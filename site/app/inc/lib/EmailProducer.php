@@ -6,10 +6,19 @@
  * Produtor Kafka para envio assíncrono de emails
  * Envia mensagens para o tópico Kafka que serão processadas pelo worker
  *
+ * Se a extensão rdkafka não estiver disponível, a classe é declarada como stub
+ * (métodos retornam false) para não quebrar a aplicação.
+ *
  * @package Leggo
  * @author Leggo Framework
  * @version 1.0
  */
+
+if (class_exists('EmailProducer', false)) {
+    return;
+}
+
+if (extension_loaded('rdkafka') && class_exists('RdKafka\Producer')) {
 
 class EmailProducer
 {
@@ -115,14 +124,20 @@ class EmailProducer
             // Flush assíncrono inicial
             $this->producer->poll(0);
 
-            // Flush com retry limitado — evita bloquear PHP por mais de ~3s
-            $maxRetries = 3;
+            // Flush com retry inteligente (timeout progressivo)
+            // Total: até 30s para garantir sucesso mesmo em ambiente de produção
+            $maxRetries = 30;
             $timeoutMs = 1000; // 1 segundo por tentativa
 
             for ($flushRetries = 0; $flushRetries < $maxRetries; $flushRetries++) {
                 $result = $this->producer->flush($timeoutMs);
 
                 if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
+                    // Sucesso!
+                    if ($flushRetries > 5) {
+                        // Log se demorou mais que 5 tentativas (5s)
+                        error_log("EmailProducer::sendEmail - Sucesso após {$flushRetries} tentativas");
+                    }
                     return true;
                 }
 
@@ -137,7 +152,7 @@ class EmailProducer
                 }
             }
 
-            throw new Exception("Falha ao enviar mensagem para Kafka após {$maxRetries} tentativas");
+            throw new Exception("Falha ao enviar mensagem para Kafka após {$maxRetries} tentativas ({$maxRetries}s)");
         } catch (Exception $e) {
             error_log("EmailProducer::sendEmail Error: " . $e->getMessage());
             return false;
@@ -228,4 +243,55 @@ class EmailProducer
             $this->producer->flush(1000);
         }
     }
+}
+
+} else {
+
+class EmailProducer
+{
+    private static ?EmailProducer $instance = null;
+
+    private function __construct() {}
+
+    public static function getInstance(): EmailProducer
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public static function send(string $to, string $subject, string $body): bool
+    {
+        error_log("EmailProducer: rdkafka não disponível. Email não enfileirado.");
+        return false;
+    }
+
+    public function sendEmail($to, string $subject, string $body, array $options = []): bool
+    {
+        return self::send(
+            is_array($to) ? implode(',', $to) : (string)$to,
+            $subject,
+            $body
+        );
+    }
+
+    public function sendTemplate(string $to, string $subject, string $template, array $data = []): bool
+    {
+        return self::send($to, $subject, '');
+    }
+
+    public function sendWithAttachments(string $to, string $subject, string $body, array $attachments): bool
+    {
+        return self::send($to, $subject, $body);
+    }
+
+    public function getStats(): array
+    {
+        return ['rdkafka' => false];
+    }
+
+    public function __destruct() {}
+}
+
 }

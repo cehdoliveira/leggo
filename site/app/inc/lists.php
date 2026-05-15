@@ -1,15 +1,15 @@
 <?php
-$yes_no_lists = array(
+$GLOBALS['yes_no_lists'] = array(
   "yes" => "sim",
   "no" => "não"
 );
 
-$method_lists = array(
+$GLOBALS['method_lists'] = array(
   "GET" => "GET",
   "POST" => "POST"
 );
 
-$week_name = array(
+$GLOBALS['week_name'] = array(
   "0" => "Domingo",
   "1" => "Segunda-feira",
   "2" => "Terça-feira",
@@ -19,7 +19,7 @@ $week_name = array(
   "6" => "Sábado"
 );
 
-$withoutaccents_lists = array(
+$GLOBALS['withoutaccents_lists'] = array(
   'á' => 'a',
   'ä' => 'a',
   'à' => 'a',
@@ -69,7 +69,7 @@ $withoutaccents_lists = array(
   '´' => ''
 );
 
-$accents_lists = array(
+$GLOBALS['accents_lists'] = array(
   'á' => 'Á',
   'ä' => 'Ä',
   'à' => 'À',
@@ -95,7 +95,7 @@ $accents_lists = array(
   'ç' => 'Ç'
 );
 
-$html_entities_list = array(
+$GLOBALS['html_entities_list'] = array(
   '&nbsp;'  =>  ' ',
   '&gt;'  =>  '>',
   '<'  =>  '<',
@@ -199,7 +199,7 @@ $html_entities_list = array(
   '&yuml;'  =>  'ÿ'
 );
 
-$month_name = array(
+$GLOBALS['month_name'] = array(
   "01" => "Janeiro",
   "02" => "Fevereiro",
   "03" => "Março",
@@ -214,7 +214,7 @@ $month_name = array(
   "12" => "Dezembro"
 );
 
-$ufbr_lists = array(
+$GLOBALS['ufbr_lists'] = array(
   "AC" => "Acre",
   "AL" => "Alagoas",
   "AP" => "Amapá",

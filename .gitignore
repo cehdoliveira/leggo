@@ -52,3 +52,6 @@ Thumbs.db
 *.swo
 .idea/
 .vscode/
+
+# PHPUnit cache
+.phpunit.result.cache

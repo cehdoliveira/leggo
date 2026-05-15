@@ -1,11 +1,17 @@
 {
     "name": "leggo/lib",
-    "description": "Dependências do projeto GarimpAções",
+    "description": "Leggo Framework — dependências compartilhadas",
     "type": "project",
     "require": {
         "php": ">=8.4",
-        "ext-rdkafka": "*",
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "phpoffice/phpspreadsheet": "^5.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "suggest": {
+        "ext-rdkafka": "Para envio assíncrono de emails via Kafka"
     },
     "autoload": {
         "psr-4": {
