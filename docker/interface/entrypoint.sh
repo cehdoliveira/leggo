@@ -54,6 +54,7 @@ php /var/www/leggo/site/cgi-bin/kafka_email_worker.php >> /var/log/kafka_email_w
 SITE_PID=$!
 echo "Kafka Email Workers iniciados (manager PID $MANAGER_PID, site PID $SITE_PID)"
 
-# Iniciar Nginx no foreground
+# Iniciar Nginx (criar diretório de logs se não existir)
 echo "Iniciando Nginx..."
+mkdir -p /var/log/nginx
 exec nginx -g "daemon off;"

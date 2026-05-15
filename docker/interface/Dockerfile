@@ -47,6 +47,7 @@ RUN mkdir -p /var/www/leggo/site/app/inc/lib \
 
 # Permissões
 RUN chown -R www-data:www-data /var/www/leggo
+RUN mkdir -p /var/log/nginx && chown -R www-data:www-data /var/log/nginx
 
 # Crontab + entrypoint
 COPY crontab /etc/cron.txt
