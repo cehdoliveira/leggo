@@ -23,6 +23,8 @@ class site_controller
         $enabled_users = count(array_filter($users, fn($u) => $u['enabled'] === 'yes' && $u['active'] === 'yes'));
         $removed_users = $total_users - $active_users;
 
+        $alpineControllers = ['dashboard'];
+
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
         include(constant("cRootServer") . "ui/page/dashboard.php");
@@ -65,6 +67,53 @@ class site_controller
                 $update->save();
             } elseif ($action === 'remover') {
                 $update->remove();
+            } elseif ($action === 'editar') {
+                $name = trim($post['name'] ?? '');
+                $mail = trim($post['mail'] ?? '');
+                if ($name !== '' && $mail !== '') {
+                    $update->populate(['name' => $name, 'mail' => $mail]);
+                    $update->save();
+                }
+            } elseif ($action === 'reset-senha') {
+                $resetUser = new users_model();
+                $con       = $resetUser->get_con();
+                $safeIdx2  = $con->real_escape_string((string)$idx);
+                $resetUser->set_field([" idx ", " name ", " mail "]);
+                $resetUser->set_filter([" active = 'yes' ", " idx = '$safeIdx2' "]);
+                $resetUser->set_paginate([1]);
+                $resetUser->load_data();
+                $user = $resetUser->data[0] ?? null;
+
+                if ($user) {
+                    $token       = bin2hex(random_bytes(32));
+                    $expires     = date("Y-m-d H:i:s", strtotime("+2 hours"));
+                    $safeToken   = $con->real_escape_string($token);
+                    $safeExpires = $con->real_escape_string($expires);
+                    $con->update(
+                        "email_token = '$safeToken', email_token_expires_at = '$safeExpires'",
+                        "users",
+                        "WHERE idx = '$safeIdx2'"
+                    );
+
+                    $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
+                    $resetLink = $canonicalBase . '/redefinir-senha/' . $token;
+                    $name      = $user['name'];
+                    $subject   = "Redefinição de senha — " . constant('cTitle');
+                    ob_start();
+                    include(constant("cRootServer") . "ui/mail/reset_password.php");
+                    $body = ob_get_clean();
+
+                    try {
+                        if (class_exists("EmailProducer")) {
+                            $producer = EmailProducer::getInstance();
+                            $producer->send($user['mail'], $subject, $body);
+                        }
+                    } catch (Exception $e) {
+                        error_log("Erro ao enviar reset de senha: " . $e->getMessage());
+                    }
+
+                    $_SESSION["messages_app"]["success"] = ["Link de redefinição de senha enviado para " . htmlspecialchars($user['mail'], ENT_QUOTES, 'UTF-8') . "."];
+                }
             }
         } catch (RuntimeException $e) {
             // falha silenciosa — redireciona de volta

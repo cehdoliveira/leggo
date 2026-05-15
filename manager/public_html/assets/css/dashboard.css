@@ -283,6 +283,38 @@
     color: var(--app-primary);
 }
 
+.btn-action-edit {
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    color: var(--app-primary);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1;
+    transition: background-color 0.1s;
+}
+
+.btn-action-edit:hover {
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--app-primary);
+}
+
+.btn-action-reset {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: background-color 0.1s;
+}
+
+.btn-action-reset:hover {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
 .btn-action-remove {
     background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.2);

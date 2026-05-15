@@ -21,5 +21,4 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.min.css">
 
     <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/main.css"); ?>">
-    <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/screener.css"); ?>">
     <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/dashboard.css"); ?>">

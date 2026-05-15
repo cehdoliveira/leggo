@@ -5,7 +5,7 @@ $adminIdx   = (int)($credential["idx"] ?? 0);
 $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
 ?>
 
-<div class="manager-layout">
+<div class="manager-layout" x-data="dashboardController()" x-init="init()">
 
     <!-- Sidebar -->
     <nav class="manager-sidebar">
@@ -104,6 +104,8 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                         : '—';
                                     $userIdx    = (int)$u['idx'];
                                     $isSelf     = $userIdx === $adminIdx;
+                                    $jsName     = htmlspecialchars(json_encode($u['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                    $jsMail     = htmlspecialchars(json_encode($u['mail'] ?? ''), ENT_QUOTES, 'UTF-8');
                                 ?>
                                     <tr<?php echo $isRemoved ? ' style="opacity:.4"' : ''; ?>>
                                         <td style="font-size:0.78rem;color:var(--app-text-muted);"><?php echo $userIdx; ?></td>
@@ -130,7 +132,17 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                         <td>
                                             <?php if (!$isRemoved && !$isSelf): ?>
                                                 <div class="d-flex gap-1">
-                                                    <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>">
+
+                                                    <!-- Editar -->
+                                                    <button type="button" class="btn btn-sm btn-action-edit"
+                                                        @click="openEdit(<?php echo $userIdx; ?>, <?php echo $jsName; ?>, <?php echo $jsMail; ?>)"
+                                                        title="Editar usuário">
+                                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                    </button>
+
+                                                    <!-- Ativar / Inativar -->
+                                                    <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>"
+                                                        @submit.prevent="confirmToggle($event.target, <?php echo $jsName; ?>, '<?php echo $isEnabled ? 'inativar' : 'ativar'; ?>')">
                                                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                                                         <input type="hidden" name="idx"         value="<?php echo $userIdx; ?>">
                                                         <input type="hidden" name="action"      value="<?php echo $isEnabled ? 'inativar' : 'ativar'; ?>">
@@ -139,8 +151,10 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                                             <i class="bi <?php echo $isEnabled ? 'bi-person-dash' : 'bi-person-check'; ?>" aria-hidden="true"></i>
                                                         </button>
                                                     </form>
+
+                                                    <!-- Remover -->
                                                     <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>"
-                                                          onsubmit="return confirm('Remover <?php echo htmlspecialchars(addslashes($u['name'] ?? 'usuário'), ENT_QUOTES, 'UTF-8'); ?>?')">
+                                                        @submit.prevent="confirmRemove($event.target, <?php echo $jsName; ?>)">
                                                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                                                         <input type="hidden" name="idx"         value="<?php echo $userIdx; ?>">
                                                         <input type="hidden" name="action"      value="remover">
@@ -148,6 +162,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                                         </button>
                                                     </form>
+
                                                 </div>
                                             <?php elseif ($isSelf && !$isRemoved): ?>
                                                 <span style="font-size:0.72rem;color:var(--app-text-muted);">Você</span>
@@ -163,6 +178,56 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                 <?php endif; ?>
             </div>
         </div>
+
+        <!-- Modal de edição -->
+        <div id="editUserModal" class="modal fade" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:var(--app-surface);border:1px solid var(--app-border);border-radius:0.5rem;">
+                    <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>">
+                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
+                        <input type="hidden" name="action" value="editar">
+                        <input type="hidden" name="idx" :value="editData.idx">
+
+                        <div class="modal-header" style="border-color:var(--app-border);padding:1rem 1.25rem 0.75rem;">
+                            <h5 class="modal-title" id="editUserModalLabel"
+                                style="font-size:0.9rem;font-weight:700;color:var(--app-text);">
+                                <i class="bi bi-pencil me-2" style="color:var(--app-primary)" aria-hidden="true"></i>Editar Usuário
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+
+                        <div class="modal-body" style="padding:1.25rem;">
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
+                                <input type="text" name="name" class="form-control" x-model="editData.name" required autocomplete="off">
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">E-mail</label>
+                                <input type="email" name="mail" class="form-control" x-model="editData.mail" required autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="modal-footer" style="border-color:var(--app-border);padding:0.75rem 1.25rem;justify-content:space-between;">
+                            <button type="button" class="btn btn-sm btn-action-reset"
+                                @click="confirmResetPassword(editData.idx, editData.name)">
+                                <i class="bi bi-envelope-arrow-up me-1" aria-hidden="true"></i>Enviar reset de senha
+                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form oculto para reset de senha -->
+        <form id="resetPasswordForm" method="POST" action="<?php echo $GLOBALS['users_url']; ?>" style="display:none;">
+            <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
+            <input type="hidden" name="action" value="reset-senha">
+            <input type="hidden" name="idx" id="resetPasswordIdx" value="">
+        </form>
 
     </main>
 </div>
