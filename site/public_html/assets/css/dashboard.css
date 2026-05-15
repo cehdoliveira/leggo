@@ -1,5 +1,5 @@
 /* ================================================
-   GarimpAções — Dashboard / Área Logada
+   LEGGO — Dashboard / Área Logada
    ================================================ */
 
 .dashboard-wrapper {
@@ -73,15 +73,19 @@
 .stat-card .bg-primary {
     background-color: rgba(200, 146, 10, 0.12) !important;
 }
+
 .stat-card .text-primary {
     color: var(--app-primary) !important;
 }
+
 .stat-card .bg-success {
     background-color: rgba(46, 160, 67, 0.1) !important;
 }
+
 .stat-card .bg-warning {
     background-color: rgba(240, 180, 41, 0.1) !important;
 }
+
 .stat-card .bg-info {
     background-color: rgba(13, 202, 240, 0.1) !important;
 }
@@ -114,7 +118,7 @@
     color: var(--app-text);
 }
 
-.table > :not(caption) > * > * {
+.table> :not(caption)>*>* {
     background-color: var(--app-surface);
     border-color: var(--app-border);
     color: var(--app-text);
