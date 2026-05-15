@@ -58,7 +58,7 @@ cd manager && php app/inc/lib/vendor/bin/phpunit
 cd site && php app/inc/lib/vendor/bin/phpunit
 
 # Migrations manuais (roda automático a cada 5 min)
-docker exec apache php /var/www/leggo/site/cgi-bin/run_migrations.php
+docker exec leggo php /var/www/leggo/site/cgi-bin/run_migrations.php
 
 # Acessar MySQL
 docker exec -it mysql mysql -u user_leggo -p db_leggo

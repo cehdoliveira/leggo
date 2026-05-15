@@ -1,7 +1,7 @@
 services:
-  apache:
+  leggo:
     build: ./interface/
-    container_name: apache
+    container_name: leggo
     environment:
       - ENABLE_CRON=true
     depends_on:
