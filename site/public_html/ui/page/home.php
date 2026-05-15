@@ -106,7 +106,7 @@ function _situacao_class(string $s): string
                     <div class="d-flex align-items-start gap-3">
                         <span style="font-size:1.5rem">👋</span>
                         <div class="flex-grow-1">
-                            <strong>Bem-vindo ao GarimpAções!</strong>
+                            <strong>Bem-vindo ao <?php echo htmlspecialchars(constant('cTitle')); ?>!</strong>
                             <p class="mb-0 mt-1" style="font-size:0.88rem;color:var(--text-muted)">
                                 Você está vendo o ranking completo das 20 melhores ações filtradas pelo algoritmo.
                                 Use a navegação abaixo para explorar rankings anteriores e acompanhe as mudanças mês a mês.

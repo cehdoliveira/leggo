@@ -88,37 +88,12 @@ $dispatcher->add_route("GET", "/?", "site_controller:home", null, $params);
 $dispatcher->add_route("GET", "/termos-de-uso(\.json|\.xml|\.html)?", "site_controller:terms", null, $params);
 $dispatcher->add_route("GET", "/politica-de-privacidade(\.json|\.xml|\.html)?", "site_controller:privacy", null, $params);
 
-// Área do usuário — redireciona para /
-$dispatcher->add_route("GET",  "/area(\.json|\.xml|\.html)?", "function:basic_redir", null, $home_url);
-$dispatcher->add_route("POST", "/area(\.json|\.xml|\.html)?", "function:basic_redir", null, $home_url);
+// Área do usuário
+$dispatcher->add_route("GET", "/area(\.json|\.xml|\.html)?", "site_controller:home", $authGuard, $params);
 
-// Remove ranking (admin only, CSRF protegido)
-$dispatcher->add_route("POST", "/remover-ranking", "site_controller:remove_session", $authGuard, $params);
-
-// Assinatura (requer login)
-$dispatcher->add_route("GET",  "/assinar(\.json|\.xml|\.html)?",         "subscription_controller:display_plans",  $authGuard, $params);
-$dispatcher->add_route("POST", "/assinar(\.json|\.xml|\.html)?",         "subscription_controller:create_payment", $authGuard, $params);
-$dispatcher->add_route("GET",  "/assinar/sucesso(\.json|\.xml|\.html)?", "subscription_controller:payment_success", $authGuard, $params);
-$dispatcher->add_route("GET",  "/assinar/status(\.json|\.xml|\.html)?",  "subscription_controller:check_status",   $authGuard, $params);
-$dispatcher->add_route("GET",  "/p/check(\.json|\.xml|\.html)?",          "subscription_controller:check_status",   $authGuard, $params); // alias neutro (ad blockers bloqueiam /assinar)
-
-// Webhook PixGo (sem auth — valida HMAC internamente)
-$dispatcher->add_route("POST", "/webhook/pixgo", "subscription_controller:webhook", null, $params);
-
-// Cancelamento de notificações de ranking (público — valida HMAC internamente)
-$dispatcher->add_route("GET", "/cancelar-notificacoes", "site_controller:unsubscribe_ranking", null, $params);
-
-// Página pública educativa (sem auth)
-$dispatcher->add_route("GET", "/como-ler-o-ranking(\.json|\.xml|\.html)?", "site_controller:ranking_guide", null, $params);
-
-// Acompanhamento Trimestral Premium
-$dispatcher->add_route("GET",  "/acompanhamento-trimestral(\.json|\.xml|\.html)?",          "quarterly_tracking_controller:display",          $authGuard, $params);
-$dispatcher->add_route("POST", "/acompanhamento-trimestral/registro(\.json|\.xml|\.html)?", "quarterly_tracking_controller:save_entry",       $authGuard, $params);
-$dispatcher->add_route("GET",  "/acompanhamento-trimestral/assinar(\.json|\.xml|\.html)?",  "quarterly_tracking_controller:display_checkout", $authGuard, $params);
-$dispatcher->add_route("POST", "/acompanhamento-trimestral/assinar(\.json|\.xml|\.html)?",  "quarterly_tracking_controller:create_payment",   $authGuard, $params);
-$dispatcher->add_route("GET",  "/acompanhamento-trimestral/status(\.json|\.xml|\.html)?",   "quarterly_tracking_controller:check_status",     $authGuard, $params);
-$dispatcher->add_route("GET",  "/qt/check(\.json|\.xml|\.html)?",                               "quarterly_tracking_controller:check_status",      $authGuard, $params); // alias neutro
-$dispatcher->add_route("GET",  "/acompanhamento-trimestral/sucesso(\.json|\.xml|\.html)?",  "quarterly_tracking_controller:payment_success",  $authGuard, $params);
+// Termos e privacidade (público)
+$dispatcher->add_route("GET", "/termos-de-uso(\.json|\.xml|\.html)?", "site_controller:terms", null, $params);
+$dispatcher->add_route("GET", "/politica-de-privacidade(\.json|\.xml|\.html)?", "site_controller:privacy", null, $params);
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {

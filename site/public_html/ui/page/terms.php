@@ -14,7 +14,7 @@
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">3. Descrição do serviço contratado</h2>
-        <p class="mb-0">O GarimpAções disponibiliza uma plataforma de visualização e acompanhamento de rankings de ativos, com dados consolidados a partir de provedores e ferramentas terceiras de mercado.</p>
+        <p class="mb-0">O <?php echo htmlspecialchars(constant('cTitle')); ?> disponibiliza uma plataforma de visualização e acompanhamento de rankings de ativos, com dados consolidados a partir de provedores e ferramentas terceiras de mercado.</p>
     </section>
 
     <section class="mb-4">

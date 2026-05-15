@@ -22,7 +22,7 @@ define("REDIS_ENABLED", true);
 define("REDIS_DEFAULT_TTL", 3600);
 
 // ===== KAFKA =====
-define("KAFKA_HOST", "kafka_broker");
+define("KAFKA_HOST", "kafka");
 define("KAFKA_PORT", "9092");
 define("KAFKA_TOPIC_EMAIL", "leggo_site_emails");
 define("KAFKA_CONSUMER_GROUP", "leggo-email-worker-group");
@@ -76,26 +76,6 @@ define("APP_VERSION", "1.0.0");
 define("UPLOAD_DIR", "/var/www/leggo/site/public_html/assets/upload/");
 define("UPLOAD_MAX_SIZE", 10);
 define("UPLOAD_ALLOWED_TYPES", "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx");
-
-// ===== PIXGO (GATEWAY DE PAGAMENTO PIX) =====
-define("PIXGO_API_URL", "https://pixgo.org/api/v1");
-define("PIXGO_API_KEY", "SUA_API_KEY_PIXGO_AQUI");
-define("PIXGO_WEBHOOK_SECRET", "SEU_WEBHOOK_SECRET_AQUI");
-// URL base pública e fixa do site — usada para montar o webhook_url enviado ao PixGo.
-// DEVE ser definida explicitamente (nunca derivada do HTTP_HOST) para evitar Host Header Injection.
-// Exemplo produção: "https://leggo.com.br"
-// Em ambiente local (HTTP/localhost), deixe vazio — o webhook será omitido automaticamente.
-define("PIXGO_WEBHOOK_BASE_URL", "");
-
-// ===== INVESTIDOR10 =====
-define("INVESTIDOR10_URL", "https://investidor10.com.br/carteiras/SEU_ID_AQUI");
-
-// ===== PREÇOS DE ASSINATURA =====
-define("SUBSCRIPTION_PRICES", [
-    'monthly'  => 9.90,
-    'annual'   => 97.00,
-    'lifetime' => 197.00,
-]);
 
 // ===== SESSÃO =====
 define("SESSION_LIFETIME", 7200);

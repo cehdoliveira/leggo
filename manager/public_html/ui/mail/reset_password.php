@@ -13,7 +13,7 @@ $logoUrl = $canonicalSite . '/assets/img/logo.png';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Redefinição de senha — GarimpAções</title>
+    <title>Redefinição de senha — <?php echo htmlspecialchars(constant('cTitle')); ?></title>
 </head>
 
 <body style="margin:0;padding:0;background-color:#060b11;font-family:Arial,Helvetica,sans-serif;">
@@ -31,14 +31,14 @@ $logoUrl = $canonicalSite . '/assets/img/logo.png';
                                 <tr>
                                     <td align="center">
                                         <img src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>"
-                                            alt="GarimpAções" width="56" height="56"
+                                            alt="<?php echo htmlspecialchars(constant('cTitle')); ?>" width="56" height="56"
                                             style="display:block;border:0;border-radius:8px;">
                                     </td>
                                 </tr>
                                 <tr>
                                     <td align="center" style="padding-top:14px;">
                                         <span style="font-size:26px;font-weight:700;color:#00d4aa;letter-spacing:2px;font-family:Arial,Helvetica,sans-serif;">
-                                            GARIMPAÇÕES
+                                            <?php echo htmlspecialchars(constant('cTitle')); ?>
                                         </span>
                                     </td>
                                 </tr>
@@ -77,7 +77,7 @@ $logoUrl = $canonicalSite . '/assets/img/logo.png';
 
                                 <tr>
                                     <td style="font-size:15px;color:#b0bec5;line-height:1.75;padding-bottom:32px;font-family:Arial,Helvetica,sans-serif;">
-                                        Recebemos uma solicitação para redefinir a senha da sua conta no <strong style="color:#e2e8f0;">GarimpAções</strong>.
+                                        Recebemos uma solicitação para redefinir a senha da sua conta no <strong style="color:#e2e8f0;"><?php echo htmlspecialchars(constant('cTitle')); ?></strong>.
                                         Clique no botão abaixo para criar uma nova senha.
                                     </td>
                                 </tr>
@@ -130,7 +130,7 @@ $logoUrl = $canonicalSite . '/assets/img/logo.png';
                                 <tr>
                                     <td style="font-size:12px;color:#7a8ba0;line-height:1.65;font-family:Arial,Helvetica,sans-serif;text-align:center;">
                                         Este é um e-mail automático. Por favor, não responda a esta mensagem.<br>
-                                        © <?php echo date('Y'); ?> GarimpAções — Todos os direitos reservados.
+                                        © <?php echo date('Y'); ?> <?php echo htmlspecialchars(constant('cTitle')); ?> — Todos os direitos reservados.
                                     </td>
                                 </tr>
                             </table>

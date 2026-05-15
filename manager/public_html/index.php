@@ -63,23 +63,12 @@ $dispatcher->add_route("POST", "/login(\.json|\.xml|\.html)?", "auth_controller:
 // Logout
 $dispatcher->add_route("GET", "/sair", "auth_controller:logout", null, $params);
 
-// Admin — GarimpAções (requer autenticação)
-$dispatcher->add_route("GET",  "/?",             "admin_controller:dashboard", $authGuard, $params);
-$dispatcher->add_route("GET",  "/admin",         "admin_controller:dashboard", $authGuard, $params);
-$dispatcher->add_route("POST", "/admin/process", "admin_controller:process",   $authGuard, $params);
-$dispatcher->add_route("POST", "/admin/delete",    "admin_controller:delete",           $authGuard, $params);
-$dispatcher->add_route("POST", "/admin/comunicar", "admin_controller:send_communication", $authGuard, $params);
+// Admin (requer autenticação)
+$dispatcher->add_route("GET",  "/?",     "site_controller:dashboard", $authGuard, $params);
+$dispatcher->add_route("GET",  "/admin", "site_controller:dashboard", $authGuard, $params);
 
-// Usuários
-$dispatcher->add_route("GET",  "/usuarios",                    "admin_controller:users_dashboard",       $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios/subscription",       "admin_controller:update_subscription",   $authGuard, $params);
-$dispatcher->add_route("GET",  "/usuarios/quarterly",          "admin_controller:quarterly_users",       $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios/quarterly-access",   "admin_controller:update_quarterly_access", $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios/reset-password",     "admin_controller:reset_user_password",   $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios/deactivate",         "admin_controller:deactivate_user",       $authGuard, $params);
-
-// Pagamentos
-$dispatcher->add_route("GET", "/pagamentos", "admin_controller:payments", $authGuard, $params);
+// Usuários (requer autenticação)
+$dispatcher->add_route("GET",  "/usuarios",                "site_controller:dashboard", $authGuard, $params);
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {

@@ -144,28 +144,14 @@ class auth_controller
         $newUser->populate($info["post"]);
         $info["idx"] = $newUser->save();
 
-        $chosenPlan = $info["post"]["selected_plan"] ?? 'trial';
-
         if (isset($info["idx"]) && $info["idx"] > 0) {
             $newUser->save_attach($info, ["profiles"]);
-
-            // Só atribui perfil trial automaticamente quando o usuário escolhe trial no cadastro.
-            if ($chosenPlan === 'trial') {
-                assign_subscription_profile((int)$info["idx"], 'trial');
-            }
-
-            // Armazenar plano escolhido para uso pós-verificação de email
-            if (in_array($chosenPlan, ['monthly', 'annual', 'lifetime'], true)) {
-                $_SESSION['pending_plan'] = $chosenPlan;
-            } else {
-                unset($_SESSION['pending_plan']);
-            }
 
             $canonicalBase = (defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== '')
                 ? rtrim(constant('SITE_CANONICAL_URL'), '/')
                 : rtrim(constant('cFrontend'), '/');
             $verifyLink = $canonicalBase . '/verificar-email/' . $token;
-            $subject = "Confirme seu cadastro — GarimpAções";
+            $subject = "Confirme seu cadastro — " . constant('cTitle');
             ob_start();
             $name = $info["post"]["name"];
             include(constant("cRootServer") . "ui/mail/verify_email.php");
@@ -330,79 +316,20 @@ class auth_controller
             exit();
         }
 
-        $pendingPlan = $_SESSION['pending_plan'] ?? null;
+        $hashedPwd = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
+        $now       = date("Y-m-d H:i:s");
+        $safeNow   = $con->real_escape_string($now);
 
-        // Habilitar usuário e criar subscription inicial em transação atômica
-        $hashedPwd  = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
-        $now        = date("Y-m-d H:i:s");
-        $safeNow    = $con->real_escape_string($now);
-        $isPaidFlow = in_array($pendingPlan, ['monthly', 'annual', 'lifetime'], true);
-        $initialStatus = $isPaidFlow ? 'expired' : 'trial';
-        $trialExpiry = $con->real_escape_string(
-            $isPaidFlow
-                ? $now
-                : date("Y-m-d H:i:s", strtotime("+30 days"))
+        $con->update(
+            "enabled = 'yes', email_verified_at = '$safeNow', password = '$hashedPwd', email_token = NULL, modified_at = '$safeNow'",
+            "users",
+            " WHERE idx = '$safeIdx' "
         );
 
-        $con->beginTransaction();
-        try {
-            $con->update(
-                "enabled = 'yes', email_verified_at = '$safeNow', password = '$hashedPwd', email_token = NULL, modified_at = '$safeNow'",
-                "users",
-                " WHERE idx = '$safeIdx' "
-            );
-
-            // Inserir subscription trial diretamente via $con para manter atomicidade
-            $con->insert(
-                "plan = 'trial', status = '$initialStatus', "
-                    . "starts_at = '$safeNow', expires_at = '$trialExpiry', active = 'yes', "
-                    . "created_at = '$safeNow', created_by = '$safeIdx', modified_at = '$safeNow'",
-                "subscriptions",
-                ""
-            );
-            $subId = $con->real_escape_string((string)$con->lastInsertId());
-
-            // Vincular subscription ao usuário via pivot users_subscriptions
-            $con->query(
-                "INSERT INTO users_subscriptions (users_id, subscriptions_id, created_at, created_by, active) "
-                    . "VALUES ('$safeIdx', '$subId', '$safeNow', '$safeIdx', 'yes')"
-            );
-
-            $con->commit();
-        } catch (\Exception $e) {
-            $con->rollback();
-            error_log("set_password transaction error: " . $e->getMessage());
-            $_SESSION["messages_app"]["danger"] = ["Erro ao ativar conta. Tente novamente."];
-            basic_redir(sprintf($GLOBALS["set_password_url"], $token));
-            exit();
-        }
-
         unset($_SESSION['pending_set_password_idx']);
-        unset($_SESSION['pending_plan']);
 
-        if ($pendingPlan !== null && in_array($pendingPlan, ['monthly', 'annual', 'lifetime'], true)) {
-            // Login automático para levar direto ao checkout Pix e mostrar QR code.
-            $userLogin = new users_model();
-            $safeIdxLogin = $userLogin->get_con()->real_escape_string((string)$pendingIdx);
-            $userLogin->set_field([" idx ", " name ", " mail ", " login "]);
-            $userLogin->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdxLogin' "]);
-            $userLogin->set_paginate([1]);
-            $userLogin->load_data();
-            $userLogin->attach(["profiles"]);
-
-            $credential = $userLogin->data[0] ?? null;
-            if ($credential) {
-                session_regenerate_id(true);
-                $_SESSION[constant("cAppKey")] = ["credential" => $credential];
-            }
-
-            $_SESSION['auto_checkout_plan'] = $pendingPlan;
-            $_SESSION["messages_app"]["success"] = ["Conta ativada! Geramos seu QR Code Pix para finalizar a assinatura."];
-            basic_redir($GLOBALS["plans_url"]);
-        } else {
-            $_SESSION["messages_app"]["success"] = ["Senha definida! Você já pode fazer login."];
-            basic_redir($GLOBALS["login_url"]);
-        }
+        $_SESSION["messages_app"]["success"] = ["Senha definida! Você já pode fazer login."];
+        basic_redir($GLOBALS["login_url"]);
         exit();
     }
 
@@ -492,13 +419,13 @@ class auth_controller
 
             if ($user['enabled'] === 'no') {
                 $verifyLink = $canonicalBase . '/verificar-email/' . $token;
-                $subject    = "Confirme seu cadastro — GarimpAções";
+                $subject    = "Confirme seu cadastro — " . constant('cTitle');
                 ob_start();
                 include(constant("cRootServer") . "ui/mail/verify_email.php");
                 $body = ob_get_clean();
             } else {
                 $resetLink = $canonicalBase . '/redefinir-senha/' . $token;
-                $subject   = "Redefinição de senha — GarimpAções";
+                $subject   = "Redefinição de senha — " . constant('cTitle');
                 ob_start();
                 include(constant("cRootServer") . "ui/mail/reset_password.php");
                 $body = ob_get_clean();

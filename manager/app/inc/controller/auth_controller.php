@@ -159,7 +159,7 @@ class auth_controller
             try {
                 if (class_exists("EmailProducer")) {
                     $producer  = EmailProducer::getInstance();
-                    $subject   = "Seus dados de acesso — GarimpAções";
+                    $subject   = "Seus dados de acesso — " . constant('cTitle');
                     $name      = $info["post"]["name"];
                     $login     = $info["post"]["login"];
                     $canonicalBase = (defined('MANAGER_CANONICAL_URL') && constant('MANAGER_CANONICAL_URL') !== '')
