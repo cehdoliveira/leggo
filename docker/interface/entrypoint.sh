@@ -6,7 +6,6 @@ ENABLE_CRON="${ENABLE_CRON:-false}"
 echo "Executando composer install nas pastas lib..."
 
 # Instalar dependências do composer para site
-# Altere o caminho: /var/www/leggo para /var/www/<NOME_APP>
 if [ -f "/var/www/leggo/site/app/inc/lib/composer.json" ]; then
     echo "Instalando dependências do site..."
     cd /var/www/leggo/site/app/inc/lib
@@ -43,6 +42,10 @@ if [ "$#" -gt 0 ]; then
     exec "$@"
 fi
 
+# Iniciar PHP-FPM em background
+echo "Iniciando PHP-FPM..."
+php-fpm -D
+
 # Iniciar Kafka Email Worker em background
 echo "Iniciando Kafka Email Worker..."
 php /var/www/leggo/manager/cgi-bin/kafka_email_worker.php >> /var/log/kafka_email_worker_manager.log 2>&1 &
@@ -51,5 +54,6 @@ php /var/www/leggo/site/cgi-bin/kafka_email_worker.php >> /var/log/kafka_email_w
 SITE_PID=$!
 echo "Kafka Email Workers iniciados (manager PID $MANAGER_PID, site PID $SITE_PID)"
 
-# Iniciar o Apache
-exec apache2-foreground
+# Iniciar Nginx no foreground
+echo "Iniciando Nginx..."
+exec nginx -g "daemon off;"
