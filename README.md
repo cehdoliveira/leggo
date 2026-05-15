@@ -5,7 +5,7 @@ Stack PHP 8.4 + MySQL 8.0 com framework próprio **LEGGO**, rodando em Docker. D
 ## Requisitos
 
 - Docker e Docker Compose
-- 4 GB de RAM disponível (MySQL + Redis + Kafka + Apache)
+- 4 GB de RAM disponível (MySQL + Redis + Kafka + Nginx)
 
 ## Setup rápido
 
