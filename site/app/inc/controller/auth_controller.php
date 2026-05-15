@@ -1,0 +1,640 @@
+<?php
+class auth_controller
+{
+    public static function check_login()
+    {
+        if (!isset($_SESSION[constant("cAppKey")]["credential"]["idx"])) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public function logout()
+    {
+        $_SESSION = [];
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+        session_destroy();
+        basic_redir($GLOBALS["login_url"]);
+    }
+
+    public function login($info)
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
+
+        if (empty($info["post"]["login"]) || empty($info["post"]["password"])) {
+            $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha são obrigatórios para realizar o login"];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $redis   = $GLOBALS['redis'] ?? null;
+        $rateKey = "login_attempts:" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        if (check_and_increment_rate_limit($redis, $rateKey, 5, 60)) {
+            $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde um momento antes de tentar novamente."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $users = new users_model();
+        $login = $users->get_con()->real_escape_string($info["post"]["login"]);
+
+        $users->set_field([" idx ", " name ", " mail ", " login ", " password "]);
+        $users->set_filter(["enabled = 'yes'", " '$login' IN (mail,login) "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+        $users->attach(["profiles"]);
+
+        $user   = $users->data[0] ?? null;
+        $userId = $user["idx"] ?? null;
+
+        if ($userId) {
+            $authenticated = verify_password_with_migration($user["password"] ?? '', $info["post"]["password"], $userId);
+        } else {
+            // Always run password_verify to prevent timing-based username enumeration
+            password_verify($info["post"]["password"], '$2y$10$invalidhashXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXe');
+            $authenticated = false;
+        }
+
+        if ($authenticated) {
+            session_regenerate_id(true);
+            $credential = $user;
+            unset($credential["password"]);
+            $_SESSION[constant("cAppKey")] = ["credential" => $credential];
+
+            if ($redis) {
+                $redis->del($rateKey);
+            }
+
+            $update = new users_model();
+            $safeIdx = $update->get_con()->real_escape_string((string)$credential["idx"]);
+            $update->set_filter(["idx = '$safeIdx'"]);
+            $update->populate(["last_login" => date("Y-m-d H:i:s")]);
+            $update->save();
+        } else {
+            $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha informados não conferem"];
+        }
+
+        basic_redir($authenticated ? $GLOBALS["area_url"] : $GLOBALS["login_url"]);
+        exit();
+    }
+
+    public function display_register($info)
+    {
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $alpineControllers = ['register'];
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/register.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function register($info)
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["register_url"]);
+
+        $required = ["name", "mail", "login"];
+        foreach ($required as $r) {
+            if (empty($info["post"][$r])) {
+                $_SESSION["messages_app"]["danger"] = ["Campo $r é obrigatório"];
+                basic_redir($GLOBALS["register_url"]);
+                exit();
+            }
+        }
+
+        $users = new users_model();
+        $con   = $users->get_con();
+        $mail  = $con->real_escape_string($info["post"]["mail"]);
+        $login = $con->real_escape_string($info["post"]["login"]);
+        $users->set_filter([" active = 'yes' ", " ( mail = '$mail' OR login = '$login' ) "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        if (isset($users->data[0]["idx"])) {
+            $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
+            basic_redir($GLOBALS["register_url"]);
+            exit();
+        }
+
+        $token = bin2hex(random_bytes(32));
+
+        // Senha temporária desconhecida — usuário vai definir após confirmar email
+        $info["post"]["password"]    = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
+        $info["post"]["profiles_id"] = constant("DEFAULT_USER_PROFILE_ID");
+        $info["post"]["enabled"]               = "no";
+        $info["post"]["email_token"]           = $token;
+        $info["post"]["email_token_expires_at"] = date("Y-m-d H:i:s", strtotime("+72 hours"));
+
+        $newUser = new users_model();
+        $newUser->populate($info["post"]);
+        $info["idx"] = $newUser->save();
+
+        $chosenPlan = $info["post"]["selected_plan"] ?? 'trial';
+
+        if (isset($info["idx"]) && $info["idx"] > 0) {
+            $newUser->save_attach($info, ["profiles"]);
+
+            // Só atribui perfil trial automaticamente quando o usuário escolhe trial no cadastro.
+            if ($chosenPlan === 'trial') {
+                assign_subscription_profile((int)$info["idx"], 'trial');
+            }
+
+            // Armazenar plano escolhido para uso pós-verificação de email
+            if (in_array($chosenPlan, ['monthly', 'annual', 'lifetime'], true)) {
+                $_SESSION['pending_plan'] = $chosenPlan;
+            } else {
+                unset($_SESSION['pending_plan']);
+            }
+
+            $canonicalBase = (defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== '')
+                ? rtrim(constant('SITE_CANONICAL_URL'), '/')
+                : rtrim(constant('cFrontend'), '/');
+            $verifyLink = $canonicalBase . '/verificar-email/' . $token;
+            $subject = "Confirme seu cadastro — GarimpAções";
+            ob_start();
+            $name = $info["post"]["name"];
+            include(constant("cRootServer") . "ui/mail/verify_email.php");
+            $body = ob_get_clean();
+
+            $emailSent = false;
+            try {
+                if (class_exists("EmailProducer")) {
+                    $producer = EmailProducer::getInstance();
+                    $emailSent = (bool)$producer->send($info["post"]["mail"], $subject, $body);
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao enfileirar email de verificação: " . $e->getMessage());
+            }
+
+            try {
+                $msgModel = new messages_model();
+                $msgModel->populate([
+                    "to_mail" => $info["post"]["mail"],
+                    "subject" => $subject,
+                    "body"    => $body,
+                    "sent_at" => date("Y-m-d H:i:s"),
+                ]);
+                $msgModel->save();
+            } catch (Exception $e) {
+                error_log("Erro ao salvar log de email: " . $e->getMessage());
+            }
+
+            if (!$emailSent) {
+                $_SESSION["messages_app"]["danger"] = ["Cadastro realizado, mas não foi possível enviar o email de verificação. Entre em contato com o suporte."];
+                basic_redir($GLOBALS["register_url"]);
+                exit();
+            }
+
+            $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        } else {
+            $_SESSION["messages_app"]["danger"] = ["Falha ao criar usuário. Tente novamente mais tarde."];
+            basic_redir($GLOBALS["register_url"]);
+            exit();
+        }
+    }
+
+    public function verify_email($info)
+    {
+        $token = $info[1] ?? null;
+
+        if (empty($token)) {
+            $_SESSION["messages_app"]["danger"] = ["Link de verificação inválido."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $users = new users_model();
+        $con   = $users->get_con();
+        $safeToken = $con->real_escape_string($token);
+
+        $users->set_field([" idx "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " email_token = '$safeToken' ", " email_token_expires_at > NOW() "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        $user = $users->data[0] ?? null;
+
+        if (!$user) {
+            $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        // Token válido — invalida no DB e guarda idx na sessão para set_password
+        $con->update("email_token = NULL", "users", " WHERE idx = '" . $con->real_escape_string((string)$user["idx"]) . "' ");
+        $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
+
+        $_SESSION["messages_app"]["success"] = ["E-mail confirmado! Agora defina sua senha para ativar sua conta."];
+        basic_redir(sprintf($GLOBALS["set_password_url"], $token));
+        exit();
+    }
+
+    public function display_set_password($info)
+    {
+        $token      = $info[1] ?? null;  // mantido apenas para compor o action da URL do formulário
+        $pendingIdx = $_SESSION['pending_set_password_idx'] ?? null;
+
+        if (empty($pendingIdx)) {
+            $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Por favor, verifique seu e-mail novamente."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $users = new users_model();
+        $con   = $users->get_con();
+        $safeIdx = $con->real_escape_string((string)$pendingIdx);
+
+        $users->set_field([" idx "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = '$safeIdx' "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        if (!isset($users->data[0]["idx"])) {
+            unset($_SESSION['pending_set_password_idx']);
+            $_SESSION["messages_app"]["danger"] = ["Link inválido ou já utilizado."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $alpineControllers = ['setPassword'];
+        $set_password_token = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/set_password.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function set_password($info)
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
+
+        $token    = $info[1] ?? null;
+        $password = $info["post"]["password"] ?? '';
+        $confirm  = $info["post"]["password_confirm"] ?? '';
+
+        $pendingIdx = $_SESSION['pending_set_password_idx'] ?? null;
+
+        if (empty($pendingIdx)) {
+            $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Por favor, verifique seu e-mail novamente."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        if (empty($password) || strlen($password) < 6) {
+            $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
+            basic_redir(sprintf($GLOBALS["set_password_url"], $token));
+            exit();
+        }
+
+        if ($password !== $confirm) {
+            $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
+            basic_redir(sprintf($GLOBALS["set_password_url"], $token));
+            exit();
+        }
+
+        $users = new users_model();
+        $con   = $users->get_con();
+        $safeIdx = $con->real_escape_string((string)$pendingIdx);
+
+        $users->set_field([" idx "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = '$safeIdx' "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        if (!$users->data[0] ?? null) {
+            unset($_SESSION['pending_set_password_idx']);
+            $_SESSION["messages_app"]["danger"] = ["Link inválido ou já utilizado."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $pendingPlan = $_SESSION['pending_plan'] ?? null;
+
+        // Habilitar usuário e criar subscription inicial em transação atômica
+        $hashedPwd  = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
+        $now        = date("Y-m-d H:i:s");
+        $safeNow    = $con->real_escape_string($now);
+        $isPaidFlow = in_array($pendingPlan, ['monthly', 'annual', 'lifetime'], true);
+        $initialStatus = $isPaidFlow ? 'expired' : 'trial';
+        $trialExpiry = $con->real_escape_string(
+            $isPaidFlow
+                ? $now
+                : date("Y-m-d H:i:s", strtotime("+30 days"))
+        );
+
+        $con->beginTransaction();
+        try {
+            $con->update(
+                "enabled = 'yes', email_verified_at = '$safeNow', password = '$hashedPwd', email_token = NULL, modified_at = '$safeNow'",
+                "users",
+                " WHERE idx = '$safeIdx' "
+            );
+
+            // Inserir subscription trial diretamente via $con para manter atomicidade
+            $con->insert(
+                "plan = 'trial', status = '$initialStatus', "
+                    . "starts_at = '$safeNow', expires_at = '$trialExpiry', active = 'yes', "
+                    . "created_at = '$safeNow', created_by = '$safeIdx', modified_at = '$safeNow'",
+                "subscriptions",
+                ""
+            );
+            $subId = $con->real_escape_string((string)$con->lastInsertId());
+
+            // Vincular subscription ao usuário via pivot users_subscriptions
+            $con->query(
+                "INSERT INTO users_subscriptions (users_id, subscriptions_id, created_at, created_by, active) "
+                    . "VALUES ('$safeIdx', '$subId', '$safeNow', '$safeIdx', 'yes')"
+            );
+
+            $con->commit();
+        } catch (\Exception $e) {
+            $con->rollback();
+            error_log("set_password transaction error: " . $e->getMessage());
+            $_SESSION["messages_app"]["danger"] = ["Erro ao ativar conta. Tente novamente."];
+            basic_redir(sprintf($GLOBALS["set_password_url"], $token));
+            exit();
+        }
+
+        unset($_SESSION['pending_set_password_idx']);
+        unset($_SESSION['pending_plan']);
+
+        if ($pendingPlan !== null && in_array($pendingPlan, ['monthly', 'annual', 'lifetime'], true)) {
+            // Login automático para levar direto ao checkout Pix e mostrar QR code.
+            $userLogin = new users_model();
+            $safeIdxLogin = $userLogin->get_con()->real_escape_string((string)$pendingIdx);
+            $userLogin->set_field([" idx ", " name ", " mail ", " login "]);
+            $userLogin->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdxLogin' "]);
+            $userLogin->set_paginate([1]);
+            $userLogin->load_data();
+            $userLogin->attach(["profiles"]);
+
+            $credential = $userLogin->data[0] ?? null;
+            if ($credential) {
+                session_regenerate_id(true);
+                $_SESSION[constant("cAppKey")] = ["credential" => $credential];
+            }
+
+            $_SESSION['auto_checkout_plan'] = $pendingPlan;
+            $_SESSION["messages_app"]["success"] = ["Conta ativada! Geramos seu QR Code Pix para finalizar a assinatura."];
+            basic_redir($GLOBALS["plans_url"]);
+        } else {
+            $_SESSION["messages_app"]["success"] = ["Senha definida! Você já pode fazer login."];
+            basic_redir($GLOBALS["login_url"]);
+        }
+        exit();
+    }
+
+    public function display($info)
+    {
+        if (self::check_login()) {
+            basic_redir($GLOBALS["area_url"]);
+            return;
+        }
+
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $alpineControllers = ['login'];
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/login.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function display_forgot_password($info)
+    {
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/forgot_password.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function forgot_password($info)
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["forgot_password_url"]);
+
+        $mail = trim($info["post"]["mail"] ?? '');
+
+        if (empty($mail)) {
+            $_SESSION["messages_app"]["danger"] = ["Informe seu e-mail."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+            exit();
+        }
+
+        $redis   = $GLOBALS['redis'] ?? null;
+        $rateKey = "forgot_pwd:" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        if (check_and_increment_rate_limit($redis, $rateKey, 3, 300)) {
+            $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde alguns minutos."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+            exit();
+        }
+
+        $users = new users_model();
+        $con   = $users->get_con();
+        $safeMail = $con->real_escape_string($mail);
+        $users->set_field([" idx ", " name ", " mail ", " enabled "]);
+        $users->set_filter([" active = 'yes' ", " mail = '$safeMail' "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        $user = $users->data[0] ?? null;
+
+        if ($user) {
+            $userId   = (int)$user['idx'];
+            $name     = $user['name'];
+            $token   = bin2hex(random_bytes(32));
+            $safeIdx = $con->real_escape_string((string)$userId);
+
+            if ($user['enabled'] === 'no') {
+                // Unverified users: use same 72h window as original registration
+                $expires = date("Y-m-d H:i:s", strtotime("+72 hours"));
+            } else {
+                // Verified users: shorter window for password reset
+                $expires = date("Y-m-d H:i:s", strtotime("+2 hours"));
+            }
+
+            $con->update(
+                "email_token = '$token', email_token_expires_at = '$expires'",
+                "users",
+                " WHERE idx = '$safeIdx' "
+            );
+
+            $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
+
+            if ($user['enabled'] === 'no') {
+                $verifyLink = $canonicalBase . '/verificar-email/' . $token;
+                $subject    = "Confirme seu cadastro — GarimpAções";
+                ob_start();
+                include(constant("cRootServer") . "ui/mail/verify_email.php");
+                $body = ob_get_clean();
+            } else {
+                $resetLink = $canonicalBase . '/redefinir-senha/' . $token;
+                $subject   = "Redefinição de senha — GarimpAções";
+                ob_start();
+                include(constant("cRootServer") . "ui/mail/reset_password.php");
+                $body = ob_get_clean();
+            }
+
+            try {
+                if (class_exists("EmailProducer")) {
+                    $producer = EmailProducer::getInstance();
+                    $producer->send($user['mail'], $subject, $body);
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
+            }
+        }
+
+        // Mensagem genérica — não revela se o e-mail existe
+        $_SESSION["messages_app"]["success"] = ["Se o e-mail informado estiver cadastrado, você receberá um link em breve."];
+        basic_redir($GLOBALS["login_url"]);
+        exit();
+    }
+
+    public function display_reset_password($info)
+    {
+        $token      = $info[1] ?? null;
+        $pendingIdx = $_SESSION['pending_reset_idx'] ?? null;
+
+        if ($pendingIdx) {
+            $users   = new users_model();
+            $con     = $users->get_con();
+            $safeIdx = $con->real_escape_string((string)$pendingIdx);
+            $users->set_field([" idx "]);
+            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdx' "]);
+            $users->set_paginate([1]);
+            $users->load_data();
+
+            if (empty($users->data[0]["idx"])) {
+                unset($_SESSION['pending_reset_idx']);
+                $_SESSION["messages_app"]["danger"] = ["Sessão inválida."];
+                basic_redir($GLOBALS["login_url"]);
+                exit();
+            }
+        } else {
+            if (empty($token)) {
+                $_SESSION["messages_app"]["danger"] = ["Link inválido."];
+                basic_redir($GLOBALS["login_url"]);
+                exit();
+            }
+
+            $users      = new users_model();
+            $con        = $users->get_con();
+            $safeToken  = $con->real_escape_string($token);
+            $users->set_field([" idx "]);
+            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " email_token = '$safeToken' ", " email_token_expires_at > NOW() "]);
+            $users->set_paginate([1]);
+            $users->load_data();
+
+            $user = $users->data[0] ?? null;
+
+            if (!$user) {
+                $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
+                basic_redir($GLOBALS["login_url"]);
+                exit();
+            }
+
+            $con->update("email_token = NULL", "users", " WHERE idx = '" . $con->real_escape_string((string)$user["idx"]) . "' ");
+            $_SESSION['pending_reset_idx'] = (int)$user["idx"];
+        }
+
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $reset_password_token = htmlspecialchars($token ?? '', ENT_QUOTES, 'UTF-8');
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/reset_password.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function reset_password($info)
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
+
+        $token    = $info[1] ?? null;
+        $password = $info["post"]["password"] ?? '';
+        $confirm  = $info["post"]["password_confirm"] ?? '';
+
+        $pendingIdx = $_SESSION['pending_reset_idx'] ?? null;
+
+        if (empty($pendingIdx)) {
+            $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Solicite um novo link de redefinição."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+            exit();
+        }
+
+        if (empty($password) || strlen($password) < 6) {
+            $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
+            basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
+            exit();
+        }
+
+        if ($password !== $confirm) {
+            $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
+            basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
+            exit();
+        }
+
+        $users   = new users_model();
+        $con     = $users->get_con();
+        $safeIdx = $con->real_escape_string((string)$pendingIdx);
+
+        $users->set_field([" idx "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdx' "]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        if (empty($users->data[0]["idx"])) {
+            unset($_SESSION['pending_reset_idx']);
+            $_SESSION["messages_app"]["danger"] = ["Usuário não encontrado."];
+            basic_redir($GLOBALS["login_url"]);
+            exit();
+        }
+
+        $safeHash = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
+        $con->update(
+            "password = '$safeHash', email_token_expires_at = NULL",
+            "users",
+            " WHERE idx = '$safeIdx' "
+        );
+
+        unset($_SESSION['pending_reset_idx']);
+        session_regenerate_id(true);
+
+        $_SESSION["messages_app"]["success"] = ["Senha redefinida com sucesso! Faça login para continuar."];
+        basic_redir($GLOBALS["login_url"]);
+        exit();
+    }
+}

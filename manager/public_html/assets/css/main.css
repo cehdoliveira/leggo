@@ -1,0 +1,257 @@
+/* ================================================
+   GarimpAções Manager — Admin Styles
+   Aesthetic: copper industrial / precision control
+   Font: JetBrains Mono (dominant)
+   No light mode — always dark.
+   ================================================ */
+
+:root {
+    --app-primary: #b87333;
+    --app-primary-glow: rgba(184, 115, 51, 0.2);
+    --app-copper-bright: #e8864a;
+    --app-bg: #0a0a0b;
+    --app-surface: #111113;
+    --app-surface-2: #18181b;
+    --app-text: #d0ccc5;
+    --app-text-muted: #605e5a;
+    --app-border: #1e1d1c;
+    --app-navbar-bg: #080808;
+    --app-footer-bg: #080808;
+    --app-footer-text: rgba(208, 204, 197, 0.38);
+    --app-focus-ring: rgba(184, 115, 51, 0.28);
+
+    /* Bootstrap overrides — força texto claro em todos os .btn no tema escuro */
+    --bs-body-color: #d0ccc5;
+    --bs-btn-color: #d0ccc5;
+}
+
+/* Layout */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    font-size: 0.9375rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+#mainContent {
+    flex: 1 0 auto;
+}
+
+/* Bootstrap primary override */
+.btn-primary {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+    color: #080808;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-radius: 0.25rem;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--app-copper-bright);
+    border-color: var(--app-copper-bright);
+    color: #080808;
+    box-shadow: 0 0 0 0.15rem var(--app-focus-ring);
+}
+
+.btn-primary:disabled {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+    color: #080808;
+    opacity: 0.5;
+}
+
+/* Navbar */
+.leggo-navbar {
+    background-color: var(--app-navbar-bg);
+    border-bottom: 1px solid var(--app-border);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.leggo-navbar .navbar-brand {
+    color: var(--app-text);
+}
+
+.brand-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--app-text);
+}
+
+.brand-gem {
+    color: var(--app-primary);
+    font-size: 1rem;
+}
+
+/* Footer */
+.leggo-footer {
+    background-color: var(--app-footer-bg);
+    color: var(--app-footer-text);
+    padding: 0.6rem 0;
+    flex-shrink: 0;
+    border-top: 1px solid var(--app-border);
+    font-size: 0.72rem;
+}
+
+.leggo-footer-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.leggo-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--app-footer-text);
+}
+
+.leggo-brand-mark {
+    color: var(--app-primary);
+}
+
+.leggo-footer-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.68rem;
+}
+
+.footer-status-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: var(--app-primary);
+    flex-shrink: 0;
+}
+
+/* Cards */
+.card {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+    color: var(--app-text);
+    border-radius: 0.25rem;
+}
+
+.card-footer {
+    background-color: transparent;
+    border-color: var(--app-border);
+}
+
+/* Forms */
+.form-control,
+.form-select {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+    color: var(--app-text);
+    border-radius: 0.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--app-surface);
+    color: var(--app-text);
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 0.15rem var(--app-focus-ring);
+}
+
+.form-control:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--app-surface) inset !important;
+    -webkit-text-fill-color: var(--app-text) !important;
+}
+
+.form-label {
+    color: var(--app-text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.form-control::placeholder {
+    color: var(--app-text-muted);
+    opacity: 0.45;
+}
+
+.form-text {
+    color: var(--app-text-muted);
+    font-size: 0.72rem;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    border: 1px solid;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.08);
+    border-color: rgba(220, 53, 69, 0.22);
+    color: #e88090;
+}
+
+.alert-success {
+    background-color: rgba(184, 115, 51, 0.08);
+    border-color: rgba(184, 115, 51, 0.22);
+    color: var(--app-copper-bright);
+}
+
+/* Invalid feedback */
+.invalid-feedback {
+    color: #e88090;
+    font-size: 0.72rem;
+}
+
+/* Spinner — copper fill */
+.spinner-border-sm {
+    border-color: #080808;
+    border-right-color: transparent;
+}
+
+/* No theme toggle on manager */
+.leggo-theme-toggle-floating {
+    display: none;
+}
+
+/* Text helpers */
+.text-muted {
+    color: var(--app-text-muted) !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+}
