@@ -28,7 +28,7 @@ define("KAFKA_TOPIC_EMAIL", "leggo_site_emails");
 define("KAFKA_CONSUMER_GROUP", "leggo-email-worker-group");
 
 // ===== EMAIL (SMTP) =====
-define("mail_from_name", "GarimpAções");
+define("mail_from_name", "LEGGO");
 define("mail_from_mail", "seu_email@exemplo.com");
 define("mail_from_host", "smtp.gmail.com");
 define("mail_from_port", "587");
@@ -38,7 +38,7 @@ define("mail_encryption", "tls");
 
 // ===== APLICAÇÃO =====
 define("cAppKey", "leggo_site_session");
-define("cTitle", "GarimpAções");
+define("cTitle", "LEGGO");
 define("cAppRoot", "/");
 define("cRootServer", sprintf("%s%s", $_SERVER["DOCUMENT_ROOT"], constant("cAppRoot")));
 define("cRootServer_APP", sprintf("%s%s", $_SERVER["DOCUMENT_ROOT"], constant("cAppRoot") . "../app"));
