@@ -11,7 +11,7 @@ $name       = isset($name)       ? (string) $name       : '';
 $verifyLink = isset($verifyLink) ? (string) $verifyLink : '#';
 $canonicalSite = defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== ''
     ? rtrim(constant('SITE_CANONICAL_URL'), '/')
-    : 'https://leggo.com.br';
+    : 'https://leggo.local';
 $logoUrl = $canonicalSite . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>

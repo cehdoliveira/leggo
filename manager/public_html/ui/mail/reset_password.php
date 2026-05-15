@@ -3,7 +3,7 @@ $name      = isset($name)      ? (string) $name      : '';
 $resetLink = isset($resetLink) ? (string) $resetLink : '#';
 $canonicalSite = defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== ''
     ? rtrim(constant('SITE_CANONICAL_URL'), '/')
-    : 'https://leggo.com.br';
+    : 'https://leggo.local';
 $logoUrl = $canonicalSite . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>

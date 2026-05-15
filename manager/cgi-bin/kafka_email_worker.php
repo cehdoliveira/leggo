@@ -19,7 +19,7 @@ date_default_timezone_set('America/Sao_Paulo');
 // Simulação de ambiente HTTP para CLI
 // Necessário porque scripts CLI não possuem $_SERVER configurado
 $_SERVER["DOCUMENT_ROOT"] = dirname(__FILE__) . "/../public_html/";
-$_SERVER["HTTP_HOST"] = "leggo.com.br";
+$_SERVER["HTTP_HOST"] = "leggo.local";
 
 // Ambiente HTTP (padrão)
 putenv('SERVER_PORT=80');

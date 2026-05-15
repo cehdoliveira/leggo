@@ -22,8 +22,8 @@ cp site/app/inc/kernel.php.example site/app/inc/kernel.php
 docker compose -f docker/docker-compose.yml up -d --build
 
 # 4. Acesse
-# Manager: http://manager.leggo.com.br
-# Site:    http://leggo.com.br
+# Manager: http://manager.leggo.local
+# Site:    http://leggo.local
 # Kafka UI: http://localhost:8080
 ```
 
@@ -32,7 +32,7 @@ O entrypoint executa `composer install` automaticamente nos dois ambientes, inic
 ## Estrutura
 
 ```
-manager/               ← Painel admin (manager.leggo.com.br)
+manager/               ← Painel admin (manager.leggo.local)
   app/inc/
     controller/        ← Lógica das rotas (auth, dashboard)
     lib/               ← Framework LEGGO (Dispatcher, ORM, PDO, Redis, Kafka)
@@ -41,7 +41,7 @@ manager/               ← Painel admin (manager.leggo.com.br)
   public_html/         ← Raiz web (index.php, assets, templates)
   tests/               ← Testes PHPUnit
 
-site/                  ← Site público (leggo.com.br)
+site/                  ← Site público (leggo.local)
   app/inc/             ← Mesma estrutura do manager
   public_html/         ← Raiz web
   tests/               ← Testes PHPUnit (idênticos ao manager)
@@ -120,7 +120,7 @@ O projeto roda sobre um framework próprio, não Laravel/Symfony:
 
 ## Rotas
 
-### Site (`leggo.com.br`)
+### Site (`leggo.local`)
 | Método | Rota | Auth |
 |--------|------|------|
 | GET | `/` | Auto |
@@ -135,7 +135,7 @@ O projeto roda sobre um framework próprio, não Laravel/Symfony:
 | GET | `/termos-de-uso` | Não |
 | GET | `/politica-de-privacidade` | Não |
 
-### Manager (`manager.leggo.com.br`)
+### Manager (`manager.leggo.local`)
 | Método | Rota | Auth |
 |--------|------|------|
 | GET | `/`, `/admin` | Sim |
