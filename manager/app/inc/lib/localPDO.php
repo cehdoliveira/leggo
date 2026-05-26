@@ -5,7 +5,7 @@ class localPDO
 	public $error;
 	private $inTransaction = false;
 
-	public function __construct($sys = NULL)
+	public function __construct()
 	{
 		$host = constant("DB_HOST");
 		$user = constant("DB_USER");

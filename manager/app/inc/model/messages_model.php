@@ -5,6 +5,6 @@ class messages_model extends DOLModel
 
     function __construct()
     {
-        return parent::__construct("messages");
+        parent::__construct("messages");
     }
 }
