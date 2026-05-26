@@ -53,11 +53,26 @@ if (
 ) {
     $_detected_protocol = 'https';
 }
+// Validar HTTP_HOST contra ALLOWED_HOSTS para prevenir Host Header Injection.
+// Em producao, defina ALLOWED_HOSTS com os dominios reais.
+// Exemplo: define("ALLOWED_HOSTS", "leggo.com.br,manager.leggo.com.br,www.leggo.com.br");
+if (defined('ALLOWED_HOSTS') && constant('ALLOWED_HOSTS') !== '') {
+	$allowedHosts = array_map('trim', explode(',', constant('ALLOWED_HOSTS')));
+	$requestHost = $_SERVER["HTTP_HOST"] ?? '';
+	if ($requestHost !== '' && !in_array($requestHost, $allowedHosts, true)) {
+		header('HTTP/1.1 400 Bad Request');
+		exit('Invalid host header');
+	}
+}
 define("cFrontend", sprintf("%s://%s%s", $_detected_protocol, $_SERVER["HTTP_HOST"] ?? "localhost", constant("cAppRoot")));
 unset($_detected_protocol);
 define("cAssets", sprintf("%s%s", constant("cFrontend"), "assets/"));
 
 // ===== SEGURANÇA =====
+// ALLOWED_HOSTS: lista de dominios validos separados por virgula.
+// DEFINIR em producao! Exemplo: "leggo.com.br,manager.leggo.com.br"
+define("ALLOWED_HOSTS", "");
+
 define("DEFAULT_USER_PROFILE_ID", 2);
 define("APP_VERSION", "1.0.0");
 
