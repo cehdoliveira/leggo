@@ -3,6 +3,18 @@
 ## [1.1.0.0] - 2026-05-26
 
 
+
+## [1.3.0.0] - 2026-05-26
+
+### Added
+- Test isolation via DBTestCase with automatic transaction rollback
+- 5 new DB-dependent tests
+- PHPStan static analysis at level 3
+- Docker volumes for tests/ and config files
+
+### Changed
+- Test bootstrap supports test helper autoloading
+- Updated README with PHPStan, prepared statements, and test conventions
 ## [1.2.0.0] - 2026-05-26
 
 ### Added
