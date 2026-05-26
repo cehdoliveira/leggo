@@ -4,6 +4,11 @@
 
 
 
+## [1.3.0.2] - 2026-05-26
+
+### Added
+- `.editorconfig` for consistent indentation and encoding across editors
+
 ## [1.3.0.1] - 2026-05-26
 
 ### Fixed
