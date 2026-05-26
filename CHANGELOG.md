@@ -3,6 +3,13 @@
 ## [1.3.0.6] - 2026-05-26
 
 ### Added
+
+## [1.3.0.7] - 2026-05-26
+
+### Changed
+- Rewritten README.md for clarity and completeness
+- Updated AGENTS.md with Logger documentation
+- Fixed CHANGELOG.md empty entry
 - Structured `Logger` class with levels (debug/info/warning/error) and JSON output
 - `LOG_LEVEL` constant in kernel.php to control log verbosity
 
