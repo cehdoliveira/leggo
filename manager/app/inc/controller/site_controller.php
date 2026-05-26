@@ -113,7 +113,11 @@ class site_controller
                 }
             }
         } catch (RuntimeException $e) {
-            // falha silenciosa — redireciona de volta
+            Logger::getInstance()->error("users_action failed", [
+                "error"   => $e->getMessage(),
+                "action"  => $action,
+                "user_id" => $idx,
+            ]);
         }
 
         basic_redir($users_url);
