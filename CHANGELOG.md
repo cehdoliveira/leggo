@@ -4,6 +4,11 @@
 
 
 
+## [1.3.0.5] - 2026-05-26
+
+### Added
+- Pre-commit hook: runs PHPStan + PHPUnit on staged PHP files before commit
+
 ## [1.3.0.4] - 2026-05-26
 
 ### Changed

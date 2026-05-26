@@ -21,6 +21,11 @@ different `kernel.php` constants and routes.
 
 - Start the stack: `docker compose -f docker/docker-compose.yml up -d --build`
 
+- Pre-commit hooks (PHPStan + PHPUnit before each commit):
+  ```
+  git config core.hooksPath .githooks
+  ```
+
 ## Commands
 
 ```bash
