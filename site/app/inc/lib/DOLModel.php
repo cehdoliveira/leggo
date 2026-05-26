@@ -1,4 +1,18 @@
 <?php
+/**
+ * @method void set_con(localPDO $con)
+ * @method void set_table(string $table)
+ * @method void set_schema(array $schema)
+ * @method void set_keys(array $keys)
+ * @method void set_field(array $field)
+ * @method void set_filter(array $filter, array $params = [])
+ * @method void set_order(array $order)
+ * @method void set_group(array $group)
+ * @method void set_paginate(array $paginate)
+ * @method void set_data(array $data)
+ * @method void set_recordset(int $recordset)
+ * @method array get_data()
+ */
 class DOLModel extends rootOBJ
 {
 	function __construct($table)
