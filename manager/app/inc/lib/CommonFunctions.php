@@ -379,6 +379,25 @@ function sanitize_string($value, $digitsOnly = false)
   return $value;
 }
 
+function render_xml(array $data, string $root): void
+{
+  $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><' . $root . '/>');
+  array_to_xml($data, $xml);
+  echo $xml->asXML();
+}
+
+function array_to_xml(array $data, SimpleXMLElement &$xml): void
+{
+  foreach ($data as $key => $value) {
+    $key = is_int($key) ? 'item' : $key;
+    if (is_array($value)) {
+      array_to_xml($value, $xml->addChild($key));
+    } else {
+      $xml->addChild($key, htmlspecialchars((string)$value, ENT_XML1, 'UTF-8'));
+    }
+  }
+}
+
 function validate_csrf(?string $token, string $redirectUrl): void
 {
   if (

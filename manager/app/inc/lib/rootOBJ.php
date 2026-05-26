@@ -1,5 +1,20 @@
 <?php
 if (!class_exists('rootOBJ')) {
+	/**
+	 * @method void set_con(localPDO $con)
+	 * @method void set_table(string $table)
+	 * @method void set_schema(array $schema)
+	 * @method void set_keys(array $keys)
+	 * @method void set_field(array $field)
+	 * @method void set_filter(array $filter)
+	 * @method void set_order(array $order)
+	 * @method void set_group(array $group)
+	 * @method void set_paginate(array $paginate)
+	 * @method void set_data(array $data)
+	 * @method void set_recordset(int $recordset)
+	 * @method array get_data()
+	 * @method array|false _current_data(array $filter = [], array $fields = [], array $attach = [], array $attach_son = [], bool $availabled = false)
+	 */
 	class rootOBJ
 	{
 		// Propriedades base
@@ -28,9 +43,8 @@ if (!class_exists('rootOBJ')) {
 					case 'set':
 						$this->$var = $paramters[0];
 						break;
-					case 'get':
-						return $this->$var;
-						break;
+				case 'get':
+					return $this->$var;
 				}
 			}
 		}
@@ -47,7 +61,6 @@ if (!class_exists('rootOBJ')) {
 					break;
 				default:
 					return $data;
-					break;
 			}
 		}
 

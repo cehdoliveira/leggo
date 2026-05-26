@@ -1,0 +1,16 @@
+parameters:
+    level: 3
+    phpVersion: 80400
+    paths:
+        - app/inc/controller
+        - app/inc/lib
+        - app/inc/model
+    excludePaths:
+        - app/inc/lib/vendor/*
+    scanFiles:
+        - app/inc/kernel.php
+        - app/inc/urls.php
+        - app/inc/lists.php
+    bootstrapFiles:
+        - app/inc/lib/vendor/autoload.php
+    reportUnmatchedIgnoredErrors: false
