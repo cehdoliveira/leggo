@@ -102,6 +102,13 @@ Both share the same MySQL database and Redis instance. Kafka topics are separate
 
 - **Passwords**: bcrypt (`password_hash`/`password_verify`). MD5 legacy passwords are auto-migrated to bcrypt on login.
 
+- **Logging**: use `Logger::getInstance()` for structured JSON logs:
+  ```php
+  Logger::getInstance()->info("User logged in", ["id" => $userId]);
+  Logger::getInstance()->error("SQL failed", ["query" => $sql, "error" => $e->getMessage()]);
+  ```
+  Levels: `debug`, `info`, `warning`, `error`. Minimum level controlled by `LOG_LEVEL` in `kernel.php`.
+
 ## Testing
 
 - Tests live in `manager/tests/` and `site/tests/`. They are identical between environments.
@@ -126,11 +133,13 @@ Both share the same MySQL database and Redis instance. Kafka topics are separate
 ## Files to know
 
 | File | Purpose |
-|---|---|
+|---|---|---|
 | `manager/app/inc/kernel.php.example` | Manager config template (DB, Redis, Kafka, SMTP, app keys) |
 | `site/app/inc/kernel.php.example` | Site config template |
 | `manager/app/inc/lib/composer.json` | Composer deps + autoload config (same for both envs) |
 | `manager/phpunit.xml` | PHPUnit config (bootstrap: `tests/bootstrap.php`) |
+| `manager/phpstan.neon` | PHPStan config (level 3, excludes vendor) |
 | `docker/docker-compose.yml` | All services: leggo (nginx+fpm), mysql, redis, kafka, kafka-ui |
 | `docker/interface/entrypoint.sh` | Startup: composer install, cron, kafka workers, nginx |
 | `docker/interface/default.conf` | Nginx vhosts for `manager.leggo.local` and `leggo.local` |
+
