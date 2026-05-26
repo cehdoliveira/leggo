@@ -15,9 +15,15 @@ services:
       - ../site/public_html/:/var/www/leggo/site/public_html/
       - ../site/app/:/var/www/leggo/site/app/
       - ../site/cgi-bin/:/var/www/leggo/site/cgi-bin/
+      - ../site/tests/:/var/www/leggo/site/tests/
+      - ../site/phpunit.xml:/var/www/leggo/site/phpunit.xml
+      - ../site/phpstan.neon:/var/www/leggo/site/phpstan.neon
       - ../manager/public_html/:/var/www/leggo/manager/public_html/
       - ../manager/app/:/var/www/leggo/manager/app/
       - ../manager/cgi-bin/:/var/www/leggo/manager/cgi-bin/
+      - ../manager/tests/:/var/www/leggo/manager/tests/
+      - ../manager/phpunit.xml:/var/www/leggo/manager/phpunit.xml
+      - ../manager/phpstan.neon:/var/www/leggo/manager/phpstan.neon
       - ../migrations/:/var/www/leggo/migrations/
     ports:
       - "80:80"

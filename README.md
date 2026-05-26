@@ -53,9 +53,16 @@ docker/                ← Dockerfile, vhosts, php.ini, entrypoint
 ## Comandos
 
 ```bash
+# Análise estática — PHPStan nível 3
+cd manager && php app/inc/lib/vendor/bin/phpstan analyse
+cd site && php app/inc/lib/vendor/bin/phpstan analyse
+
 # Testes (ambos os ambientes)
 cd manager && php app/inc/lib/vendor/bin/phpunit
 cd site && php app/inc/lib/vendor/bin/phpunit
+
+# Teste único
+php app/inc/lib/vendor/bin/phpunit --filter testMethodName
 
 # Migrations manuais (roda automático a cada 5 min)
 docker exec leggo php /var/www/leggo/site/cgi-bin/run_migrations.php
@@ -103,7 +110,7 @@ O projeto roda sobre um framework próprio, não Laravel/Symfony:
 |-----------|---------|--------|
 | Router | `Dispatcher.php` | `add_route(METHOD, pattern, "controller:method", guard, args)` |
 | ORM | `DOLModel.php` | Active record com soft-delete, attach/join, `populate()`/`save()`/`remove()` |
-| Database | `localPDO.php` | Wrapper PDO com `select()`, `insert()`, `update()`, `real_escape_string()` |
+| Database | `localPDO.php` | Wrapper PDO com `select()`, `insert()`, `update()`, `executePrepared()` |
 | Cache | `RedisCache.php` | Singleton Redis com TTL, serialização, prefixo por ambiente |
 | Email | `EmailProducer.php` | Producer Kafka assíncrono (com fallback sem rdkafka) |
 | Migrations | `MigrationRunner.php` | Runner idempotente de arquivos .sql |
@@ -113,6 +120,11 @@ O projeto roda sobre um framework próprio, não Laravel/Symfony:
 ### Convenções
 - PHP 8.4. Classes: `PascalCase` em arquivos `snake_case`. Variáveis: `snake_case`.
 - Models estendem `DOLModel`, definem `$field` e `$filter` como arrays de SQL cru.
+- Filtros SQL usam `set_filter()` com placeholders `?` e valores como segundo parâmetro.
+- Soft-delete universal: `active = 'yes'/'no'` — nunca `DELETE FROM`.
+- CSRF one-time-use: tokens consumidos via `validate_csrf()`, regenerados a cada página.
+- Sessão: `$_SESSION[cAppKey]["credential"]` — chave diferente por ambiente.
+- Testes com banco usam `DBTestCase` que isola via transações (rollback automático).
 - Filtros SQL usam `real_escape_string()` — **sempre** escapamos valores.
 - Soft-delete universal: `active = 'yes'/'no'` — nunca `DELETE FROM`.
 - CSRF one-time-use: tokens consumidos via `validate_csrf()`, regenerados a cada página.

@@ -25,6 +25,7 @@ require_once __DIR__ . '/../app/inc/lists.php';
 // Autoloader manual
 spl_autoload_register(function ($name) {
     if (strpos($name, '\\') !== false) return;
+    // App classes: model, lib, controller
     $base = __DIR__ . '/../app/inc/';
     foreach (['model', 'lib', 'controller'] as $dir) {
         $file = $base . "$dir/$name.php";
@@ -32,5 +33,10 @@ spl_autoload_register(function ($name) {
             require_once $file;
             return;
         }
+    }
+    // Test helpers: tests/
+    $testFile = __DIR__ . "/$name.php";
+    if (file_exists($testFile)) {
+        require_once $testFile;
     }
 });
