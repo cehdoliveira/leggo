@@ -45,12 +45,12 @@ function m_autoload($name)
 spl_autoload_register('m_autoload');
 
 /**
- * Gera uma chave aleatória
- * Retorna uma string MD5 única de tamanho definido (padrão: 10 caracteres)
+ * Gera uma chave aleatoria criptograficamente segura.
+ * Retorna uma string hexadecimal de tamanho definido (padrao: 10 caracteres)
  */
 function generate_key($size = 10)
 {
-  return substr(md5(uniqid(time())), 0, $size);
+  return substr(bin2hex(random_bytes((int)ceil($size / 2))), 0, $size);
 }
 
 /**
