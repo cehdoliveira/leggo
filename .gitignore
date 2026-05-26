@@ -22,9 +22,7 @@ _data/
 # Uploads de usuários
 # ============================================================
 site/public_html/assets/upload/
-site/app/inc/lib/composer.lock
 manager/public_html/assets/upload/
-manager/app/inc/lib/composer.lock
 
 
 # ============================================================

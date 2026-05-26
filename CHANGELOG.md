@@ -4,6 +4,11 @@
 
 
 
+## [1.3.0.3] - 2026-05-26
+
+### Changed
+- `composer.lock` files now tracked in git for reproducible builds
+
 ## [1.3.0.2] - 2026-05-26
 
 ### Added
