@@ -4,6 +4,12 @@
 
 
 
+## [1.3.0.1] - 2026-05-26
+
+### Fixed
+- Replace deprecated `utf8_decode()` with `mb_convert_encoding()` for PHP 8.4 compatibility
+- Zero `utf8_decode` or `utf8_encode` calls remain in codebase
+
 ## [1.3.0.0] - 2026-05-26
 
 ### Added
