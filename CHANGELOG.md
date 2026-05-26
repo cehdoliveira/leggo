@@ -4,6 +4,11 @@
 
 
 
+## [1.3.0.4] - 2026-05-26
+
+### Changed
+- PHP `memory_limit` increased from 128M to 512M in Docker container (needed for PHPStan and large spreadsheets)
+
 ## [1.3.0.3] - 2026-05-26
 
 ### Changed
