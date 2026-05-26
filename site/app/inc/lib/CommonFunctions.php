@@ -429,8 +429,7 @@ function verify_password_with_migration(string $storedHash, string $inputPasswor
   $authenticated = hash_equals($storedHash, md5($inputPassword));
   if ($authenticated) {
     $m = new users_model();
-    $safeId = $m->get_con()->real_escape_string($userId);
-    $m->set_filter(["idx = '$safeId'"]);
+    $m->set_filter(["idx = ?"], [$userId]);
     $m->populate(["password" => password_hash($inputPassword, PASSWORD_BCRYPT)]);
     $m->save();
   }

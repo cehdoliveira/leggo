@@ -21,43 +21,120 @@ class DOLModel extends rootOBJ
 
 	public function save()
 	{
-		if (isset($this->field)) {
-			if (isset($this->field["idx"])) {
-				unset($this->field["idx"]);
-			}
-			$ff = implode(" , ", $this->field);
-			if (preg_match("/'/", $ff)) {
-				if (isset($this->filter) && is_array($this->filter) && count($this->filter) == 1 && ltrim(rtrim($this->filter[0])) == "active = 'yes'") {
-					unset($this->filter);
-				}
-				if (isset($this->filter) && is_array($this->filter)) {
-					$fi = " where " . implode(" and ", $this->filter) . " ";
-					$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
-					$ff .= ", modified_at = now(), modified_by = '" . $this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0) . "'";
-					return $this->con->update($ff, $this->table, $fi . $pa);
-				} else {
-					$ff .= ", created_at = now(), created_by = '" . $this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0) . "'";
-					$this->con->insert($ff, $this->table, null);
-					return $this->con->lastInsertId();
-				}
-			}
-		} else {
+		if (!isset($this->values) || empty($this->values)) {
 			return false;
+		}
+
+		if (isset($this->values["idx"])) {
+			unset($this->values["idx"]);
+		}
+		if (isset($this->field["idx"])) {
+			unset($this->field["idx"]);
+		}
+
+		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
+			? $_SESSION[constant("cAppKey")]["credential"]["idx"]
+			: 0;
+
+		$assignments = [];
+		$params = [];
+		foreach ($this->values as $col => $val) {
+			$assignments[] = sprintf(" %s = ? ", $col);
+			$params[] = $val;
+		}
+
+		$isUpdateFilter = isset($this->filter) && is_array($this->filter);
+
+		// Se o filtro for APENAS o default "active = 'yes'" (definido na classe do model),
+		// trata como INSERT, nao UPDATE — mesma logica do codigo original.
+		if ($isUpdateFilter && count($this->filter) === 1 && ltrim(rtrim($this->filter[0])) === "active = 'yes'") {
+			$isUpdateFilter = false;
+		}
+
+		if ($isUpdateFilter) {
+			$fi = " where " . implode(" and ", $this->filter) . " ";
+			$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
+			$assignments[] = " modified_at = now() ";
+			$assignments[] = " modified_by = ? ";
+			$params[] = $userId;
+
+			// Prepend filter params (WHERE placeholders) before SET params
+			if (!empty($this->filterParams)) {
+				$params = array_merge($this->filterParams, $params);
+			}
+
+			$sql = sprintf(
+				"UPDATE %s SET %s %s",
+				$this->table,
+				implode(" , ", $assignments),
+				$fi . $pa
+			);
+			return $this->con->executePrepared($sql, $params);
+		} else {
+			$assignments[] = " created_at = now() ";
+			$assignments[] = " created_by = ? ";
+			$params[] = $userId;
+
+			$sql = sprintf(
+				"INSERT INTO %s SET %s",
+				$this->table,
+				implode(" , ", $assignments)
+			);
+			$this->con->executePrepared($sql, $params);
+			return $this->con->lastInsertId();
 		}
 	}
 
 	public function remove()
 	{
-		if (isset($this->filter)) {
-			$fi = " where " . implode(" and ", $this->filter) . " ";
-			$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
-			$ff = " active = 'no', removed_at = now(), removed_by = '" . $this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0) . "'";
-			return $this->con->update($ff, $this->table, $fi . $pa);
+		if (!isset($this->filter)) {
+			return null;
 		}
+
+		$fi = " where " . implode(" and ", $this->filter) . " ";
+		$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
+		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
+			? $_SESSION[constant("cAppKey")]["credential"]["idx"]
+			: 0;
+
+		$params = [];
+		if (!empty($this->filterParams)) {
+			$params = $this->filterParams;
+		}
+		$params[] = $userId;
+
+		$sql = sprintf(
+			"UPDATE %s SET active = 'no', removed_at = now(), removed_by = ? %s",
+			$this->table,
+			$fi . $pa
+		);
+		return $this->con->executePrepared($sql, $params);
+	}
+
+	/**
+	 * Define as condicoes WHERE da query.
+	 *
+	 * Sem $params: comportamento legado — strings SQL cruas no array.
+	 *   Ex: $model->set_filter(["active = 'yes'", "idx > 0"]);
+	 *
+	 * Com $params: prepared statement — use ? nos templates.
+	 *   Ex: $model->set_filter(["active = 'yes'", "mail = ? OR login = ?"], ['yes', $mail, $login]);
+	 *
+	 * @param array $conditions Condicoes SQL (strings com ? opcionais)
+	 * @param array $params     Valores para bind (opcional)
+	 */
+	public function set_filter(array $conditions, array $params = []): void
+	{
+		$this->filter = $conditions;
+		$this->filterParams = $params;
 	}
 
 	public function populate($data, $encode = false)
 	{
+		if (!isset($this->values)) {
+			$this->values = [];
+		}
+
 		$array = array();
 		foreach ($this->schema as $key => $value) {
 			if (isset($data[$key])) {
@@ -65,11 +142,8 @@ class DOLModel extends rootOBJ
 					$data[$key] = utf8_decode($data[$key]);
 				}
 				if (strtolower($data[$key])) {
-					$array[$key] = sprintf(
-						" %s = '%s' ",
-						$key,
-						$this->con->real_escape_string($data[$key])
-					);
+					$array[$key] = sprintf(" %s ", $key);
+					$this->values[$key] = $data[$key];
 				}
 			}
 		}
@@ -142,9 +216,30 @@ class DOLModel extends rootOBJ
 		$or = isset($this->order) ? " order by " . implode(" , ", $this->order) . " " : "";
 		$gp = isset($this->group) ? " group by " . implode(" , ", $this->group) . " " : "";
 		$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
-		$r = $this->con->select($ff, $this->table, $fi . $gp . $or . $pa);
-		$this->set_data($this->con->results($r));
-		$this->set_recordset($this->con->result($this->con->select(" count( " . implode(",", $this->keys["pk"]) . ") as q ", $this->table, $fi . $gp), "q", 0));
+
+		if (!empty($this->filterParams)) {
+			$sql = sprintf("SELECT %s FROM %s %s %s %s %s", $ff, $this->table, $fi, $gp, $or, $pa);
+			$r = $this->con->executePrepared($sql, $this->filterParams);
+			$this->set_data($this->con->results($r));
+
+			$countSql = sprintf("SELECT count( %s ) as q FROM %s %s %s",
+				implode(",", $this->keys["pk"]), $this->table, $fi, $gp);
+			$countStmt = $this->con->executePrepared($countSql, $this->filterParams);
+			$this->set_recordset($this->con->result($countStmt, "q", 0));
+		} else {
+			$r = $this->con->select($ff, $this->table, $fi . $gp . $or . $pa);
+			$this->set_data($this->con->results($r));
+			$this->set_recordset($this->con->result($this->con->select(" count( " . implode(",", $this->keys["pk"]) . ") as q ", $this->table, $fi . $gp), "q", 0));
+		}
+	}
+
+	/**
+	 * Executa uma query raw com parametros vinculados.
+	 * Para comandos que nao passam por load_data/save (ex: updates diretos).
+	 */
+	public function execute_raw_prepared(string $sql, array $params = []): \PDOStatement
+	{
+		return $this->con->executePrepared($sql, $params);
 	}
 
 	public function attach($classes = array(), $reverse_table = null, $options = null, $class_field = null)
@@ -231,6 +326,10 @@ class DOLModel extends rootOBJ
 
 	public function save_attach($info, $classes = array(), $reverse_table = null)
 	{
+		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
+			? $_SESSION[constant("cAppKey")]["credential"]["idx"]
+			: 0;
+
 		foreach ($classes as $class) {
 			if (isset($info["post"][$class . "_id"])) {
 				$execute = $info["post"][$class . "_id"];
@@ -242,23 +341,22 @@ class DOLModel extends rootOBJ
 				}
 
 				if (count($varexecute)) {
-					$this->con->update(
-						sprintf(" active = 'no' , removed_at = now() , removed_by = '%d' ", $this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0)),
-						sprintf(" %s_%s ", $reverse_table ? $class : $this->table, $reverse_table ? $this->table : $class),
-						sprintf(" where active='yes' and %s_id = '%d'", $this->table, $this->con->real_escape_string($info["idx"]))
+					$junctionTable = sprintf(" %s_%s ",
+						$reverse_table ? $class : $this->table,
+						$reverse_table ? $this->table : $class);
+					$tableIdCol = sprintf(" %s_id ", $this->table);
+
+					$this->con->executePrepared(
+						"UPDATE {$junctionTable} SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND {$tableIdCol} = ?",
+						[$userId, $info["idx"]]
 					);
+
+					$classIdCol = sprintf(" %s_id ", $class);
 					foreach ($varexecute as $var) {
-						$sql = sprintf(
-							"INSERT INTO %s ( %s, %s, created_by, created_at) VALUES( '%d' , '%d', %d , now() ) ON DUPLICATE KEY UPDATE active = 'yes', removed_at = NULL, removed_by = NULL, modified_at=now(), modified_by='%d' ",
-							sprintf(" %s_%s ", $reverse_table ? $class : $this->table, $reverse_table ? $this->table : $class),
-							sprintf(" %s_id ", $class),
-							sprintf(" %s_id ", $this->table),
-							$this->con->real_escape_string($var),
-							$this->con->real_escape_string($info["idx"]),
-							$this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0),
-							$this->con->real_escape_string(isset($_SESSION[constant("cAppKey")]["credential"]["idx"]) ? $_SESSION[constant("cAppKey")]["credential"]["idx"] : 0)
+						$this->con->executePrepared(
+							"INSERT INTO {$junctionTable} ({$classIdCol}, {$tableIdCol}, created_by, created_at) VALUES (?, ?, ?, now()) ON DUPLICATE KEY UPDATE active = 'yes', removed_at = NULL, removed_by = NULL, modified_at = now(), modified_by = ?",
+							[$var, $info["idx"], $userId, $userId]
 						);
-						$this->con->query($sql);
 					}
 				}
 			}

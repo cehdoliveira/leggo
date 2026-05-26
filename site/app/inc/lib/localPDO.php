@@ -219,4 +219,29 @@ class localPDO
 			return 0;
 		}
 	}
+
+	/**
+	 * Executa uma query parametrizada com prepared statement.
+	 * Substitui o uso manual de real_escape_string() + concatenação.
+	 *
+	 * @param string $sql    SQL com placeholders (?) ou named (:name)
+	 * @param array  $params Valores para bind (sequenciais ou associativos)
+	 * @return \PDOStatement
+	 * @throws RuntimeException
+	 */
+	public function executePrepared(string $sql, array $params = []): \PDOStatement
+	{
+		try {
+			$stmt = $this->pdo->prepare($sql);
+			$stmt->execute($params);
+			return $stmt;
+		} catch (PDOException $e) {
+			$this->error = $e->getMessage();
+			if ($this->inTransaction) {
+				$this->rollback();
+			}
+			error_log("SQL error: " . $this->error . " | Query: " . $sql);
+			throw new RuntimeException("Database error");
+		}
+	}
 }
