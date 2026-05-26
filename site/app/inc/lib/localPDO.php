@@ -126,7 +126,7 @@ class localPDO
 			if ($this->inTransaction) {
 				$this->rollback();
 			}
-			error_log("SQL error: " . $this->error . " | Query: " . $query);
+		Logger::getInstance()->error("SQL error", ['query' => $query, 'error' => $this->error]);
 			throw new RuntimeException("Database error");
 		}
 	}
@@ -215,7 +215,7 @@ class localPDO
 		try {
 			return (int)$this->pdo->lastInsertId();
 		} catch (PDOException $e) {
-			error_log('local_pdo::lastInsertId Error: ' . $e->getMessage());
+		Logger::getInstance()->warning('lastInsertId failed', ['error' => $e->getMessage()]);
 			return 0;
 		}
 	}
@@ -240,7 +240,7 @@ class localPDO
 			if ($this->inTransaction) {
 				$this->rollback();
 			}
-			error_log("SQL error: " . $this->error . " | Query: " . $sql);
+			Logger::getInstance()->error("SQL prepared error", ['query' => $sql, 'error' => $this->error]);
 			throw new RuntimeException("Database error");
 		}
 	}
