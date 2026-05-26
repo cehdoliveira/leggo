@@ -16,7 +16,7 @@ define("DB_PASS", "SUA_SENHA_AQUI");
 // ===== REDIS =====
 define("REDIS_HOST", "redis");
 define("REDIS_PORT", 6379);
-define("REDIS_PREFIX", "leggo:site:");
+define("REDIS_PREFIX", "leggo:manager:");
 define("REDIS_DATABASE", 0);
 define("REDIS_ENABLED", true);
 define("REDIS_DEFAULT_TTL", 3600);
@@ -24,11 +24,11 @@ define("REDIS_DEFAULT_TTL", 3600);
 // ===== KAFKA =====
 define("KAFKA_HOST", "kafka");
 define("KAFKA_PORT", "9092");
-define("KAFKA_TOPIC_EMAIL", "leggo_site_emails");
-define("KAFKA_CONSUMER_GROUP", "leggo-email-worker-group");
+define("KAFKA_TOPIC_EMAIL", "leggo_manager_emails");
+define("KAFKA_CONSUMER_GROUP", "leggo-manager-email-worker-group");
 
 // ===== EMAIL (SMTP) =====
-define("mail_from_name", "LEGGO");
+define("mail_from_name", "leggo Manager");
 define("mail_from_mail", "seu_email@exemplo.com");
 define("mail_from_host", "smtp.gmail.com");
 define("mail_from_port", "587");
@@ -37,8 +37,8 @@ define("mail_from_pwd", "SUA_APP_PASSWORD_AQUI");
 define("mail_encryption", "tls");
 
 // ===== APLICAÇÃO =====
-define("cAppKey", "leggo_site_session");
-define("cTitle", "LEGGO");
+define("cAppKey", "leggo_manager_session");
+define("cTitle", "leggo Manager");
 define("cAppRoot", "/");
 define("cRootServer", sprintf("%s%s", $_SERVER["DOCUMENT_ROOT"], constant("cAppRoot")));
 define("cRootServer_APP", sprintf("%s%s", $_SERVER["DOCUMENT_ROOT"], constant("cAppRoot") . "../app"));
@@ -58,24 +58,23 @@ unset($_detected_protocol);
 define("cAssets", sprintf("%s%s", constant("cFrontend"), "assets/"));
 
 // ===== SEGURANÇA =====
-// ID do perfil padrão para novos cadastros via /cadastro (deve ser um perfil não-admin).
-// Verifique a tabela `profiles` e ajuste conforme sua instalação.
 define("DEFAULT_USER_PROFILE_ID", 2);
-
-// URL canônica do site — usada para links em e-mails (verificação, recuperação de senha).
-// DEVE ser definida explicitamente para evitar Host Header Injection.
-// Exemplo produção: "https://leggo.com.br"
-// Em ambiente local, deixe vazio — o sistema usará cFrontend como fallback.
-define("SITE_CANONICAL_URL", "");
-
-// Versão da aplicação usada para cache busting de assets JS/CSS.
-// Incremente a cada deploy.
 define("APP_VERSION", "1.0.0");
 
+// ===== LOG =====
+define("LOG_LEVEL", "info"); // debug, info, warning, error
+
 // ===== UPLOAD =====
-define("UPLOAD_DIR", "/var/www/leggo/site/public_html/assets/upload/");
+define("UPLOAD_DIR", "/var/www/leggo/manager/public_html/assets/upload/");
 define("UPLOAD_MAX_SIZE", 10);
 define("UPLOAD_ALLOWED_TYPES", "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx");
+
+// ===== SEGURANÇA =====
+// URL canônica do painel manager — usada para links em e-mails de credenciais.
+// DEVE ser definida explicitamente para evitar Host Header Injection.
+// Exemplo produção: "https://manager.leggo.com.br"
+// Em ambiente local, deixe vazio — o sistema usará cFrontend como fallback.
+define("MANAGER_CANONICAL_URL", "");
 
 // ===== SESSÃO =====
 define("SESSION_LIFETIME", 7200);

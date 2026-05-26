@@ -19,6 +19,7 @@
             "leggo\\": "classes/"
         },
         "files": [
+            "Logger.php",
             "CommonFunctions.php",
             "localPDO.php",
             "rootOBJ.php",
