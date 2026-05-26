@@ -17,6 +17,8 @@ if (!class_exists('rootOBJ')) {
 		protected $order = null;
 		protected $group = null;
 		protected $direct_query = null;
+		protected $values = [];
+		protected $filterParams = [];
 
 		public function __call($method, $paramters)
 		{

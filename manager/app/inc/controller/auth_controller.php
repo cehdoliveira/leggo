@@ -29,7 +29,7 @@ class auth_controller
         basic_redir($GLOBALS["login_url"]);
     }
 
-    public function login($info)
+    public function login(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -48,10 +48,9 @@ class auth_controller
         }
 
         $users = new users_model();
-        $login = $users->get_con()->real_escape_string($info["post"]["login"]);
 
         $users->set_field([" idx ", " name ", " mail ", " login ", " password "]);
-        $users->set_filter(["enabled = 'yes'", " '$login' IN (mail,login) "]);
+        $users->set_filter(["enabled = 'yes'", "? IN (mail,login)"], [$info["post"]["login"]]);
         $users->set_paginate([1]);
         $users->load_data();
         $users->attach(["profiles"]);
@@ -93,8 +92,7 @@ class auth_controller
             }
 
             $update = new users_model();
-            $safeIdx = $update->get_con()->real_escape_string((string)$credential["idx"]);
-            $update->set_filter(["idx = '$safeIdx'"]);
+            $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);
             $update->populate(["last_login" => date("Y-m-d H:i:s")]);
             $update->save();
         } else {
@@ -105,7 +103,7 @@ class auth_controller
         exit();
     }
 
-    public function display_register($info)
+    public function display_register(array $info)
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -119,7 +117,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function register($info)
+    public function register(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["register_url"]);
 
@@ -133,10 +131,7 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $mail  = $con->real_escape_string($info["post"]["mail"]);
-        $login = $con->real_escape_string($info["post"]["login"]);
-        $users->set_filter([" active = 'yes' ", " ( mail = '$mail' OR login = '$login' ) "]);
+        $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -185,7 +180,7 @@ class auth_controller
         }
     }
 
-    public function display($info)
+    public function display(array $info)
     {
         if (self::check_login()) {
             basic_redir($GLOBALS["home_url"]);

@@ -1,7 +1,7 @@
 <?php
 class site_controller
 {
-    public function dashboard($info)
+    public function dashboard(array $info)
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -32,7 +32,7 @@ class site_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function users_action($info)
+    public function users_action(array $info)
     {
         global $users_url;
 
@@ -56,8 +56,7 @@ class site_controller
 
         try {
             $update  = new users_model();
-            $safeIdx = $update->get_con()->real_escape_string((string)$idx);
-            $update->set_filter(["idx = '$safeIdx'"]);
+            $update->set_filter(["idx = ?"], [$idx]);
 
             if ($action === 'inativar') {
                 $update->populate(["enabled" => "no"]);
@@ -76,24 +75,22 @@ class site_controller
                 }
             } elseif ($action === 'reset-senha') {
                 $resetUser = new users_model();
-                $con       = $resetUser->get_con();
-                $safeIdx2  = $con->real_escape_string((string)$idx);
                 $resetUser->set_field([" idx ", " name ", " mail "]);
-                $resetUser->set_filter([" active = 'yes' ", " idx = '$safeIdx2' "]);
+                $resetUser->set_filter([" active = 'yes' ", " idx = ? "], [$idx]);
                 $resetUser->set_paginate([1]);
                 $resetUser->load_data();
                 $user = $resetUser->data[0] ?? null;
 
                 if ($user) {
-                    $token       = bin2hex(random_bytes(32));
-                    $expires     = date("Y-m-d H:i:s", strtotime("+2 hours"));
-                    $safeToken   = $con->real_escape_string($token);
-                    $safeExpires = $con->real_escape_string($expires);
-                    $con->update(
-                        "email_token = '$safeToken', email_token_expires_at = '$safeExpires'",
-                        "users",
-                        "WHERE idx = '$safeIdx2'"
-                    );
+                    $token   = bin2hex(random_bytes(32));
+                    $expires = date("Y-m-d H:i:s", strtotime("+2 hours"));
+
+                    $resetUser->set_filter(["idx = ?"], [$idx]);
+                    $resetUser->populate([
+                        "email_token"           => $token,
+                        "email_token_expires_at" => $expires,
+                    ]);
+                    $resetUser->save();
 
                     $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
                     $resetLink = $canonicalBase . '/redefinir-senha/' . $token;

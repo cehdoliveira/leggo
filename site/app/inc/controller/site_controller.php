@@ -1,7 +1,7 @@
 <?php
 class site_controller
 {
-    public function home($info)
+    public function home(array $info)
     {
         $isLoggedIn = auth_controller::check_login();
 
@@ -16,7 +16,7 @@ class site_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function terms($info)
+    public function terms(array $info)
     {
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
@@ -25,7 +25,7 @@ class site_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function privacy($info)
+    public function privacy(array $info)
     {
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
