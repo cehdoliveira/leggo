@@ -29,7 +29,7 @@ class auth_controller
         basic_redir($GLOBALS["login_url"]);
     }
 
-    public function login($info)
+    public function login(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -48,10 +48,9 @@ class auth_controller
         }
 
         $users = new users_model();
-        $login = $users->get_con()->real_escape_string($info["post"]["login"]);
 
         $users->set_field([" idx ", " name ", " mail ", " login ", " password "]);
-        $users->set_filter(["enabled = 'yes'", " '$login' IN (mail,login) "]);
+        $users->set_filter(["enabled = 'yes'", "? IN (mail,login)"], [$info["post"]["login"]]);
         $users->set_paginate([1]);
         $users->load_data();
         $users->attach(["profiles"]);
@@ -78,8 +77,7 @@ class auth_controller
             }
 
             $update = new users_model();
-            $safeIdx = $update->get_con()->real_escape_string((string)$credential["idx"]);
-            $update->set_filter(["idx = '$safeIdx'"]);
+            $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);
             $update->populate(["last_login" => date("Y-m-d H:i:s")]);
             $update->save();
         } else {
@@ -90,7 +88,7 @@ class auth_controller
         exit();
     }
 
-    public function display_register($info)
+    public function display_register(array $info)
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -104,7 +102,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function register($info)
+    public function register(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["register_url"]);
 
@@ -118,10 +116,7 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $mail  = $con->real_escape_string($info["post"]["mail"]);
-        $login = $con->real_escape_string($info["post"]["login"]);
-        $users->set_filter([" active = 'yes' ", " ( mail = '$mail' OR login = '$login' ) "]);
+        $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -196,7 +191,7 @@ class auth_controller
         }
     }
 
-    public function verify_email($info)
+    public function verify_email(array $info)
     {
         $token = $info[1] ?? null;
 
@@ -207,11 +202,9 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $safeToken = $con->real_escape_string($token);
 
         $users->set_field([" idx "]);
-        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " email_token = '$safeToken' ", " email_token_expires_at > NOW() "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " email_token = ? ", " email_token_expires_at > NOW() "], [$token]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -224,7 +217,9 @@ class auth_controller
         }
 
         // Token válido — invalida no DB e guarda idx na sessão para set_password
-        $con->update("email_token = NULL", "users", " WHERE idx = '" . $con->real_escape_string((string)$user["idx"]) . "' ");
+        $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
+        $users->populate(["email_token" => null]);
+        $users->save();
         $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
 
         $_SESSION["messages_app"]["success"] = ["E-mail confirmado! Agora defina sua senha para ativar sua conta."];
@@ -232,9 +227,9 @@ class auth_controller
         exit();
     }
 
-    public function display_set_password($info)
+    public function display_set_password(array $info)
     {
-        $token      = $info[1] ?? null;  // mantido apenas para compor o action da URL do formulário
+        $token      = $info[1] ?? null;  // mantido apenas para compor o action da URL do formulario
         $pendingIdx = $_SESSION['pending_set_password_idx'] ?? null;
 
         if (empty($pendingIdx)) {
@@ -244,11 +239,9 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $safeIdx = $con->real_escape_string((string)$pendingIdx);
 
         $users->set_field([" idx "]);
-        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = '$safeIdx' "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = ? "], [$pendingIdx]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -272,7 +265,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function set_password($info)
+    public function set_password(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -301,11 +294,9 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $safeIdx = $con->real_escape_string((string)$pendingIdx);
 
         $users->set_field([" idx "]);
-        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = '$safeIdx' "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " idx = ? "], [$pendingIdx]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -316,15 +307,16 @@ class auth_controller
             exit();
         }
 
-        $hashedPwd = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
-        $now       = date("Y-m-d H:i:s");
-        $safeNow   = $con->real_escape_string($now);
+        $hashedPwd = password_hash($password, PASSWORD_BCRYPT);
 
-        $con->update(
-            "enabled = 'yes', email_verified_at = '$safeNow', password = '$hashedPwd', email_token = NULL, modified_at = '$safeNow'",
-            "users",
-            " WHERE idx = '$safeIdx' "
-        );
+        $users->set_filter(["idx = ?"], [$pendingIdx]);
+        $users->populate([
+            "enabled"            => "yes",
+            "email_verified_at"  => date("Y-m-d H:i:s"),
+            "password"           => $hashedPwd,
+            "email_token"        => null,
+        ]);
+        $users->save();
 
         unset($_SESSION['pending_set_password_idx']);
 
@@ -333,7 +325,7 @@ class auth_controller
         exit();
     }
 
-    public function display($info)
+    public function display(array $info)
     {
         if (self::check_login()) {
             basic_redir($GLOBALS["area_url"]);
@@ -352,7 +344,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function display_forgot_password($info)
+    public function display_forgot_password(array $info)
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -365,7 +357,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function forgot_password($info)
+    public function forgot_password(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["forgot_password_url"]);
 
@@ -386,10 +378,8 @@ class auth_controller
         }
 
         $users = new users_model();
-        $con   = $users->get_con();
-        $safeMail = $con->real_escape_string($mail);
         $users->set_field([" idx ", " name ", " mail ", " enabled "]);
-        $users->set_filter([" active = 'yes' ", " mail = '$safeMail' "]);
+        $users->set_filter([" active = 'yes' ", " mail = ? "], [$mail]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -399,7 +389,6 @@ class auth_controller
             $userId   = (int)$user['idx'];
             $name     = $user['name'];
             $token   = bin2hex(random_bytes(32));
-            $safeIdx = $con->real_escape_string((string)$userId);
 
             if ($user['enabled'] === 'no') {
                 // Unverified users: use same 72h window as original registration
@@ -409,11 +398,12 @@ class auth_controller
                 $expires = date("Y-m-d H:i:s", strtotime("+2 hours"));
             }
 
-            $con->update(
-                "email_token = '$token', email_token_expires_at = '$expires'",
-                "users",
-                " WHERE idx = '$safeIdx' "
-            );
+            $users->set_filter(["idx = ?"], [$userId]);
+            $users->populate([
+                "email_token"           => $token,
+                "email_token_expires_at" => $expires,
+            ]);
+            $users->save();
 
             $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
 
@@ -447,17 +437,15 @@ class auth_controller
         exit();
     }
 
-    public function display_reset_password($info)
+    public function display_reset_password(array $info)
     {
         $token      = $info[1] ?? null;
         $pendingIdx = $_SESSION['pending_reset_idx'] ?? null;
 
         if ($pendingIdx) {
-            $users   = new users_model();
-            $con     = $users->get_con();
-            $safeIdx = $con->real_escape_string((string)$pendingIdx);
+            $users = new users_model();
             $users->set_field([" idx "]);
-            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdx' "]);
+            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = ? "], [$pendingIdx]);
             $users->set_paginate([1]);
             $users->load_data();
 
@@ -475,10 +463,8 @@ class auth_controller
             }
 
             $users      = new users_model();
-            $con        = $users->get_con();
-            $safeToken  = $con->real_escape_string($token);
             $users->set_field([" idx "]);
-            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " email_token = '$safeToken' ", " email_token_expires_at > NOW() "]);
+            $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " email_token = ? ", " email_token_expires_at > NOW() "], [$token]);
             $users->set_paginate([1]);
             $users->load_data();
 
@@ -490,7 +476,9 @@ class auth_controller
                 exit();
             }
 
-            $con->update("email_token = NULL", "users", " WHERE idx = '" . $con->real_escape_string((string)$user["idx"]) . "' ");
+            $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
+            $users->populate(["email_token" => null]);
+            $users->save();
             $_SESSION['pending_reset_idx'] = (int)$user["idx"];
         }
 
@@ -506,7 +494,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function reset_password($info)
+    public function reset_password(array $info)
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -535,11 +523,9 @@ class auth_controller
         }
 
         $users   = new users_model();
-        $con     = $users->get_con();
-        $safeIdx = $con->real_escape_string((string)$pendingIdx);
 
         $users->set_field([" idx "]);
-        $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = '$safeIdx' "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " idx = ? "], [$pendingIdx]);
         $users->set_paginate([1]);
         $users->load_data();
 
@@ -550,12 +536,12 @@ class auth_controller
             exit();
         }
 
-        $safeHash = $con->real_escape_string(password_hash($password, PASSWORD_BCRYPT));
-        $con->update(
-            "password = '$safeHash', email_token_expires_at = NULL",
-            "users",
-            " WHERE idx = '$safeIdx' "
-        );
+        $users->set_filter(["idx = ?"], [$pendingIdx]);
+        $users->populate([
+            "password"                => password_hash($password, PASSWORD_BCRYPT),
+            "email_token_expires_at"  => null,
+        ]);
+        $users->save();
 
         unset($_SESSION['pending_reset_idx']);
         session_regenerate_id(true);
