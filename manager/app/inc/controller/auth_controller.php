@@ -135,7 +135,6 @@ class auth_controller
         }
 
         $users = new users_model();
-        $users->beginTransaction();
 
         try {
             $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
@@ -143,7 +142,6 @@ class auth_controller
             $users->load_data();
 
             if (isset($users->data[0]["idx"])) {
-                $users->rollback();
                 $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
                 basic_redir($GLOBALS["register_url"]);
                 exit();
@@ -153,14 +151,11 @@ class auth_controller
             $info["post"]["profiles_id"] = constant("DEFAULT_USER_PROFILE_ID");
 
             $newUser = new users_model();
-            $newUser->set_con($users->getCon());
             $newUser->populate($info["post"]);
             $info["idx"] = $newUser->save();
 
             if (isset($info["idx"]) && $info["idx"] > 0) {
                 $newUser->save_attach($info, ["profiles"]);
-
-                $users->commit();
 
                 try {
                     $name      = $info["post"]["name"];
@@ -195,13 +190,11 @@ class auth_controller
                 basic_redir($GLOBALS["login_url"]);
                 exit();
             } else {
-                $users->rollback();
                 $_SESSION["messages_app"]["danger"] = ["Falha ao criar usuário. Tente novamente mais tarde."];
                 basic_redir($GLOBALS["register_url"]);
                 exit();
             }
         } catch (Exception $e) {
-            $users->rollback();
             error_log("Erro ao criar usuário: " . $e->getMessage());
             $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"]);

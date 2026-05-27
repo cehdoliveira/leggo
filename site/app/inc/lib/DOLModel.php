@@ -17,7 +17,7 @@ class DOLModel extends rootOBJ
 {
 	function __construct(string $table)
 	{
-		$c = new localPDO();
+		$c = localPDO::getInstance();
 		$this->set_con($c);
 		$this->set_table($table);
 		$this->set_schema($this->con->fields_config($this->table));
