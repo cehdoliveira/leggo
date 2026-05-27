@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0.0] - 2026-05-27
+
+### Added
+- Transação global automática: `localPDO` agora é singleton por request,
+  iniciando transação no primeiro uso e commit no __destruct(). Todos os
+  models compartilham a mesma conexão, garantindo atomicidade em operações
+  multi-statement. `DOLModel` ganha `beginTransaction()`, `commit()`,
+  `rollback()` e `getCon()`.
+
+### Fixed
+- Race condition no cadastro (Site e Manager): check-then-act de unicidade
+  mail/login agora opera dentro da transação, prevenindo inserts duplicados
+  em cenário de requests concorrentes.
+
 ## [1.3.4.3] - 2026-05-27
 
 ### Fixed

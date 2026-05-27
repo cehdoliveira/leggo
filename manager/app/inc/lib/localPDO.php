@@ -4,6 +4,8 @@ class localPDO
 	private \PDO $pdo;
 	public string $error = "";
 	private bool $inTransaction = false;
+	private static ?localPDO $instance = null;
+	private bool $ownsTransaction = false;
 
 	public function __construct()
 	{
@@ -21,7 +23,24 @@ class localPDO
 				PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
 			]);
 		} catch (PDOException $e) {
-			throw $e;  // Lançar exception em vez de morrer
+			throw $e;
+		}
+	}
+
+	public static function getInstance(): self
+	{
+		if (self::$instance === null) {
+			self::$instance = new self();
+			self::$instance->beginTransaction();
+			self::$instance->ownsTransaction = true;
+		}
+		return self::$instance;
+	}
+
+	public function __destruct()
+	{
+		if ($this->ownsTransaction && $this->inTransaction) {
+			$this->commit();
 		}
 	}
 

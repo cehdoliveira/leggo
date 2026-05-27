@@ -114,76 +114,84 @@ class auth_controller
         }
 
         $users = new users_model();
-        $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
-        $users->set_paginate([1]);
-        $users->load_data();
 
-        if (isset($users->data[0]["idx"])) {
-            $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
-            basic_redir($GLOBALS["register_url"]);
-            exit();
-        }
+        try {
+            $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
+            $users->set_paginate([1]);
+            $users->load_data();
 
-        $token = bin2hex(random_bytes(32));
-
-        // Senha temporária desconhecida — usuário vai definir após confirmar email
-        $info["post"]["password"]    = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
-        $info["post"]["profiles_id"] = constant("DEFAULT_USER_PROFILE_ID");
-        $info["post"]["enabled"]               = "no";
-        $info["post"]["email_token"]           = $token;
-        $info["post"]["email_token_expires_at"] = date("Y-m-d H:i:s", strtotime("+72 hours"));
-
-        $newUser = new users_model();
-        $newUser->populate($info["post"]);
-        $info["idx"] = $newUser->save();
-
-        if (isset($info["idx"]) && $info["idx"] > 0) {
-            $newUser->save_attach($info, ["profiles"]);
-
-            $canonicalBase = (defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== '')
-                ? rtrim(constant('SITE_CANONICAL_URL'), '/')
-                : rtrim(constant('cFrontend'), '/');
-            $verifyLink = $canonicalBase . '/verificar-email/' . $token;
-            $subject = "Confirme seu cadastro — " . constant('cTitle');
-            ob_start();
-            $name = $info["post"]["name"];
-            include(constant("cRootServer") . "ui/mail/verify_email.php");
-            $body = ob_get_clean();
-
-            $emailSent = false;
-            try {
-                if (class_exists("EmailProducer")) {
-                    $producer = EmailProducer::getInstance();
-                    $emailSent = (bool)$producer->send($info["post"]["mail"], $subject, $body);
-                }
-            } catch (Exception $e) {
-                error_log("Erro ao enfileirar email de verificação: " . $e->getMessage());
-            }
-
-            try {
-                $msgModel = new messages_model();
-                $msgModel->populate([
-                    "to_mail" => $info["post"]["mail"],
-                    "subject" => $subject,
-                    "body"    => $body,
-                    "sent_at" => date("Y-m-d H:i:s"),
-                ]);
-                $msgModel->save();
-            } catch (Exception $e) {
-                error_log("Erro ao salvar log de email: " . $e->getMessage());
-            }
-
-            if (!$emailSent) {
-                $_SESSION["messages_app"]["danger"] = ["Cadastro realizado, mas não foi possível enviar o email de verificação. Entre em contato com o suporte."];
+            if (isset($users->data[0]["idx"])) {
+                $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
                 basic_redir($GLOBALS["register_url"]);
                 exit();
             }
 
-            $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
-            basic_redir($GLOBALS["login_url"]);
-            exit();
-        } else {
-            $_SESSION["messages_app"]["danger"] = ["Falha ao criar usuário. Tente novamente mais tarde."];
+            $token = bin2hex(random_bytes(32));
+
+            // Senha temporária desconhecida — usuário vai definir após confirmar email
+            $info["post"]["password"]    = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
+            $info["post"]["profiles_id"] = constant("DEFAULT_USER_PROFILE_ID");
+            $info["post"]["enabled"]               = "no";
+            $info["post"]["email_token"]           = $token;
+            $info["post"]["email_token_expires_at"] = date("Y-m-d H:i:s", strtotime("+72 hours"));
+
+            $newUser = new users_model();
+            $newUser->populate($info["post"]);
+            $info["idx"] = $newUser->save();
+
+            if (isset($info["idx"]) && $info["idx"] > 0) {
+                $newUser->save_attach($info, ["profiles"]);
+
+                $canonicalBase = (defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== '')
+                    ? rtrim(constant('SITE_CANONICAL_URL'), '/')
+                    : rtrim(constant('cFrontend'), '/');
+                $verifyLink = $canonicalBase . '/verificar-email/' . $token;
+                $subject = "Confirme seu cadastro — " . constant('cTitle');
+                ob_start();
+                $name = $info["post"]["name"];
+                include(constant("cRootServer") . "ui/mail/verify_email.php");
+                $body = ob_get_clean();
+
+                $emailSent = false;
+                try {
+                    if (class_exists("EmailProducer")) {
+                        $producer = EmailProducer::getInstance();
+                        $emailSent = (bool)$producer->send($info["post"]["mail"], $subject, $body);
+                    }
+                } catch (Exception $e) {
+                    error_log("Erro ao enfileirar email de verificação: " . $e->getMessage());
+                }
+
+                try {
+                    $msgModel = new messages_model();
+                    $msgModel->populate([
+                        "to_mail" => $info["post"]["mail"],
+                        "subject" => $subject,
+                        "body"    => $body,
+                        "sent_at" => date("Y-m-d H:i:s"),
+                    ]);
+                    $msgModel->save();
+                } catch (Exception $e) {
+                    error_log("Erro ao salvar log de email: " . $e->getMessage());
+                }
+
+                if (!$emailSent) {
+                    $_SESSION["messages_app"]["danger"] = ["Cadastro realizado, mas não foi possível enviar o email de verificação. Entre em contato com o suporte."];
+                    basic_redir($GLOBALS["register_url"]);
+                    exit();
+                }
+
+                $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
+                basic_redir($GLOBALS["login_url"]);
+                exit();
+            } else {
+                $_SESSION["messages_app"]["danger"] = ["Falha ao criar usuário. Tente novamente mais tarde."];
+                basic_redir($GLOBALS["register_url"]);
+                exit();
+            }
+        } catch (Exception $e) {
+            error_log("Erro ao criar usuário: " . $e->getMessage());
+            $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"]);
             exit();
         }

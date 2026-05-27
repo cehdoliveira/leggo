@@ -17,7 +17,7 @@ class DOLModel extends rootOBJ
 {
 	function __construct(string $table)
 	{
-		$c = new localPDO();
+		$c = localPDO::getInstance();
 		$this->set_con($c);
 		$this->set_table($table);
 		$this->set_schema($this->con->fields_config($this->table));
@@ -31,6 +31,26 @@ class DOLModel extends rootOBJ
 			}
 		}
 		$this->set_keys($keys);
+	}
+
+	public function beginTransaction(): bool
+	{
+		return $this->con->beginTransaction();
+	}
+
+	public function commit(): bool
+	{
+		return $this->con->commit();
+	}
+
+	public function rollback(): bool
+	{
+		return $this->con->rollback();
+	}
+
+	public function getCon(): localPDO
+	{
+		return $this->con;
 	}
 
 	public function save(): int|bool|\PDOStatement
