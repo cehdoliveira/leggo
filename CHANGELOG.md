@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0.1] - 2026-05-27
+
+### Removed
+- Rotas duplicadas de /termos-de-uso e /politica-de-privacidade no
+  site/public_html/index.php (dead code, nunca executadas).
+
 ## [1.4.0.0] - 2026-05-27
 
 ### Added
