@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2.0] - 2026-05-27
+
+### Fixed
+- Rate limit de login e forgot password agora tem fallback via arquivo quando Redis
+  está indisponível. `check_and_increment_rate_limit()` usa `flock()` em
+  `/tmp/leggo_ratelimit/` para manter a proteção contra brute force mesmo sem Redis.
+  `reset_rate_limit()` substitui `$redis->del()` direto nos controllers.
+
 ## [1.3.1.0] - 2026-05-27
 
 ### Changed
