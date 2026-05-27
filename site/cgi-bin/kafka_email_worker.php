@@ -13,6 +13,18 @@
  * @version 1.0
  */
 
+// Stubs for static analysis when rdkafka extension is not loaded
+if (!defined('RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS')) {
+    define('RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS', -175);
+    define('RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS', -174);
+    define('RD_KAFKA_RESP_ERR__PARTITION_EOF', -191);
+    define('RD_KAFKA_RESP_ERR_NO_ERROR', 0);
+    define('RD_KAFKA_RESP_ERR__TIMED_OUT', -185);
+}
+if (!function_exists('rd_kafka_err2str')) {
+    function rd_kafka_err2str(int $err): string { return "Unknown Kafka error: $err"; }
+}
+
 // Configuração do timezone (importante para PHP 8.4)
 date_default_timezone_set('America/Sao_Paulo');
 
@@ -75,7 +87,7 @@ if (!empty($ENABLE_FILE_LOG) && !empty($LOG_FILE)) {
 /**
  * Função de log
  */
-function log_message($message, $level = 'INFO')
+function log_message(string $message, string $level = 'INFO'): void
 {
     global $LOG_FILE, $ENABLE_FILE_LOG;
     $timestamp = date('Y-m-d H:i:s');
@@ -91,6 +103,7 @@ function log_message($message, $level = 'INFO')
  */
 function sendEmailViaPHPMailer(array $emailData): bool
 {
+    $mail = null;
     try {
         $mail = new PHPMailer(true);
 
@@ -160,7 +173,8 @@ function sendEmailViaPHPMailer(array $emailData): bool
 
         return false;
     } catch (Exception $e) {
-        log_message("Erro ao enviar email: {$mail->ErrorInfo}", 'ERROR');
+        $errorInfo = $mail ? $mail->ErrorInfo : $e->getMessage();
+        log_message("Erro ao enviar email: {$errorInfo}", 'ERROR');
         return false;
     }
 }
@@ -178,7 +192,8 @@ function runWorker()
 
     try {
         // Configurar Kafka Consumer
-        $conf = new \RdKafka\Conf();
+        $confClass = '\RdKafka\Conf';
+        $conf = new $confClass();
         $conf->set('metadata.broker.list', KAFKA_HOST . ':' . KAFKA_PORT);
         $conf->set('group.id', 'email-worker-group');
         $conf->set('auto.offset.reset', 'earliest'); // earliest para não perder mensagens
@@ -186,7 +201,7 @@ function runWorker()
         $conf->set('auto.commit.interval.ms', '1000'); // Commit a cada 1 segundo
 
         // Configurar callbacks para debug de rebalance
-        $conf->setRebalanceCb(function (\RdKafka\KafkaConsumer $kafka, $err, array $partitions = null) {
+        $conf->setRebalanceCb(function ($kafka, $err, array $partitions = null) {
             switch ($err) {
                 case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
                     log_message("[REBALANCE] Partições ATRIBUÍDAS:");
@@ -217,7 +232,8 @@ function runWorker()
 
         // Criar consumer
         log_message("[DEBUG] Criando KafkaConsumer...");
-        $consumer = new \RdKafka\KafkaConsumer($conf);
+        $consumerClass = '\RdKafka\KafkaConsumer';
+        $consumer = new $consumerClass($conf);
         log_message("[DEBUG] KafkaConsumer criado com sucesso");
 
         // Inscrever no tópico
