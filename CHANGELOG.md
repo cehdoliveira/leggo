@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0.11] - 2026-05-27
+
+### Fixed
+- `DOLModel::populate()` não ignora mais valores falsy como string `"0"`.
+  A condição `if (strtolower($data[$key]))` fazia com que valores legítimos
+  fossem silenciosamente descartados (`strtolower("0")` retorna `"0"`, falsy em PHP).
+  Substituído por `if ($data[$key] !== '')` — `isset()` já filtra null.
+
 ## [1.3.0.6] - 2026-05-26
 
 ### Added
