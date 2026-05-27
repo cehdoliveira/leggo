@@ -72,9 +72,7 @@ class auth_controller
             unset($credential["password"]);
             $_SESSION[constant("cAppKey")] = ["credential" => $credential];
 
-            if ($redis) {
-                $redis->del($rateKey);
-            }
+            reset_rate_limit($redis, $rateKey);
 
             $update = new users_model();
             $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);

@@ -427,16 +427,78 @@ function increment_rate_limit(?object $redis, string $key, int $window): void
   }
 }
 
+function ratelimit_fallback_dir(): string
+{
+  if (defined('RATELIMIT_FALLBACK_DIR') && constant('RATELIMIT_FALLBACK_DIR') !== '') {
+    return rtrim(constant('RATELIMIT_FALLBACK_DIR'), '/');
+  }
+  return sys_get_temp_dir() . '/leggo_ratelimit';
+}
+
 // Atomic check+increment: increments first to prevent race condition bypass.
 // Returns true if the new count exceeds $max (i.e., request should be blocked).
+// Falls back to file-based locking when Redis is unavailable.
 function check_and_increment_rate_limit(?object $redis, string $key, int $max, int $window): bool
 {
-  if (!$redis) return false;
-  $count = $redis->incr($key);
-  if ($count === 1) {
-    $redis->expire($key, $window);
+  if ($redis) {
+    $count = $redis->incr($key);
+    if ($count === 1) {
+      $redis->expire($key, $window);
+    }
+    return $count > $max;
   }
-  return $count > $max;
+
+  $dir = ratelimit_fallback_dir();
+  if (!is_dir($dir)) {
+    @mkdir($dir, 0700, true);
+  }
+  $file = $dir . '/' . md5($key) . '.lock';
+
+  $fp = @fopen($file, 'c+');
+  if (!$fp) {
+    return false;
+  }
+
+  if (!flock($fp, LOCK_EX)) {
+    fclose($fp);
+    return false;
+  }
+
+  $raw = '';
+  while (!feof($fp)) {
+    $raw .= fread($fp, 8192);
+  }
+  $data = @json_decode($raw ?: '{}', true) ?: [];
+  $now = time();
+
+  if (!isset($data['window_start']) || ($now - $data['window_start']) > $window) {
+    $data = ['count' => 1, 'window_start' => $now];
+  } else {
+    $data['count']++;
+  }
+
+  $blocked = $data['count'] > $max;
+
+  ftruncate($fp, 0);
+  rewind($fp);
+  fwrite($fp, json_encode($data));
+  fflush($fp);
+  flock($fp, LOCK_UN);
+  fclose($fp);
+
+  return $blocked;
+}
+
+function reset_rate_limit(?object $redis, string $key): void
+{
+  if ($redis) {
+    $redis->del($key);
+    return;
+  }
+
+  $dir = ratelimit_fallback_dir();
+  $file = $dir . '/' . md5($key) . '.lock';
+  @unlink($file);
 }
 
 function verify_password_with_migration(string $storedHash, string $inputPassword, string $userId): bool
