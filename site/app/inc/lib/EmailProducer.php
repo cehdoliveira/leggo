@@ -94,7 +94,7 @@ class EmailProducer
      * @param array $options Opções adicionais (cc, bcc, attachments, isHtml, replyTo)
      * @return bool Sucesso do envio para fila
      */
-    public function sendEmail($to, string $subject, string $body, array $options = []): bool
+    public function sendEmail(string|array $to, string $subject, string $body, array $options = []): bool
     {
         try {
             if (!$this->producer || !$this->topic) {
@@ -267,7 +267,7 @@ class EmailProducer
         return false;
     }
 
-    public function sendEmail($to, string $subject, string $body, array $options = []): bool
+    public function sendEmail(string|array $to, string $subject, string $body, array $options = []): bool
     {
         return self::send(
             is_array($to) ? implode(',', $to) : (string)$to,

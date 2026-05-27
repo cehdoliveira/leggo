@@ -18,24 +18,24 @@ if (!class_exists('rootOBJ')) {
 	class rootOBJ
 	{
 		// Propriedades base
-		public $data = [];
+		public array $data = [];
 
 		// Propriedades usadas por DOLModel (evitar dynamic properties no PHP 8.2+)
-		protected $con = null;
-		protected $table = null;
-		protected $schema = null;
-		protected $keys = null;
-		protected $paginate = null;
-		protected $recordset = null;
-		protected $filter = [];
-		protected $field = [];
-		protected $order = null;
-		protected $group = null;
-		protected $direct_query = null;
-		protected $values = [];
-		protected $filterParams = [];
+		protected ?localPDO $con = null;
+		protected ?string $table = null;
+		protected ?array $schema = null;
+		protected ?array $keys = null;
+		protected ?array $paginate = null;
+		protected ?int $recordset = null;
+		protected array $filter = [];
+		protected array $field = [];
+		protected ?array $order = null;
+		protected ?array $group = null;
+		protected ?string $direct_query = null;
+		protected array $values = [];
+		protected array $filterParams = [];
 
-		public function __call($method, $paramters)
+		public function __call(string $method, array $paramters): mixed
 		{
 			if (preg_match("/(?P<type>[sg]et)_(?P<method>\w+)/", $method, $match)) {
 				$var = $match["method"];
@@ -47,8 +47,9 @@ if (!class_exists('rootOBJ')) {
 					return $this->$var;
 				}
 			}
+			return null;
 		}
-		public function render($data, $format = NULL)
+		public function render(array $data, ?string $format = null): mixed
 		{
 			switch ($format) {
 				case ".xml":
@@ -62,9 +63,10 @@ if (!class_exists('rootOBJ')) {
 				default:
 					return $data;
 			}
+			return null;
 		}
 
-		public function loadcurrent_data($filters = [], $fields = [], $attach = [], $attach_son = [], $availabled = false)
+		public function loadcurrent_data(array $filters = [], array $fields = [], array $attach = [], array $attach_son = [], bool|array $availabled = false): array|false
 		{
 			$field = count($fields) ? array_merge($this->field, $fields) : $this->field;
 			$filter = count($filters) ? array_merge($this->filter, $filters) : $this->filter;

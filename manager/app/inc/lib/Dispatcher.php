@@ -1,15 +1,15 @@
 <?php
 class Dispatcher
 {
-	private $_class_args = [];
-	private $_request_server = "";
-	private $_request_uri = "";
-	private $_path_info = "";
-	private $_file_default_list = ["index", "index.php", "Dispatcher.php", "webapp.php", "index.html"];
-	private $_rewrite = true;
-	private $_routes = [];
+	private array $_class_args = [];
+	private string $_request_server = "";
+	private string $_request_uri = "";
+	private string $_path_info = "";
+	private array $_file_default_list = ["index", "index.php", "Dispatcher.php", "webapp.php", "index.html"];
+	private bool $_rewrite = true;
+	private array $_routes = [];
 
-	public function __construct($rewrite = true, $class_args = [])
+	public function __construct(bool $rewrite = true, array $class_args = [])
 	{
 		$this->_rewrite = $rewrite;
 		$this->_class_args = $class_args;

@@ -111,7 +111,7 @@ class RedisCache
      * @param int $ttl Tempo de vida em segundos (0 = sem expiração)
      * @return bool
      */
-    public function set(string $key, $value, int $ttl = 60): bool
+    public function set(string $key, mixed $value, int $ttl = 60): bool
     {
         if (!$this->isConnected()) {
             return false;
@@ -136,7 +136,7 @@ class RedisCache
      * @param mixed $default Valor padrão se a chave não existir
      * @return mixed
      */
-    public function get(string $key, $default = null)
+    public function get(string $key, mixed $default = null): mixed
     {
         if (!$this->isConnected()) {
             return $default;
@@ -177,7 +177,7 @@ class RedisCache
      * @param string|array $keys Chave(s) a serem removidas
      * @return int Número de chaves removidas
      */
-    public function delete($keys): int
+    public function delete(string|array $keys): int
     {
         if (!$this->isConnected()) {
             return 0;
@@ -253,7 +253,7 @@ class RedisCache
      * @param int $value Valor a incrementar (padrão: 1)
      * @return int|false Novo valor ou false em caso de erro
      */
-    public function increment(string $key, int $value = 1)
+    public function increment(string $key, int $value = 1): int|false
     {
         if (!$this->isConnected()) {
             return false;
@@ -274,7 +274,7 @@ class RedisCache
      * @param int $value Valor a decrementar (padrão: 1)
      * @return int|false Novo valor ou false em caso de erro
      */
-    public function decrement(string $key, int $value = 1)
+    public function decrement(string $key, int $value = 1): int|false
     {
         if (!$this->isConnected()) {
             return false;
@@ -390,7 +390,7 @@ class RedisCache
      * @param int $ttl Tempo de vida em segundos
      * @return mixed
      */
-    public function remember(string $key, callable $callback, int $ttl = 60)
+    public function remember(string $key, callable $callback, int $ttl = 60): mixed
     {
         $value = $this->get($key);
 
@@ -409,7 +409,7 @@ class RedisCache
      *
      * @return array|false
      */
-    public function info()
+    public function info(): array|false
     {
         if (!$this->isConnected()) {
             return false;
@@ -482,7 +482,7 @@ class RedisCache
     /**
      * Previne deserialização do objeto Singleton
      */
-    public function __wakeup()
+    public function __wakeup(): void
     {
         throw new Exception("Cannot unserialize singleton");
     }

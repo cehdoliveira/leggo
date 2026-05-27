@@ -2,11 +2,11 @@
 
 class MigrationRunner
 {
-    private $pdo;
-    private $migrations_dir;
+    private ?\PDO $pdo;
+    private ?string $migrations_dir;
     private $logger;
 
-    public function __construct($pdo, $migrations_dir = null)
+    public function __construct(localPDO|\PDO $pdo, ?string $migrations_dir = null)
     {
         // Suporte para local_pdo ou PDO nativo
         if ($pdo && method_exists($pdo, 'getPdo')) {

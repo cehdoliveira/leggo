@@ -1,7 +1,7 @@
 <?php
 class messages_model extends DOLModel
 {
-    protected $filter = [" active = 'yes' "];
+    protected array $filter = [" active = 'yes' "];
 
     function __construct()
     {
