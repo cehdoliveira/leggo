@@ -54,6 +54,8 @@ class site_controller
             return;
         }
 
+        $rollback = false;
+
         try {
             $update  = new users_model();
             $update->set_filter(["idx = ?"], [$idx]);
@@ -126,6 +128,7 @@ class site_controller
                 }
             }
         } catch (RuntimeException $e) {
+            $rollback = true;
             Logger::getInstance()->error("users_action failed", [
                 "error"   => $e->getMessage(),
                 "action"  => $action,
@@ -133,6 +136,6 @@ class site_controller
             ]);
         }
 
-        basic_redir($users_url);
+        basic_redir($users_url, rollback: $rollback);
     }
 }

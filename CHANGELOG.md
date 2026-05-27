@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.0.3] - 2026-05-27
+
+### Changed
+- `basic_redir()` agora gerencia commit/rollback da transação automaticamente.
+  Sucesso (`basic_redir($url)`) faz commit; erro (`basic_redir($url, rollback: true)`)
+  faz rollback. O `__destruct()` do `localPDO` faz rollback de segurança se nenhum
+  redirect explícito ocorrer — garantindo que transações nunca commitam sem passar
+  pelo gate do `basic_redir()`.
+- Controllers de registro (manager e site) e `users_action` (manager) agora usam
+  `rollback: true` nos catch blocks para reverter operações parciais em caso de erro.
+
 ## [1.4.0.2] - 2026-05-27
 
 ### Fixed

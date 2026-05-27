@@ -40,7 +40,7 @@ class localPDO
 	public function __destruct()
 	{
 		if ($this->ownsTransaction && $this->inTransaction) {
-			$this->commit();
+			$this->rollback();
 		}
 	}
 
