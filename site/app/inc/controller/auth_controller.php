@@ -298,7 +298,7 @@ class auth_controller
         $users->set_paginate([1]);
         $users->load_data();
 
-        if (!$users->data[0] ?? null) {
+        if (!($users->data[0] ?? null)) {
             unset($_SESSION['pending_set_password_idx']);
             $_SESSION["messages_app"]["danger"] = ["Link inválido ou já utilizado."];
             basic_redir($GLOBALS["login_url"]);
