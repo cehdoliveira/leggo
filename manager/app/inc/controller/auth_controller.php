@@ -93,7 +93,6 @@ class auth_controller
             $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);
             $update->populate(["last_login" => date("Y-m-d H:i:s")]);
             $update->save();
-            $update->getCon()->commitTransaction();
         } else {
             $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha informados não conferem"];
         }
@@ -188,7 +187,6 @@ class auth_controller
                 }
 
                 $_SESSION["messages_app"]["success"] = ["Cadastro realizado com sucesso. Verifique seu e-mail com os dados de acesso."];
-                $newUser->getCon()->commitTransaction();
                 basic_redir($GLOBALS["login_url"]);
                 exit();
             } else {
@@ -197,7 +195,6 @@ class auth_controller
                 exit();
             }
         } catch (Exception $e) {
-            $users->getCon()->rollback();
             error_log("Erro ao criar usuário: " . $e->getMessage());
             $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"]);

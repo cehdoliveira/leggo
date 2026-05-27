@@ -5,7 +5,6 @@ class localPDO
 	public string $error = "";
 	private bool $inTransaction = false;
 	private static ?localPDO $instance = null;
-	private bool $ownsTransaction = false;
 
 	public function __construct()
 	{
@@ -31,22 +30,8 @@ class localPDO
 	{
 		if (self::$instance === null) {
 			self::$instance = new self();
-			self::$instance->beginTransaction();
-			self::$instance->ownsTransaction = true;
 		}
 		return self::$instance;
-	}
-
-	public function __destruct()
-	{
-		if ($this->ownsTransaction && $this->inTransaction) {
-			$this->rollback();
-		}
-	}
-
-	public function commitTransaction(): bool
-	{
-		return $this->commit();
 	}
 
 	public function beginTransaction(): bool

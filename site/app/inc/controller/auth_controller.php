@@ -78,7 +78,6 @@ class auth_controller
             $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);
             $update->populate(["last_login" => date("Y-m-d H:i:s")]);
             $update->save();
-            $update->getCon()->commitTransaction();
         } else {
             $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha informados não conferem"];
         }
@@ -183,7 +182,6 @@ class auth_controller
                 }
 
                 $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
-                $newUser->getCon()->commitTransaction();
                 basic_redir($GLOBALS["login_url"]);
                 exit();
             } else {
@@ -192,7 +190,6 @@ class auth_controller
                 exit();
             }
         } catch (Exception $e) {
-            $users->getCon()->rollback();
             error_log("Erro ao criar usuário: " . $e->getMessage());
             $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"]);
@@ -229,7 +226,6 @@ class auth_controller
         $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
         $users->populate(["email_token" => null]);
         $users->save();
-        $users->getCon()->commitTransaction();
         $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
 
         $_SESSION["messages_app"]["success"] = ["E-mail confirmado! Agora defina sua senha para ativar sua conta."];
@@ -327,7 +323,6 @@ class auth_controller
             "email_token"        => null,
         ]);
         $users->save();
-        $users->getCon()->commitTransaction();
 
         unset($_SESSION['pending_set_password_idx']);
 
@@ -415,7 +410,6 @@ class auth_controller
                 "email_token_expires_at" => $expires,
             ]);
             $users->save();
-            $users->getCon()->commitTransaction();
 
             $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
 
@@ -574,7 +568,6 @@ class auth_controller
             "email_token_expires_at"  => null,
         ]);
         $users->save();
-        $users->getCon()->commitTransaction();
 
         unset($_SESSION['pending_reset_idx']);
         session_regenerate_id(true);
