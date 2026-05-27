@@ -150,22 +150,32 @@ class auth_controller
             $newUser->save_attach($info, ["profiles"]);
 
             try {
+                $name      = $info["post"]["name"];
+                $login     = $info["post"]["login"];
+                $canonicalBase = (defined('MANAGER_CANONICAL_URL') && constant('MANAGER_CANONICAL_URL') !== '')
+                    ? rtrim(constant('MANAGER_CANONICAL_URL'), '/')
+                    : rtrim(constant('cFrontend'), '/');
+                $loginLink = $canonicalBase . '/login';
+                $subject   = "Seus dados de acesso — " . constant('cTitle');
+                ob_start();
+                include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
+                $body = ob_get_clean();
+
                 if (class_exists("EmailProducer")) {
-                    $producer  = EmailProducer::getInstance();
-                    $subject   = "Seus dados de acesso — " . constant('cTitle');
-                    $name      = $info["post"]["name"];
-                    $login     = $info["post"]["login"];
-                    $canonicalBase = (defined('MANAGER_CANONICAL_URL') && constant('MANAGER_CANONICAL_URL') !== '')
-                        ? rtrim(constant('MANAGER_CANONICAL_URL'), '/')
-                        : rtrim(constant('cFrontend'), '/');
-                    $loginLink = $canonicalBase . '/login';
-                    ob_start();
-                    include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
-                    $body = ob_get_clean();
+                    $producer = EmailProducer::getInstance();
                     $producer->send($info["post"]["mail"], $subject, $body);
                 }
+
+                $msgModel = new messages_model();
+                $msgModel->populate([
+                    "to_mail" => $info["post"]["mail"],
+                    "subject" => $subject,
+                    "body"    => $body,
+                    "sent_at" => date("Y-m-d H:i:s"),
+                ]);
+                $msgModel->save();
             } catch (Exception $e) {
-                error_log("Erro ao enfileirar email de cadastro: " . $e->getMessage());
+                error_log("Erro ao enviar email de cadastro: " . $e->getMessage());
             }
 
             $_SESSION["messages_app"]["success"] = ["Cadastro realizado com sucesso. Verifique seu e-mail com os dados de acesso."];

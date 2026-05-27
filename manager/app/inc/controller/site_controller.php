@@ -109,6 +109,19 @@ class site_controller
                         error_log("Erro ao enviar reset de senha: " . $e->getMessage());
                     }
 
+                    try {
+                        $msgModel = new messages_model();
+                        $msgModel->populate([
+                            "to_mail" => $user['mail'],
+                            "subject" => $subject,
+                            "body"    => $body,
+                            "sent_at" => date("Y-m-d H:i:s"),
+                        ]);
+                        $msgModel->save();
+                    } catch (Exception $e) {
+                        error_log("Erro ao salvar log de email: " . $e->getMessage());
+                    }
+
                     $_SESSION["messages_app"]["success"] = ["Link de redefinição de senha enviado para " . htmlspecialchars($user['mail'], ENT_QUOTES, 'UTF-8') . "."];
                 }
             }
