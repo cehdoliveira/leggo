@@ -91,10 +91,6 @@ $dispatcher->add_route("GET", "/politica-de-privacidade(\.json|\.xml|\.html)?", 
 // Área do usuário
 $dispatcher->add_route("GET", "/area(\.json|\.xml|\.html)?", "site_controller:home", $authGuard, $params);
 
-// Termos e privacidade (público)
-$dispatcher->add_route("GET", "/termos-de-uso(\.json|\.xml|\.html)?", "site_controller:terms", null, $params);
-$dispatcher->add_route("GET", "/politica-de-privacidade(\.json|\.xml|\.html)?", "site_controller:privacy", null, $params);
-
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
 	basic_redir($home_url);
