@@ -41,6 +41,7 @@ function m_autoload(string $name): bool
     error_log("Autoload Error: " . $e->getMessage());
     return false;
   }
+  return false;
 }
 spl_autoload_register('m_autoload');
 
@@ -87,7 +88,7 @@ function var_pre(mixed $data, bool $stop = false): void
  */
 function html_accents(?string $text = null): string
 {
-  return strtr($text,  array_flip($GLOBALS["html_entities_list"]));
+  return strtr($text ?? '',  array_flip($GLOBALS["html_entities_list"]));
 }
 
 /**
@@ -96,7 +97,7 @@ function html_accents(?string $text = null): string
  */
 function up_accents(?string $text = null): string
 {
-  return strtoupper(strtr($text, $GLOBALS["accents_lists"]));
+  return strtoupper(strtr($text ?? '', $GLOBALS["accents_lists"]));
 }
 
 /**
@@ -105,7 +106,7 @@ function up_accents(?string $text = null): string
  */
 function down_accents(?string $text = null): string
 {
-  return strtolower(strtr($text, array_flip($GLOBALS["accents_lists"])));
+  return strtolower(strtr($text ?? '', array_flip($GLOBALS["accents_lists"])));
 }
 
 /**
@@ -114,7 +115,7 @@ function down_accents(?string $text = null): string
  */
 function remove_accents(?string $text = null): string
 {
-  return  strtr($text, $GLOBALS["withoutaccents_lists"]);
+  return  strtr($text ?? '', $GLOBALS["withoutaccents_lists"]);
 }
 
 /**
@@ -123,7 +124,7 @@ function remove_accents(?string $text = null): string
  */
 function generate_slug(?string $text = null): string
 {
-  $text = strtolower(remove_accents($text));
+  $text = strtolower(remove_accents($text ?? ''));
   $text = preg_replace("/[^0-9A-z]+/", "_", $text);
   $text = preg_replace("/\s+?|_+|-+/", "-", $text);
   return $text;
@@ -136,6 +137,9 @@ function generate_slug(?string $text = null): string
 function set_url(string $url = "", array $params = []): string
 {
   $tmp = preg_split('/\?/', $url);
+  if ($tmp === false) {
+    return $url;
+  }
   $url = $tmp[0];
   $p = "";
   if (isset($tmp[1])) {
@@ -391,7 +395,8 @@ function array_to_xml(array $data, SimpleXMLElement &$xml): void
   foreach ($data as $key => $value) {
     $key = is_int($key) ? 'item' : $key;
     if (is_array($value)) {
-      array_to_xml($value, $xml->addChild($key));
+      $child = $xml->addChild($key);
+      array_to_xml($value, $child);
     } else {
       $xml->addChild($key, htmlspecialchars((string)$value, ENT_XML1, 'UTF-8'));
     }

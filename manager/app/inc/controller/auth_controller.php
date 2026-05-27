@@ -66,7 +66,7 @@ class auth_controller
             $authenticated = false;
         }
 
-        if ($authenticated) {
+        if ($authenticated && is_array($user)) {
             session_regenerate_id(true);
 
             $isAdmin = false;

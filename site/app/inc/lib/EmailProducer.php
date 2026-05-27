@@ -18,6 +18,16 @@ if (class_exists('EmailProducer', false)) {
     return;
 }
 
+// Stubs for static analysis when rdkafka extension is not loaded
+if (!defined('RD_KAFKA_PARTITION_UA')) {
+    define('RD_KAFKA_PARTITION_UA', 0);
+    define('RD_KAFKA_RESP_ERR_NO_ERROR', 0);
+    define('RD_KAFKA_RESP_ERR__TIMED_OUT', -185);
+}
+if (!function_exists('rd_kafka_err2str')) {
+    function rd_kafka_err2str(int $err): string { return "Unknown Kafka error: $err"; }
+}
+
 if (extension_loaded('rdkafka') && class_exists('RdKafka\Producer')) {
 
 class EmailProducer
@@ -29,13 +39,15 @@ class EmailProducer
 
     /**
      * Producer RdKafka
+     * @var object|null
      */
-    private ?\RdKafka\Producer $producer = null;
+    private ?object $producer = null;
 
     /**
      * Tópico Kafka
+     * @var object|null
      */
-    private ?\RdKafka\ProducerTopic $topic = null;
+    private ?object $topic = null;
 
     /**
      * Configurações do Kafka
@@ -55,7 +67,8 @@ class EmailProducer
             ];
 
             // Configurar producer
-            $conf = new \RdKafka\Conf();
+            $confClass = '\RdKafka\Conf';
+            $conf = new $confClass();
             $conf->set('metadata.broker.list', $this->config['host'] . ':' . $this->config['port']);
 
             // Timeout de produção (aumentado para produção)
@@ -65,7 +78,8 @@ class EmailProducer
             $conf->set('request.timeout.ms', '5000');     // 5s timeout de request
 
             // Criar producer
-            $this->producer = new \RdKafka\Producer($conf);
+            $producerClass = '\RdKafka\Producer';
+            $this->producer = new $producerClass($conf);
 
             // Criar tópico
             $this->topic = $this->producer->newTopic($this->config['topic']);

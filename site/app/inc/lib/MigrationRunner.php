@@ -3,8 +3,8 @@
 class MigrationRunner
 {
     private ?\PDO $pdo;
-    private ?string $migrations_dir;
-    private $logger;
+    private string $migrations_dir = '/var/www/leggo/migrations';
+    private \Closure|Logger|null $logger;
 
     public function __construct(localPDO|\PDO $pdo, ?string $migrations_dir = null)
     {
@@ -28,7 +28,6 @@ class MigrationRunner
                 getenv('APP_ROOT') ? getenv('APP_ROOT') . '/migrations' : null,
             ];
 
-            $this->migrations_dir = null;
             foreach ($possiblePaths as $path) {
                 if ($path && is_dir($path)) {
                     $this->migrations_dir = $path;

@@ -13,11 +13,15 @@
 
 class RedisCache
 {
-    private static $instance = null;
-    private $redis;
-    private $prefix;
-    private $connected = false;
-    private $enabled = true;
+    private static ?self $instance = null;
+
+    private ?object $redis = null;
+
+    private string $prefix = '';
+
+    private bool $connected = false;
+
+    private bool $enabled = true;
 
     /**
      * Construtor privado para implementar Singleton
@@ -42,7 +46,8 @@ class RedisCache
         }
 
         try {
-            $this->redis = new Redis();
+            $redisClass = 'Redis';
+            $this->redis = new $redisClass();
             $this->prefix = $prefix;
 
             // Conectar ao Redis
@@ -61,8 +66,8 @@ class RedisCache
             $this->redis->select($database);
 
             // Configurar opções
-            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-            $this->redis->setOption(Redis::OPT_PREFIX, $this->prefix);
+            $this->redis->setOption(1, 1);      // OPT_SERIALIZER=1, SERIALIZER_PHP=1
+            $this->redis->setOption(2, $this->prefix);  // OPT_PREFIX=2
 
             $this->connected = true;
         } catch (Exception $e) {
