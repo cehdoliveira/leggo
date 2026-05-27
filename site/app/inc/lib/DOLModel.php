@@ -33,6 +33,26 @@ class DOLModel extends rootOBJ
 		$this->set_keys($keys);
 	}
 
+	public function beginTransaction(): bool
+	{
+		return $this->con->beginTransaction();
+	}
+
+	public function commit(): bool
+	{
+		return $this->con->commit();
+	}
+
+	public function rollback(): bool
+	{
+		return $this->con->rollback();
+	}
+
+	public function getCon(): localPDO
+	{
+		return $this->con;
+	}
+
 	public function save(): int|bool|\PDOStatement
 	{
 		if (!isset($this->values) || empty($this->values)) {
