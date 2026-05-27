@@ -1,7 +1,7 @@
 <?php
 class auth_controller
 {
-    public static function check_login()
+    public static function check_login(): bool
     {
         if (!isset($_SESSION[constant("cAppKey")]["credential"]["idx"])) {
             return false;
@@ -10,7 +10,7 @@ class auth_controller
         }
     }
 
-    public function logout()
+    public function logout(): never
     {
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
@@ -29,7 +29,7 @@ class auth_controller
         basic_redir($GLOBALS["login_url"]);
     }
 
-    public function login(array $info)
+    public function login(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -86,7 +86,7 @@ class auth_controller
         exit();
     }
 
-    public function display_register(array $info)
+    public function display_register(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -100,7 +100,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function register(array $info)
+    public function register(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["register_url"]);
 
@@ -189,7 +189,7 @@ class auth_controller
         }
     }
 
-    public function verify_email(array $info)
+    public function verify_email(array $info): never
     {
         $token = $info[1] ?? null;
 
@@ -225,7 +225,7 @@ class auth_controller
         exit();
     }
 
-    public function display_set_password(array $info)
+    public function display_set_password(array $info): void
     {
         $token      = $info[1] ?? null;  // mantido apenas para compor o action da URL do formulario
         $pendingIdx = $_SESSION['pending_set_password_idx'] ?? null;
@@ -263,7 +263,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function set_password(array $info)
+    public function set_password(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -323,7 +323,7 @@ class auth_controller
         exit();
     }
 
-    public function display(array $info)
+    public function display(array $info): void
     {
         if (self::check_login()) {
             basic_redir($GLOBALS["area_url"]);
@@ -342,7 +342,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function display_forgot_password(array $info)
+    public function display_forgot_password(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -355,7 +355,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function forgot_password(array $info)
+    public function forgot_password(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["forgot_password_url"]);
 
@@ -435,7 +435,7 @@ class auth_controller
         exit();
     }
 
-    public function display_reset_password(array $info)
+    public function display_reset_password(array $info): void
     {
         $token      = $info[1] ?? null;
         $pendingIdx = $_SESSION['pending_reset_idx'] ?? null;
@@ -492,7 +492,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function reset_password(array $info)
+    public function reset_password(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 

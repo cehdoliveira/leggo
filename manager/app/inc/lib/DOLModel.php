@@ -15,7 +15,7 @@
  */
 class DOLModel extends rootOBJ
 {
-	function __construct($table)
+	function __construct(string $table)
 	{
 		$c = new localPDO();
 		$this->set_con($c);
@@ -33,7 +33,7 @@ class DOLModel extends rootOBJ
 		$this->set_keys($keys);
 	}
 
-	public function save()
+	public function save(): int|bool|\PDOStatement
 	{
 		if (!isset($this->values) || empty($this->values)) {
 			return false;
@@ -99,7 +99,7 @@ class DOLModel extends rootOBJ
 		}
 	}
 
-	public function remove()
+	public function remove(): ?\PDOStatement
 	{
 		if (!isset($this->filter)) {
 			return null;
@@ -143,7 +143,7 @@ class DOLModel extends rootOBJ
 		$this->filterParams = $params;
 	}
 
-	public function populate($data, $encode = false)
+	public function populate(array $data, bool $encode = false)
 	{
 		if (!isset($this->values)) {
 			$this->values = [];
@@ -166,13 +166,13 @@ class DOLModel extends rootOBJ
 		}
 	}
 
-	public function return_data()
+	public function return_data(): array
 	{
 		$this->load_data();
 		return array($this->recordset, $this->data);
 	}
 
-	public function _list_data($value = "name", $filter = array(), $key = "idx", $order = "")
+	public function _list_data(string $value = "name", array $filter = array(), string $key = "idx", string $order = ""): array
 	{
 		$this->set_field(array($key, $value));
 		$this->set_filter(count($filter) ? array_merge(array(" active = 'yes' "), $filter) : array(" active = 'yes' "));
@@ -181,7 +181,7 @@ class DOLModel extends rootOBJ
 		return $this->data;
 	}
 
-	public function _current_data($filter = array(), $fields = array(), $attach = array(), $attach_son = array(), $availabled = false)
+	public function _current_data(array $filter = array(), array $fields = array(), array $attach = array(), array $attach_son = array(), bool|array $availabled = false): array|false
 	{
 		$field = array(" idx ", " DATE_FORMAT( created_at , '%d/%m/%Y %H:%i' ) as created_at ", " DATE_FORMAT( modified_at , '%d/%m/%Y %H:%i' ) as modified_at ");
 		if (!count($filter)) {
@@ -223,7 +223,7 @@ class DOLModel extends rootOBJ
 		return current($this->data);
 	}
 
-	public function load_data()
+	public function load_data(): void
 	{
 		$ff = isset($this->field) ? implode(",", $this->field) : " * ";
 		$fi = isset($this->filter) ? " where " . implode(" and ", $this->filter) . " " : "";
@@ -256,7 +256,7 @@ class DOLModel extends rootOBJ
 		return $this->con->executePrepared($sql, $params);
 	}
 
-	public function attach($classes = array(), $reverse_table = null, $options = null, $class_field = null)
+	public function attach(array $classes = array(), ?string $reverse_table = null, ?string $options = null, ?array $class_field = null): void
 	{
 		$new_data = array();
 		$_data = $this->data;
@@ -292,7 +292,7 @@ class DOLModel extends rootOBJ
 		$this->set_data($new_data);
 	}
 
-	public function join($name = null, $table = null, $fw_key = array(), $options = null, $field = null)
+	public function join(?string $name = null, ?string $table = null, array $fw_key = array(), ?string $options = null, ?array $field = null): void
 	{
 		$new_data = array();
 		$_data = $this->get_data();
@@ -326,9 +326,9 @@ class DOLModel extends rootOBJ
 		$this->set_data($new_data);
 	}
 
-	public function attach_son($classesfather = "", $classes = array(), $reverse_table = null, $options = null, $class_field = null)
+	public function attach_son(string $classesfather = "", array $classes = array(), ?string $reverse_table = null, ?string $options = null, ?array $class_field = null): void
 	{
-		if ($classesfather != "" && isset($classes) && count($classes)) {
+		if ($classesfather != "" && count($classes)) {
 			$new_data = array();
 			$_data = $this->data;
 			foreach ($_data as $key => $value) {
@@ -376,7 +376,7 @@ class DOLModel extends rootOBJ
 		}
 	}
 
-	public function save_attach($info, $classes = array(), $reverse_table = null)
+	public function save_attach(array $info, array $classes = array(), ?string $reverse_table = null): void
 	{
 		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
 			? $_SESSION[constant("cAppKey")]["credential"]["idx"]

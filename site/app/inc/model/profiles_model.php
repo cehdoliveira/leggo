@@ -1,8 +1,8 @@
 <?php
 class profiles_model extends DOLModel
 {
-    protected $field = ["idx", "name", "editabled", "slug", "adm", "parent"];
-    protected $filter = ["active = 'yes'"];
+    protected array $field = ["idx", "name", "editabled", "slug", "adm", "parent"];
+    protected array $filter = ["active = 'yes'"];
 
     function __construct()
     {

@@ -1,7 +1,7 @@
 <?php
 class site_controller
 {
-    public function dashboard(array $info)
+    public function dashboard(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -32,7 +32,7 @@ class site_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function users_action(array $info)
+    public function users_action(array $info): void
     {
         global $users_url;
 

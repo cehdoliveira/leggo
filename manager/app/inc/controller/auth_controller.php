@@ -1,7 +1,7 @@
 <?php
 class auth_controller
 {
-    public static function check_login()
+    public static function check_login(): bool
     {
         if (!isset($_SESSION[constant("cAppKey")]["credential"]["idx"])) {
             return false;
@@ -10,7 +10,7 @@ class auth_controller
         }
     }
 
-    public function logout()
+    public function logout(): never
     {
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
@@ -29,7 +29,7 @@ class auth_controller
         basic_redir($GLOBALS["login_url"]);
     }
 
-    public function login(array $info)
+    public function login(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
 
@@ -101,7 +101,7 @@ class auth_controller
         exit();
     }
 
-    public function display_register(array $info)
+    public function display_register(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -115,7 +115,7 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
-    public function register(array $info)
+    public function register(array $info): never
     {
         validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["register_url"]);
 
@@ -178,7 +178,7 @@ class auth_controller
         }
     }
 
-    public function display(array $info)
+    public function display(array $info): void
     {
         if (self::check_login()) {
             basic_redir($GLOBALS["home_url"]);

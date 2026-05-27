@@ -1,9 +1,9 @@
 <?php
 class localPDO
 {
-	private $pdo;
-	public $error;
-	private $inTransaction = false;
+	private \PDO $pdo;
+	public string $error = "";
+	private bool $inTransaction = false;
 
 	public function __construct()
 	{
@@ -25,7 +25,7 @@ class localPDO
 		}
 	}
 
-	public function beginTransaction()
+	public function beginTransaction(): bool
 	{
 		if (!$this->inTransaction) {
 			$this->pdo->beginTransaction();
@@ -34,7 +34,7 @@ class localPDO
 		return true;
 	}
 
-	public function commit()
+	public function commit(): bool
 	{
 		if ($this->inTransaction) {
 			$this->pdo->commit();
@@ -43,7 +43,7 @@ class localPDO
 		return true;
 	}
 
-	public function rollback()
+	public function rollback(): bool
 	{
 		if ($this->inTransaction) {
 			$this->pdo->rollBack();
@@ -52,12 +52,12 @@ class localPDO
 		return true;
 	}
 
-	public function real_escape_string($string)
+	public function real_escape_string(string $string): string
 	{
 		return trim($this->pdo->quote($string), "'");
 	}
 
-	public function select($fields, $table, $options)
+	public function select(string $fields, string $table, string $options): \PDOStatement|false
 	{
 		$res = $this->my_query(
 			sprintf(
@@ -70,7 +70,7 @@ class localPDO
 		return $res;
 	}
 
-	public function insert($fields, $table, $options)
+	public function insert(string $fields, string $table, string $options): \PDOStatement|false
 	{
 		return $this->my_query(
 			sprintf(
@@ -82,7 +82,7 @@ class localPDO
 		);
 	}
 
-	public function replace($fields, $table)
+	public function replace(string $fields, string $table): \PDOStatement|false
 	{
 		return $this->my_query(
 			sprintf(
@@ -93,7 +93,7 @@ class localPDO
 		);
 	}
 
-	public function update($fields, $table, $options)
+	public function update(string $fields, string $table, string $options): \PDOStatement|false
 	{
 		return $this->my_query(
 			sprintf(
@@ -105,7 +105,7 @@ class localPDO
 		);
 	}
 
-	public function delete($table, $options)
+	public function delete(string $table, string $options): \PDOStatement|false
 	{
 		return $this->my_query(
 			sprintf(
@@ -116,7 +116,7 @@ class localPDO
 		);
 	}
 
-	public function my_query($query)
+	public function my_query(string $query): \PDOStatement
 	{
 		try {
 			$stmt = $this->pdo->query($query);
@@ -131,12 +131,12 @@ class localPDO
 		}
 	}
 
-	public function query($query)
+	public function query(string $query): \PDOStatement
 	{
 		return $this->my_query($query);
 	}
 
-	public function recordcount($res)
+	public function recordcount(\PDOStatement|false $res): int
 	{
 		if (!is_object($res)) return 0;
 		try {
@@ -146,7 +146,7 @@ class localPDO
 		}
 	}
 
-	public function result($res, $name, $position)
+	public function result(\PDOStatement|false $res, string $name, int $position): mixed
 	{
 		if ($res === false) return false;
 		try {
@@ -158,7 +158,7 @@ class localPDO
 		}
 	}
 
-	public function results($res)
+	public function results(\PDOStatement|false $res): array
 	{
 		$obj = [];
 		if (is_object($res)) {
@@ -171,7 +171,7 @@ class localPDO
 		return $obj;
 	}
 
-	public function fields_config($table)
+	public function fields_config(string $table): array
 	{
 		$object = [];
 		$res = $this->my_query(
@@ -205,12 +205,12 @@ class localPDO
 		return $object;
 	}
 
-	public function getPdo()
+	public function getPdo(): \PDO
 	{
 		return $this->pdo;
 	}
 
-	public function lastInsertId()
+	public function lastInsertId(): int
 	{
 		try {
 			return (int)$this->pdo->lastInsertId();

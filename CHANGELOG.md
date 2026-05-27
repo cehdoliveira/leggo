@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3.0] - 2026-05-27
+
+### Changed
+- Type hints adicionados em todo o código: parâmetros (string, int, mixed, ?string),
+  retornos (bool, void, never, array), e propriedades tipadas em 26 arquivos.
+  PHPStan nível 3 limpo em ambos os ambientes. Resolve warnings do Intelephense.
+
 ## [1.3.2.0] - 2026-05-27
 
 ### Fixed

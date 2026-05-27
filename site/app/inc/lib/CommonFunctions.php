@@ -4,7 +4,7 @@
  * Autoload de classes
  * Carrega automaticamente classes de controller, lib ou model quando são instanciadas
  */
-function m_autoload($name)
+function m_autoload(string $name): bool
 {
   // Ignorar classes do namespace ou do Composer
   if (strpos($name, '\\') !== false || strpos($name, 'Composer') !== false) {
@@ -48,7 +48,7 @@ spl_autoload_register('m_autoload');
  * Gera uma chave aleatoria criptograficamente segura.
  * Retorna uma string hexadecimal de tamanho definido (padrao: 10 caracteres)
  */
-function generate_key($size = 10)
+function generate_key(int $size = 10): string
 {
   return substr(bin2hex(random_bytes((int)ceil($size / 2))), 0, $size);
 }
@@ -57,7 +57,7 @@ function generate_key($size = 10)
  * Exibe array formatado para debug
  * Mostra o conteúdo de uma variável com print_r em formato legível
  */
-function print_pre($data, $stop = false)
+function print_pre(mixed $data, bool $stop = false): void
 {
   print("<pre>");
   print_r($data);
@@ -71,7 +71,7 @@ function print_pre($data, $stop = false)
  * Exibe variável com var_dump formatado
  * Mostra detalhes completos da variável incluindo tipos para debug
  */
-function var_pre($data, $stop = false)
+function var_pre(mixed $data, bool $stop = false): void
 {
   print("<pre>");
   var_dump($data);
@@ -85,7 +85,7 @@ function var_pre($data, $stop = false)
  * Converte entidades HTML para caracteres acentuados
  * Transforma &aacute; em á, &ccedil; em ç, etc
  */
-function html_accents($text = NULL)
+function html_accents(?string $text = null): string
 {
   return strtr($text,  array_flip($GLOBALS["html_entities_list"]));
 }
@@ -94,7 +94,7 @@ function html_accents($text = NULL)
  * Converte texto para maiúsculas mantendo acentos
  * Transforma "josé" em "JOSÉ" preservando acentuação
  */
-function up_accents($text = NULL)
+function up_accents(?string $text = null): string
 {
   return strtoupper(strtr($text, $GLOBALS["accents_lists"]));
 }
@@ -103,7 +103,7 @@ function up_accents($text = NULL)
  * Converte texto para minúsculas mantendo acentos
  * Transforma "JOSÉ" em "josé" preservando acentuação
  */
-function down_accents($text = NULL)
+function down_accents(?string $text = null): string
 {
   return strtolower(strtr($text, array_flip($GLOBALS["accents_lists"])));
 }
@@ -112,7 +112,7 @@ function down_accents($text = NULL)
  * Remove todos os acentos de um texto
  * Transforma "José" em "Jose", "São" em "Sao", etc
  */
-function remove_accents($text = NULL)
+function remove_accents(?string $text = null): string
 {
   return  strtr($text, $GLOBALS["withoutaccents_lists"]);
 }
@@ -121,7 +121,7 @@ function remove_accents($text = NULL)
  * Gera slug amigável para URLs
  * Converte "São Paulo" em "sao-paulo", remove acentos e caracteres especiais
  */
-function generate_slug($text = NULL)
+function generate_slug(?string $text = null): string
 {
   $text = strtolower(remove_accents($text));
   $text = preg_replace("/[^0-9A-z]+/", "_", $text);
@@ -133,7 +133,7 @@ function generate_slug($text = NULL)
  * Monta URL com parâmetros GET
  * Adiciona ou substitui parâmetros na query string da URL
  */
-function set_url($url = "", $params = [])
+function set_url(string $url = "", array $params = []): string
 {
   $tmp = preg_split('/\?/', $url);
   $url = $tmp[0];
@@ -165,7 +165,7 @@ function set_url($url = "", $params = [])
  * que o cookie de sessão seja enviado corretamente e que não haja race condition
  * entre a escrita da sessão no Redis e o próximo request do browser.
  */
-function basic_redir($url, $code = 302, $use_html = false)
+function basic_redir(string|array $url, int $code = 302, bool $use_html = false): never
 {
   if (is_array($url)) {
     $url = $url[0];
@@ -206,7 +206,7 @@ function basic_redir($url, $code = 302, $use_html = false)
  * Retorna URL completa do servidor
  * Monta http://exemplo.com ou https://exemplo.com com porta se necessário
  */
-function get_request_server($auth = false, $https = NULL)
+function get_request_server(string|false $auth = false, ?bool $https = null): string
 {
   $server_name = substr(addslashes(stripslashes(strip_tags(getenv("SERVER_NAME")))), 0, 255);
   $server_protocol = substr(addslashes(stripslashes(strip_tags(getenv("SERVER_PROTOCOL")))), 0, 255);
@@ -247,7 +247,7 @@ function get_request_server($auth = false, $https = NULL)
  * Converte array para UTF-8 recursivamente
  * Percorre todo o array e garante encoding UTF-8 em todos os valores
  */
-function a_walk(&$array)
+function a_walk(array &$array): array
 {
   if (is_array($array)) {
     foreach ($array as $k => $v) {
@@ -265,7 +265,7 @@ function a_walk(&$array)
  * Converte string para UTF-8 se necessário
  * Detecta se já está em UTF-8, caso contrário converte
  */
-function toUtf8($item)
+function toUtf8(string $item): string
 {
   return preg_match('%(?:
         [\xC2-\xDF][\x80-\xBF]        # non-overlong 2-byte
@@ -282,7 +282,7 @@ function toUtf8($item)
  * Identifica se o acesso é de dispositivo móvel
  * Detecta smartphones e tablets pelo User Agent
  */
-function identifyDevice()
+function identifyDevice(): bool
 {
   return preg_match("/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i", $_SERVER['HTTP_USER_AGENT']) || preg_match("/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i", substr($_SERVER['HTTP_USER_AGENT'], 0, 4));
 }
@@ -291,7 +291,7 @@ function identifyDevice()
  * Valida e-mail verificando DNS do domínio
  * Checa formato e se o domínio possui registros MX ou A válidos
  */
-function json_domainmail($mail)
+function json_domainmail(string $mail): bool
 {
   return preg_match('/^([a-zA-Z0-9\._-])*([@])([a-z0-9]).([a-z]{2,3})/', $mail) && (checkdnsrr(preg_replace("/[^@\s]*@(.+)$/", "$1", $mail), 'A') || checkdnsrr(preg_replace("/[^@\s]*@(.+)$/", "$1", $mail), 'MX'));
 }
@@ -300,7 +300,7 @@ function json_domainmail($mail)
  * Desserializa dados corrigindo tamanho de strings UTF-8
  * Útil para dados serializados que podem ter problemas de encoding
  */
-function utf8_unserialize($data)
+function utf8_unserialize(string $data): mixed
 {
   return unserialize(preg_replace_callback('/s:([0-9]+):\"(.*?)\";/', function ($matches) {
     return "s:" . strlen($matches[2]) . ':"' . $matches[2] . '";';
@@ -311,7 +311,7 @@ function utf8_unserialize($data)
  * Busca arquivo recursivamente em um diretório
  * Procura um arquivo .php específico dentro de uma pasta e suas subpastas
  */
-function findfile($path, $name = "x")
+function findfile(string $path, string $name = "x"): string|false
 {
   $dir_iterator = new RecursiveDirectoryIterator($path);
   $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
@@ -337,7 +337,7 @@ $path_info = getenv("PATH_INFO");
  * Exibe notificações armazenadas na sessão
  * Mostra mensagens de sucesso, erro, etc em formato Bootstrap alert
  */
-function html_notification_print()
+function html_notification_print(): void
 {
   if (isset($_SESSION["messages_app"])) {
     foreach ($_SESSION["messages_app"] as $type => $context) {
@@ -355,7 +355,7 @@ function html_notification_print()
  * Se `$digitsOnly` for true, retorna apenas os dígitos (útil para campos numéricos).
  * Pode ser reutilizada para limpar outros campos antes de salvar ou comparar.
  */
-function sanitize_string($value, $digitsOnly = false)
+function sanitize_string(mixed $value, bool $digitsOnly = false): ?string
 {
   if (!isset($value) || $value === null) {
     return null;
