@@ -169,10 +169,20 @@ function set_url(string $url = "", array $params = []): string
  * que o cookie de sessão seja enviado corretamente e que não haja race condition
  * entre a escrita da sessão no Redis e o próximo request do browser.
  */
-function basic_redir(string|array $url, int $code = 302, bool $use_html = false): never
+function basic_redir(string|array $url, int $code = 302, bool $use_html = false, bool $rollback = false): never
 {
   if (is_array($url)) {
     $url = $url[0];
+  }
+
+  try {
+    if ($rollback) {
+      localPDO::getInstance()->rollback();
+    } else {
+      localPDO::getInstance()->commit();
+    }
+  } catch (\Throwable) {
+    // localPDO might not be initialized if no DB ops occurred
   }
 
   // Cache-Control: no-store impede que o browser cache 302s.

@@ -7,8 +7,57 @@ class site_controller
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        $update  = new users_model();
         try {
+            $model = new users_model();
+            $model->set_field([" idx ", " name ", " mail ", " login ", " active ", " enabled ", " created_at ", " last_login ", " email_verified_at "]);
+            $model->set_filter([" idx > 0 "]);
+            $model->set_order([" created_at DESC "]);
+            $model->load_data();
+            $users = $model->data;
+        } catch (RuntimeException $e) {
+            $users = [];
+        }
+
+        $total_users   = count($users);
+        $active_users  = count(array_filter($users, fn($u) => $u['active'] === 'yes'));
+        $enabled_users = count(array_filter($users, fn($u) => $u['enabled'] === 'yes' && $u['active'] === 'yes'));
+        $removed_users = $total_users - $active_users;
+
+        $alpineControllers = ['dashboard'];
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/dashboard.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function users_action(array $info): void
+    {
+        global $users_url;
+
+        $post   = $info['post'] ?? [];
+        $action = $post['action'] ?? '';
+        $idx    = (int)($post['idx'] ?? 0);
+
+        validate_csrf($post['_csrf_token'] ?? null, $users_url);
+
+        if ($idx <= 0) {
+            basic_redir($users_url);
+            return;
+        }
+
+        $adminId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+
+        if ($action === 'remover' && $idx === $adminId) {
+            basic_redir($users_url);
+            return;
+        }
+
+        $rollback = false;
+
+        try {
+            $update  = new users_model();
             $update->set_filter(["idx = ?"], [$idx]);
 
             if ($action === 'inativar') {
@@ -79,6 +128,7 @@ class site_controller
                 }
             }
         } catch (RuntimeException $e) {
+            $rollback = true;
             Logger::getInstance()->error("users_action failed", [
                 "error"   => $e->getMessage(),
                 "action"  => $action,
@@ -86,6 +136,6 @@ class site_controller
             ]);
         }
 
-        basic_redir($users_url);
+        basic_redir($users_url, rollback: $rollback);
     }
 }
