@@ -419,10 +419,11 @@ class auth_controller
                 $body = ob_get_clean();
             }
 
+            $emailSent = false;
             try {
                 if (class_exists("EmailProducer")) {
                     $producer = EmailProducer::getInstance();
-                    $producer->send($user['mail'], $subject, $body);
+                    $emailSent = (bool)$producer->send($user['mail'], $subject, $body);
                 }
             } catch (Exception $e) {
                 error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
@@ -439,6 +440,12 @@ class auth_controller
                 $msgModel->save();
             } catch (Exception $e) {
                 error_log("Erro ao salvar log de email: " . $e->getMessage());
+            }
+
+            if (!$emailSent) {
+                $_SESSION["messages_app"]["danger"] = ["Não foi possível enviar o email. Tente novamente mais tarde."];
+                basic_redir($GLOBALS["forgot_password_url"]);
+                exit();
             }
         }
 
