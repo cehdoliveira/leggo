@@ -93,6 +93,7 @@ class auth_controller
             $update->set_filter(["idx = ?"], [(int)$credential["idx"]]);
             $update->populate(["last_login" => date("Y-m-d H:i:s")]);
             $update->save();
+            $update->getCon()->commitTransaction();
         } else {
             $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha informados não conferem"];
         }
@@ -187,6 +188,7 @@ class auth_controller
                 }
 
                 $_SESSION["messages_app"]["success"] = ["Cadastro realizado com sucesso. Verifique seu e-mail com os dados de acesso."];
+                $newUser->getCon()->commitTransaction();
                 basic_redir($GLOBALS["login_url"]);
                 exit();
             } else {

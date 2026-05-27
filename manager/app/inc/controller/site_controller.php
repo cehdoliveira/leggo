@@ -125,6 +125,7 @@ class site_controller
                     $_SESSION["messages_app"]["success"] = ["Link de redefinição de senha enviado para " . htmlspecialchars($user['mail'], ENT_QUOTES, 'UTF-8') . "."];
                 }
             }
+            $update->getCon()->commitTransaction();
         } catch (RuntimeException $e) {
             $update->getCon()->rollback();
             Logger::getInstance()->error("users_action failed", [

@@ -40,8 +40,13 @@ class localPDO
 	public function __destruct()
 	{
 		if ($this->ownsTransaction && $this->inTransaction) {
-			$this->commit();
+			$this->rollback();
 		}
+	}
+
+	public function commitTransaction(): bool
+	{
+		return $this->commit();
 	}
 
 	public function beginTransaction(): bool
