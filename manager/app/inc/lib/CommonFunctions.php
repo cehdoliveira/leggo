@@ -395,7 +395,8 @@ function array_to_xml(array $data, SimpleXMLElement &$xml): void
   foreach ($data as $key => $value) {
     $key = is_int($key) ? 'item' : $key;
     if (is_array($value)) {
-      array_to_xml($value, $xml->addChild($key));
+      $child = $xml->addChild($key);
+      array_to_xml($value, $child);
     } else {
       $xml->addChild($key, htmlspecialchars((string)$value, ENT_XML1, 'UTF-8'));
     }
