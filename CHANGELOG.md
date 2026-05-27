@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4.0] - 2026-05-27
+
+### Fixed
+- Intelephense: corrigidos warnings P1009, P1010, P1011, P1075, P1114, P1116, P1132, P1133
+  em 14 arquivos. Inclui null safety, operator precedence, by-reference pass,
+  type hints no Dispatcher, stubs para extensoes rdkafka/Redis, e correcoes
+  no kafka_email_worker.php.
+
 ## [1.3.3.0] - 2026-05-27
 
 ### Changed
