@@ -19,7 +19,7 @@ class Dispatcher
 		$this->normalize_request();
 	}
 
-	private function normalize_request()
+	private function normalize_request(): void
 	{
 		$path_length = strlen($this->_path_info);
 		if ($path_length > 0 && $this->_path_info[$path_length - 1] == "/") {
@@ -27,7 +27,7 @@ class Dispatcher
 		}
 	}
 
-	public function set_file_default_list(array $value)
+	public function set_file_default_list(array $value): void
 	{
 		$this->_file_default_list = array_merge($this->_file_default_list, $value);
 	}
@@ -53,7 +53,7 @@ class Dispatcher
 		return $path;
 	}
 
-	public function get_request_uri()
+	public function get_request_uri(): string
 	{
 		if (empty($_SERVER["SCRIPT_NAME"])) {
 			return "";
@@ -68,7 +68,7 @@ class Dispatcher
 		return rtrim($tmp_script_name, "/");
 	}
 
-	public function get_request_full_uri()
+	public function get_request_full_uri(): string
 	{
 		return $this->_request_server . $this->_request_uri;
 	}
@@ -99,7 +99,7 @@ class Dispatcher
 		return (bool) $check;
 	}
 
-	public function exec()
+	public function exec(): bool
 	{
 		$server_method = $_SERVER["REQUEST_METHOD"];
 		foreach ($this->_routes as $entry) {
