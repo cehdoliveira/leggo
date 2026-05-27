@@ -263,20 +263,29 @@ class DOLModel extends rootOBJ
 		foreach ($_data as $key => $value) {
 			$new_data[$key] = $value;
 			foreach ($classes as $class) {
-				$r = $this->con->select(
-					sprintf("%s_id as k", $class),
-					sprintf("%s_%s", $reverse_table ? $class : $this->table, $reverse_table ? $this->table : $class),
-					sprintf(" where active = 'yes' and %s_id = '%d'", $this->table, $value["idx"])
+				$junctionTable = sprintf("%s_%s",
+					$reverse_table ? $class : $this->table,
+					$reverse_table ? $this->table : $class);
+				$parentCol = sprintf("%s_id", $this->table);
+				$childCol  = sprintf("%s_id", $class);
+
+				$r = $this->con->executePrepared(
+					sprintf("SELECT %s as k FROM %s WHERE active = 'yes' AND %s = ?", $childCol, $junctionTable, $parentCol),
+					[(int)$value["idx"]]
 				);
-				$filter_key = array('0');
+				$filter_key_vals = array();
 				foreach ($this->con->results($r) as $key_r => $data) {
-					$filter_key[] = "'" . $data["k"] . "'";
+					$filter_key_vals[] = $data["k"];
 				}
-				$r = $this->con->select(
-					isset($class_field) ? implode(", ", $class_field) : "*",
-					$class,
-					sprintf(" where active = 'yes' and idx in (%s) %s ", implode(",", array_unique($filter_key)), $options)
-				);
+				if (empty($filter_key_vals)) {
+					$new_data[$key][$class . "_attach"] = array();
+					continue;
+				}
+				$placeholders = implode(',', array_fill(0, count($filter_key_vals), '?'));
+				$fields = isset($class_field) ? implode(", ", $class_field) : "*";
+				$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s) %s",
+					$fields, $class, $placeholders, $options ?? '');
+				$r = $this->con->executePrepared($sql, $filter_key_vals);
 				$new_data[$key][$class . "_attach"] = $this->con->results($r);
 			}
 		}
@@ -290,13 +299,25 @@ class DOLModel extends rootOBJ
 		foreach ($_data as $key => $value) {
 			$new_data[$key] = $value;
 			$flt = array(" active = 'yes' ");
+			$params = array();
 			foreach ((array)$fw_key as $fw_keys => $data_value) {
 				if (isset($value[$data_value])) {
-					$flt[] = $fw_keys . " = '" . $this->con->real_escape_string($value[$data_value])  . "' ";
+					if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fw_keys)) {
+						continue;
+					}
+					$flt[] = $fw_keys . " = ? ";
+					$params[] = $value[$data_value];
 				}
 			}
 			if (count($flt) > 1 || ! empty($options)) {
-				$r = $this->con->select(isset($field) ? implode(", ", $field) : "*", $table, " where " . implode(" and ", $flt) . strtr($options, array("#IDX#" => $value["idx"])));
+				$optionsSql = '';
+				if ($options !== null) {
+					$optionsSql = ' ' . str_replace("#IDX#", "?", $options);
+					$params[] = (int)$value["idx"];
+				}
+				$fields = isset($field) ? implode(", ", $field) : "*";
+				$sql = sprintf("SELECT %s FROM %s WHERE %s%s", $fields, $table, implode(" and ", $flt), $optionsSql);
+				$r = $this->con->executePrepared($sql, $params);
 				$new_data[$key][$name . "_attach"] = $this->con->results($r);
 			} else {
 				$new_data[$key][$name . "_attach"] = array();
@@ -315,20 +336,37 @@ class DOLModel extends rootOBJ
 				if (isset($new_data[$key][$classesfather . "_attach"]) && count($new_data[$key][$classesfather . "_attach"])) {
 					foreach ($new_data[$key][$classesfather . "_attach"] as $k => $v) {
 						foreach ($classes as $class) {
-							$r = $this->con->select(
-								sprintf("%s_id as k", $class),
-								sprintf("%s_%s", $reverse_table ? $class : $classesfather, $reverse_table ? $classesfather : $class),
-								sprintf(" where active = 'yes' and %s_id = '%d'", $classesfather, $this->con->real_escape_string($v["idx"]))
+							$junctionTable = sprintf("%s_%s",
+								$reverse_table ? $class : $classesfather,
+								$reverse_table ? $classesfather : $class);
+							$fatherCol = sprintf("%s_id", $classesfather);
+							$childCol  = sprintf("%s_id", $class);
+
+							$r = $this->con->executePrepared(
+								sprintf("SELECT %s as k FROM %s WHERE active = 'yes' AND %s = ?", $childCol, $junctionTable, $fatherCol),
+								[(int)$v["idx"]]
 							);
-							$filter_key = array('0');
+							$filter_key_vals = array();
 							foreach ($this->con->results($r) as $key_r => $data) {
-								$filter_key[] = $data["k"];
+								$filter_key_vals[] = $data["k"];
 							}
-							$r = $this->con->select(
-								isset($class_field[$class]) ? implode(", ", $class_field[$class]) : "*",
-								$class,
-								sprintf(" where active = 'yes' and idx in ('%s') %s ", implode("','", array_unique($filter_key)), ($options != null ? preg_replace("/%s/im", $this->con->real_escape_string($value["idx"]), $options) : ""))
-							);
+							if (empty($filter_key_vals)) {
+								$new_data[$key][$classesfather . "_attach"][$k][$class . "_attach"] = array();
+								continue;
+							}
+							$placeholders = implode(',', array_fill(0, count($filter_key_vals), '?'));
+
+							$optionsSql = '';
+							$optionsParams = array();
+							if ($options !== null) {
+								$optionsSql = ' ' . preg_replace("/%s/im", "?", $options, -1, $count);
+								$optionsParams = array_fill(0, $count, (int)$value["idx"]);
+							}
+
+							$fields = isset($class_field[$class]) ? implode(", ", $class_field[$class]) : "*";
+							$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s)%s",
+								$fields, $class, $placeholders, $optionsSql);
+							$r = $this->con->executePrepared($sql, array_merge($filter_key_vals, $optionsParams));
 							$new_data[$key][$classesfather . "_attach"][$k][$class . "_attach"] = $this->con->results($r);
 						}
 					}
