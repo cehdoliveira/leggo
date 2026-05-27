@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4.3] - 2026-05-27
+
+### Fixed
+- forgot_password: agora alerta o usuario quando o envio de email falha
+  (antes mostrava mensagem generica de sucesso mesmo com falha).
+  Mantem protecao contra user enumeration para emails inexistentes.
+
 ## [1.3.4.2] - 2026-05-27
 
 ### Fixed
