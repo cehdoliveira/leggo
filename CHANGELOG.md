@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0.2] - 2026-05-27
+
+### Fixed
+- Constantes do `site/app/inc/kernel.php.example` estavam copiadas do manager
+  (`REDIS_PREFIX`, `KAFKA_TOPIC_EMAIL`, `cAppKey`, `cTitle`, `UPLOAD_DIR`,
+  `MANAGER_CANONICAL_URL`). Corrigidas para os valores corretos do ambiente site,
+  alinhando com o que o código do site de fato referencia (`SITE_CANONICAL_URL`
+  em vez de `MANAGER_CANONICAL_URL`, entre outros).
+
 ## [1.4.0.1] - 2026-05-27
 
 ### Removed
