@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1.0] - 2026-05-27
+
+### Changed
+- `DOLModel::attach()`, `join()` e `attach_son()` convertidos para prepared statements.
+  Substitui `real_escape_string()` e string interpolation por `executePrepared()` com
+  placeholders `?`. Tokens `#IDX#` e `%s` do parâmetro `$options` convertidos internamente
+  para `?` com bind seguro. Colunas do parâmetro `$fw_key` em `join()` validadas com regex.
+
 ## [1.3.0.11] - 2026-05-27
 
 ### Fixed
