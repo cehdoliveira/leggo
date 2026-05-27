@@ -128,6 +128,12 @@ class auth_controller
             }
         }
 
+        if (strlen($info["post"]["password"]) < 6) {
+            $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
+            basic_redir($GLOBALS["register_url"]);
+            exit();
+        }
+
         $users = new users_model();
         $users->set_filter([" active = 'yes' ", " ( mail = ? OR login = ? ) "], [$info["post"]["mail"], $info["post"]["login"]]);
         $users->set_paginate([1]);
