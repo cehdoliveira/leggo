@@ -29,13 +29,15 @@ class EmailProducer
 
     /**
      * Producer RdKafka
+     * @var \RdKafka\Producer|null
      */
-    private ?\RdKafka\Producer $producer = null;
+    private ?object $producer = null;
 
     /**
      * Tópico Kafka
+     * @var \RdKafka\ProducerTopic|null
      */
-    private ?\RdKafka\ProducerTopic $topic = null;
+    private ?object $topic = null;
 
     /**
      * Configurações do Kafka
@@ -55,7 +57,8 @@ class EmailProducer
             ];
 
             // Configurar producer
-            $conf = new \RdKafka\Conf();
+            $confClass = '\RdKafka\Conf';
+            $conf = new $confClass();
             $conf->set('metadata.broker.list', $this->config['host'] . ':' . $this->config['port']);
 
             // Timeout de produção (aumentado para produção)
@@ -65,7 +68,8 @@ class EmailProducer
             $conf->set('request.timeout.ms', '5000');     // 5s timeout de request
 
             // Criar producer
-            $this->producer = new \RdKafka\Producer($conf);
+            $producerClass = '\RdKafka\Producer';
+            $this->producer = new $producerClass($conf);
 
             // Criar tópico
             $this->topic = $this->producer->newTopic($this->config['topic']);
