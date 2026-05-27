@@ -4,7 +4,7 @@ class MigrationRunner
 {
     private ?\PDO $pdo;
     private string $migrations_dir = '/var/www/leggo/migrations';
-    private $logger;
+    private \Closure|Logger|null $logger;
 
     public function __construct(localPDO|\PDO $pdo, ?string $migrations_dir = null)
     {

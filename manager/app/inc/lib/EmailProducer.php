@@ -18,6 +18,16 @@ if (class_exists('EmailProducer', false)) {
     return;
 }
 
+// Stubs for static analysis when rdkafka extension is not loaded
+if (!defined('RD_KAFKA_PARTITION_UA')) {
+    define('RD_KAFKA_PARTITION_UA', 0);
+    define('RD_KAFKA_RESP_ERR_NO_ERROR', 0);
+    define('RD_KAFKA_RESP_ERR__TIMED_OUT', -185);
+}
+if (!function_exists('rd_kafka_err2str')) {
+    function rd_kafka_err2str(int $err): string { return "Unknown Kafka error: $err"; }
+}
+
 if (extension_loaded('rdkafka') && class_exists('RdKafka\Producer')) {
 
 class EmailProducer
@@ -29,13 +39,13 @@ class EmailProducer
 
     /**
      * Producer RdKafka
-     * @var \RdKafka\Producer|null
+     * @var object|null
      */
     private ?object $producer = null;
 
     /**
      * Tópico Kafka
-     * @var \RdKafka\ProducerTopic|null
+     * @var object|null
      */
     private ?object $topic = null;
 
