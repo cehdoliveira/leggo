@@ -54,8 +54,8 @@ class site_controller
             return;
         }
 
+        $update  = new users_model();
         try {
-            $update  = new users_model();
             $update->set_filter(["idx = ?"], [$idx]);
 
             if ($action === 'inativar') {
@@ -126,6 +126,7 @@ class site_controller
                 }
             }
         } catch (RuntimeException $e) {
+            $update->getCon()->rollback();
             Logger::getInstance()->error("users_action failed", [
                 "error"   => $e->getMessage(),
                 "action"  => $action,

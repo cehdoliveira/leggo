@@ -195,6 +195,7 @@ class auth_controller
                 exit();
             }
         } catch (Exception $e) {
+            $users->getCon()->rollback();
             error_log("Erro ao criar usuário: " . $e->getMessage());
             $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"]);
