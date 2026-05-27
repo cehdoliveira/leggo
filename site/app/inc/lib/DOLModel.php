@@ -155,7 +155,7 @@ class DOLModel extends rootOBJ
 				if ($encode === true) {
 					$data[$key] = mb_convert_encoding($data[$key], 'ISO-8859-1', 'UTF-8');
 				}
-				if (strtolower($data[$key])) {
+				if ($data[$key] !== '') {
 					$array[$key] = sprintf(" %s ", $key);
 					$this->values[$key] = $data[$key];
 				}
