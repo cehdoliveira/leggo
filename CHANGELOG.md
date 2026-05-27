@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4.1] - 2026-05-27
+
+### Fixed
+- Audit trail (messages): todos os envios de email agora registram na tabela
+  messages. Adicionado em forgot_password (site), register (manager) e
+  reset-senha (manager).
+
 ## [1.3.4.0] - 2026-05-27
 
 ### Fixed

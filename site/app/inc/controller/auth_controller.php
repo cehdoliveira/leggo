@@ -427,6 +427,19 @@ class auth_controller
             } catch (Exception $e) {
                 error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
             }
+
+            try {
+                $msgModel = new messages_model();
+                $msgModel->populate([
+                    "to_mail" => $user['mail'],
+                    "subject" => $subject,
+                    "body"    => $body,
+                    "sent_at" => date("Y-m-d H:i:s"),
+                ]);
+                $msgModel->save();
+            } catch (Exception $e) {
+                error_log("Erro ao salvar log de email: " . $e->getMessage());
+            }
         }
 
         // Mensagem genérica — não revela se o e-mail existe
