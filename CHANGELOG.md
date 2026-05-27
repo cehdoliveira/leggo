@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.4.2] - 2026-05-27
+
+### Fixed
+- Manager register: valida tamanho mínimo de senha (6 caracteres), alinhado
+  com o Site que já exige em set_password() e reset_password().
+
 ## [1.3.4.1] - 2026-05-27
 
 ### Fixed
