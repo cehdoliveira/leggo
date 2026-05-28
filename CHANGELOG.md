@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0.2] - 2026-05-28
+
+### Changed
+- Função `random_token()` adicionada como wrapper para
+  `bin2hex(random_bytes())`. Substitui 14 ocorrências manuais nos
+  controllers de ambos os ambientes, padronizando a geração de tokens.
+
 ## [1.8.0.1] - 2026-05-28
 
 ### Added
