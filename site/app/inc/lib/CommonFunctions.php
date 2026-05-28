@@ -878,4 +878,27 @@ function array_to_csv(array $data, string $filename = 'export.csv', ?array $head
   exit();
 }
 
+function json_response(mixed $data, int $code = 200): never
+{
+  http_response_code($code);
+  header('Content-Type: application/json; charset=UTF-8');
+  header('Cache-Control: no-store, no-cache');
+  header('Pragma: no-cache');
+
+  $data = is_array($data) ? $data : ['data' => $data];
+  $json = json_encode(
+    a_walk($data),
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+  );
+
+  if ($json === false) {
+    http_response_code(500);
+    echo json_encode(['error' => 'JSON encoding failed']);
+    exit();
+  }
+
+  echo $json;
+  exit();
+}
+
 
