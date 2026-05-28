@@ -209,7 +209,7 @@ class auth_controller
 
         $users = new users_model();
 
-        $users->set_field([" idx "]);
+        $users->set_field([" idx ", " email_verified_at "]);
         $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " email_token = ? ", " email_token_expires_at > NOW() "], [$token]);
         $users->set_paginate([1]);
         $users->load_data();
@@ -217,14 +217,26 @@ class auth_controller
         $user = $users->data[0] ?? null;
 
         if (!$user) {
+            $users->set_field([" idx ", " email_verified_at "]);
+            $users->set_filter([" active = 'yes' ", " enabled = 'no' ", " email_token = ? "], [$token]);
+            $users->set_paginate([1]);
+            $users->load_data();
+            $user = $users->data[0] ?? null;
+
+            if ($user && !empty($user["email_verified_at"])) {
+                $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
+                $_SESSION["messages_app"]["success"] = ["Este e-mail já foi confirmado. Continue para definir sua senha."];
+                basic_redir(sprintf($GLOBALS["set_password_url"], $token));
+                exit();
+            }
+
             $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
             basic_redir($GLOBALS["login_url"]);
             exit();
         }
 
-        // Token válido — invalida no DB e guarda idx na sessão para set_password
         $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
-        $users->populate(["email_token" => null]);
+        $users->populate(["email_verified_at" => date("Y-m-d H:i:s")]);
         $users->save();
         $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
 
