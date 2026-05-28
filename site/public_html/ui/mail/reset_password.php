@@ -1,7 +1,7 @@
 <?php
 $name      = isset($name)      ? (string) $name      : '';
 $resetLink = isset($resetLink) ? (string) $resetLink : '#';
-$canonicalBase = defined('SITE_CANONICAL_URL') ? rtrim(constant('SITE_CANONICAL_URL'), '/') : 'https://leggo.local';
+$canonicalBase = canonical_url('SITE_CANONICAL_URL');
 $logoUrl = $canonicalBase . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>

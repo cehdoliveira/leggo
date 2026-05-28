@@ -2,7 +2,7 @@
 $name      = isset($name)      ? (string) $name      : '';
 $login     = isset($login)     ? (string) $login     : '';
 $loginLink = isset($loginLink) ? (string) $loginLink : '#';
-$logoUrl   = rtrim(constant('cFrontend'), '/') . '/assets/img/logo.png';
+$logoUrl   = canonical_url('MANAGER_CANONICAL_URL') . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
