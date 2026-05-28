@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1.1] - 2026-05-27
+
+### Changed
+- Rate limit fail-open documentado e monitorado: `check_and_increment_rate_limit()`
+  agora loga warnings estruturados via Logger quando o fallback de arquivo (mkdir,
+  fopen, flock) falha. O comportamento fail-open (não bloqueia) foi mantido e
+  documentado no docblock como escolha intencional de disponibilidade sobre
+  segurança durante outages de infraestrutura.
+
 ## [1.4.1.0] - 2026-05-27
 
 ### Fixed
