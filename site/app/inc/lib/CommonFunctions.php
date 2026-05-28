@@ -835,4 +835,15 @@ function str_limit(?string $value, int $limit = 100, string $end = '...'): strin
   return mb_substr($value, 0, $limit) . $end;
 }
 
+function old(string $key, mixed $default = ''): string
+{
+  $value = $_POST[$key] ?? $default;
+
+  if (is_string($value)) {
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+  }
+
+  return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
 
