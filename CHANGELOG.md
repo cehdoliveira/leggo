@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.6.0.0] - 2026-05-28
+
+### Added
+- Função `handle_upload()` em CommonFunctions.php para upload de arquivos
+  com validação automática de MIME (via finfo), extensão e tamanho. Suporte
+  a redimensionamento proporcional e conversão de imagens para WebP/AVIF
+  via GD. Cria diretórios automaticamente, gera nomes únicos com slug +
+  timestamp, e retorna o caminho relativo do arquivo. Tipos suportados:
+  jpg, png, gif, webp, avif, pdf, doc, docx, xls, xlsx, csv. Uploads
+  persistidos via volume Docker mapeado no docker-compose.yml.
+
 ## [1.5.0.0] - 2026-05-28
 
 ### Added
