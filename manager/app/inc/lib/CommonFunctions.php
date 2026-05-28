@@ -479,6 +479,11 @@ function ratelimit_fallback_dir(): string
 // Atomic check+increment: increments first to prevent race condition bypass.
 // Returns true if the new count exceeds $max (i.e., request should be blocked).
 // Falls back to file-based locking when Redis is unavailable.
+//
+// Design choice — fail-open: if both Redis AND the file fallback are unavailable,
+// the function returns false (does not block). This prioritizes availability over
+// rate-limit enforcement during infrastructure outages. A warning is logged so
+// operators can detect when rate limiting is completely bypassed.
 function check_and_increment_rate_limit(?object $redis, string $key, int $max, int $window): bool
 {
   if ($redis) {
@@ -491,17 +496,31 @@ function check_and_increment_rate_limit(?object $redis, string $key, int $max, i
 
   $dir = ratelimit_fallback_dir();
   if (!is_dir($dir)) {
-    @mkdir($dir, 0700, true);
+    if (!@mkdir($dir, 0700, true) && !is_dir($dir)) {
+      Logger::getInstance()->warning("Rate limit fallback dir unavailable", [
+        "dir"    => $dir,
+        "key"    => $key,
+      ]);
+      return false;
+    }
   }
   $file = $dir . '/' . md5($key) . '.lock';
 
   $fp = @fopen($file, 'c+');
   if (!$fp) {
+    Logger::getInstance()->warning("Rate limit fallback file open failed", [
+      "file"   => $file,
+      "key"    => $key,
+    ]);
     return false;
   }
 
   if (!flock($fp, LOCK_EX)) {
     fclose($fp);
+    Logger::getInstance()->warning("Rate limit fallback lock failed", [
+      "file"   => $file,
+      "key"    => $key,
+    ]);
     return false;
   }
 
