@@ -746,78 +746,66 @@ function time_ago(?string $datetime): string
     return '—';
   }
 
-  $now  = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
-  $then = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $datetime, new DateTimeZone('America/Sao_Paulo'));
-
-  if (!$then) {
+  $then = strtotime($datetime);
+  if ($then === false) {
     return '—';
   }
 
-  $diff = $now->diff($then);
-  $seconds = $diff->s + $diff->i * 60 + $diff->h * 3600
-              + $diff->days * 86400;
-
-  if ($diff->invert === 0) {
-    $seconds = -$seconds;
-  }
-
-  $isFuture = $seconds < 0;
-  $seconds = abs($seconds);
-
-  $prefix = $isFuture ? 'em ' : '';
+  $now     = time();
+  $diff    = $now - $then;
+  $isFuture = $diff < 0;
+  $seconds  = abs($diff);
 
   if ($seconds < 60) {
-    return $isFuture ? 'agora mesmo' : 'agora mesmo';
+    return 'agora mesmo';
   }
 
   $minutes = (int)($seconds / 60);
+  if ($minutes === 1) {
+    return $isFuture ? 'em 1 minuto' : 'há 1 minuto';
+  }
   if ($minutes < 60) {
-    if ($minutes === 1) {
-      return $prefix . '1 minuto';
-    }
-    return $prefix . $minutes . ' minutos';
+    return $isFuture ? "em {$minutes} minutos" : "há {$minutes} minutos";
   }
 
   $hours = (int)($minutes / 60);
+  if ($hours === 1) {
+    return $isFuture ? 'em 1 hora' : 'há 1 hora';
+  }
   if ($hours < 24) {
-    if ($hours === 1) {
-      return $isFuture ? 'em 1 hora' : 'há 1 hora';
-    }
     return $isFuture ? "em {$hours} horas" : "há {$hours} horas";
   }
 
   $days = (int)($hours / 24);
   if ($days === 1) {
-    $time = $then->format('H:i');
+    $time = date('H:i', $then);
     return $isFuture ? "amanhã às {$time}" : "ontem às {$time}";
   }
-
   if ($days < 7) {
-    $time = $then->format('H:i');
     return $isFuture ? "em {$days} dias" : "há {$days} dias";
   }
 
   if ($days < 30) {
     $weeks = (int)($days / 7);
     if ($weeks === 1) {
-      return $prefix . '1 semana';
+      return $isFuture ? 'em 1 semana' : 'há 1 semana';
     }
-    return $prefix . $weeks . ' semanas';
+    return $isFuture ? "em {$weeks} semanas" : "há {$weeks} semanas";
   }
 
   if ($days < 365) {
     $months = (int)($days / 30);
     if ($months === 1) {
-      return $prefix . '1 mês';
+      return $isFuture ? 'em 1 mês' : 'há 1 mês';
     }
-    return $prefix . $months . ' meses';
+    return $isFuture ? "em {$months} meses" : "há {$months} meses";
   }
 
   $years = (int)($days / 365);
   if ($years === 1) {
-    return $prefix . '1 ano';
+    return $isFuture ? 'em 1 ano' : 'há 1 ano';
   }
-  return $prefix . $years . ' anos';
+  return $isFuture ? "em {$years} anos" : "há {$years} anos";
 }
 
 function str_limit(?string $value, int $limit = 100, string $end = '...'): string
