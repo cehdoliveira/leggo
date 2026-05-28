@@ -104,7 +104,7 @@ class auth_controller
     public function display_register(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
-            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['_csrf_token'] = random_token();
         }
         $alpineControllers = ['register'];
 
@@ -141,9 +141,9 @@ class auth_controller
                 exit();
             }
 
-            $token = bin2hex(random_bytes(32));
+            $token = random_token();
 
-            $info["post"]["password"]              = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
+            $info["post"]["password"]              = password_hash(random_token(), PASSWORD_BCRYPT);
             $info["post"]["profiles_id"]           = constant("DEFAULT_USER_PROFILE_ID");
             $info["post"]["enabled"]               = "no";
             $info["post"]["email_token"]           = $token;
@@ -223,7 +223,7 @@ class auth_controller
         }
 
         if (empty($_SESSION['_csrf_token'])) {
-            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['_csrf_token'] = random_token();
         }
         $alpineControllers = ['setPassword'];
         $set_password_token = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
@@ -299,7 +299,7 @@ class auth_controller
         }
 
         if (empty($_SESSION['_csrf_token'])) {
-            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['_csrf_token'] = random_token();
         }
         $alpineControllers = ['login'];
 

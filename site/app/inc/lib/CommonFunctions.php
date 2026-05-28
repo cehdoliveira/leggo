@@ -901,4 +901,9 @@ function json_response(mixed $data, int $code = 200): never
   exit();
 }
 
+function random_token(int $bytes = 32): string
+{
+  return bin2hex(random_bytes($bytes));
+}
+
 
