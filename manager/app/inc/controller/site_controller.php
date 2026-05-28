@@ -4,7 +4,7 @@ class site_controller
     public function dashboard(array $info): void
     {
         if (empty($_SESSION['_csrf_token'])) {
-            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['_csrf_token'] = random_token();
         }
 
         try {
@@ -95,7 +95,7 @@ class site_controller
                 $user = $resetUser->data[0] ?? null;
 
                 if ($user) {
-                    $token   = bin2hex(random_bytes(32));
+                    $token   = random_token();
                     $expires = date("Y-m-d H:i:s", strtotime("+2 hours"));
 
                     $resetUser->set_filter(["idx = ?"], [$idx]);
