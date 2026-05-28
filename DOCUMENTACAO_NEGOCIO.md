@@ -2,7 +2,7 @@
 > Gerado em: 2026-05-27
 > Atualizado em: 2026-05-28 — correções aplicadas (ver seção "Histórico de correções")
 > Ferramenta: OpenCode + DeepSeek V4 Pro
-> Versão do sistema: 1.5.0.0
+> Versão do sistema: 1.8.0.2
 
 ```
 SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
@@ -380,7 +380,7 @@ SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
 ├── INFRAESTRUTURA
 │   ├── localPDO (singleton)
 │   │   ├── Conexão MySQL via PDO com charset utf8mb4, ERRMODE_EXCEPTION, emulated prepares=false
-│   │   ├── Transação automática: beginTransaction() na primeira getInstance(), commit() no __destruct()
+│   │   ├── Transação automática: beginTransaction() na primeira getInstance(). `basic_redir()` é o gate de commit/rollback — `basic_redir($url)` commita, `basic_redir($url, rollback: true)` reverte. `__destruct()` faz safety rollback se nenhum redirect explícito ocorrer.
 │   │   ├── Rollback automático em erros SQL (my_query, executePrepared)
 │   │   ├── executePrepared(): query parametrizada com bind de parâmetros
 │   │   └── fields_config(): introspecção do schema (SHOW COLUMNS) para detectar PK, UNIQUE, tipos
@@ -407,6 +407,18 @@ SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
 │   │   ├── Níveis: DEBUG(0), INFO(1), WARNING(2), ERROR(3)
 │   │   ├── Threshold: controlado por LOG_LEVEL no kernel.php
 │   │   └── Output: JSON via error_log() com timestamp ISO8601, channel, level, message, context
+│   │
+│   ├── CommonFunctions (utilitários)
+│   │   ├── time_ago($datetime) → data relativa PT-BR ("há 5 minutos", "ontem às 14:30")
+│   │   ├── str_limit($value, $limit) → trunca texto com "..."
+│   │   ├── old($key, $default) → repopula campo de formulário com htmlspecialchars
+│   │   ├── array_to_csv($data, $filename, $headers) → exporta array para CSV
+│   │   ├── json_response($data, $code) → resposta JSON padronizada
+│   │   ├── random_token($bytes) → bin2hex(random_bytes()), default 32 bytes
+│   │   ├── handle_upload($file, $subDir, $options) → upload com validação/resize/conversão
+│   │   ├── canonical_url($constant) → URL canônica para links em emails
+│   │   ├── generate_slug($text) → slug amigável para URLs
+│   │   └── sanitize_string($value, $digitsOnly) → limpeza de string para formulários
 │   │
 │   └── Sessão + Segurança
 │       ├── Session: cookie_httponly=true, cookie_secure=dinâmico (HTTPS), cookie_samesite=Lax, use_only_cookies=true
@@ -456,6 +468,9 @@ Histórico de correções (2026-05-28):
   ✅ Verificação de email: idempotente — token preservado até set_password
   ✅ Cadastro Manager: senha auto-gerada, email com link /definir-senha/{token}
   ✅ Tema: toggle de tema claro/escuro funcional no header do Manager
+  ✅ Úteis: time_ago(), str_limit(), old(), array_to_csv(), json_response(), random_token(), handle_upload()
+  ✅ Dashboard: time_ago() na coluna Último login, botão Exportar CSV
+  ✅ time_ago(): corrigido bug com datas MySQL zero (0000-00-00 → '—')
 
 Pontos de atenção remanescentes:
   Nenhum. Todos os 8 pontos identificados na auditoria original foram corrigidos

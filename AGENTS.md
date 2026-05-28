@@ -96,6 +96,15 @@ Both share the same MySQL database and Redis instance. Kafka topics are separate
 
 - **Canonical URLs**: use `canonical_url('SITE_CANONICAL_URL')` ou `canonical_url('MANAGER_CANONICAL_URL')` para compor links em emails. O helper valida contra `ALLOWED_HOSTS` e loga warning se nenhuma proteção estiver ativa.
 
+- **Utility helpers** (em `CommonFunctions.php`):
+  - `time_ago($datetime)` — exibe data relativa em PT-BR ("há 5 minutos", "ontem às 14:30")
+  - `str_limit($value, $limit)` — trunca texto com "..." (usa `mb_substr`)
+  - `old($key, $default)` — repopula campo de formulário com `htmlspecialchars` automático
+  - `array_to_csv($data, $filename, $headers)` — exporta array para CSV (delimitador `;`)
+  - `json_response($data, $code)` — resposta JSON padronizada com headers e http status code
+  - `random_token($bytes)` — alias para `bin2hex(random_bytes())`, default 64 caracteres hex
+  - `handle_upload($file, $subDir, $options)` — upload com validação MIME, resize e conversão WebP/AVIF
+
 - **Auth guard**: `fn() => auth_controller::check_login()`. Checks `$_SESSION[cAppKey]["credential"]["idx"]`.
 
 - **Sessions**: keyed by `cAppKey` constant (different per environment to avoid cross-env collisions).

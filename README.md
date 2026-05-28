@@ -95,7 +95,7 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 | Migrations | `MigrationRunner.php` | Runner idempotente de arquivos .sql |
 | Auth | `auth_controller.php` | Login bcrypt + migração MD5, CSRF com grace period de 10s, rate limit |
 | Logger | `Logger.php` | Log estruturado em JSON com níveis debug/info/warning/error |
-| Util | `CommonFunctions.php` | `generate_slug()`, `sanitize_string()`, `basic_redir()`, `canonical_url()`, CSRF |
+| Util | `CommonFunctions.php` | `generate_slug()`, `sanitize_string()`, `basic_redir()`, `canonical_url()`, CSRF, `time_ago()`, `str_limit()`, `old()`, `json_response()`, `array_to_csv()`, `random_token()`, `handle_upload()` |
 
 ### Convenções
 
