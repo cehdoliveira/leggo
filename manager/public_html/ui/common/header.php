@@ -10,6 +10,10 @@
                 </a>
                 <?php if (auth_controller::check_login()) { ?>
                     <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="theme-toggle-btn" data-theme-toggle="true"
+                            title="Alternar tema" aria-label="Ativar tema claro">
+                            <i class="bi bi-sun"></i><span class="d-none d-md-inline ms-1">Claro</span>
+                        </button>
                         <a class="btn btn-sm btn-outline-danger"
                             href="<?php echo $GLOBALS['logout_url']; ?>"
                             style="font-size:0.8rem; padding:0.3rem 0.75rem;">

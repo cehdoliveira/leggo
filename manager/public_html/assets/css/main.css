@@ -1,8 +1,7 @@
 /* ================================================
    LEGGO Manager — Admin Styles
-   Palette: azul (#2563eb) / dark
+   Palette: azul (#2563eb) / dark (default) / light
    Font: Inter (Google Fonts)
-   No light mode — always dark.
    ================================================ */
 
 :root {
@@ -23,6 +22,46 @@
     /* Bootstrap overrides */
     --bs-body-color: #d4d8e0;
     --bs-btn-color: #d4d8e0;
+}
+
+[data-theme="light"] {
+    --app-primary: #2563eb;
+    --app-primary-glow: rgba(37, 99, 235, 0.15);
+    --app-primary-bright: #1d4ed8;
+    --app-bg: #f1f5f9;
+    --app-surface: #ffffff;
+    --app-surface-2: #f8fafc;
+    --app-text: #1e293b;
+    --app-text-muted: #64748b;
+    --app-border: #e2e8f0;
+    --app-navbar-bg: #ffffff;
+    --app-footer-bg: #f8fafc;
+    --app-footer-text: rgba(30, 41, 59, 0.5);
+    --app-focus-ring: rgba(37, 99, 235, 0.25);
+
+    --bs-body-color: #1e293b;
+    --bs-btn-color: #1e293b;
+}
+
+/* Theme toggle button in header */
+.theme-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--app-border);
+    color: var(--app-text-muted);
+    border-radius: 0.375rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    line-height: 1.5;
+}
+.theme-toggle-btn:hover {
+    color: var(--app-text);
+    border-color: var(--app-primary);
+    background: var(--app-surface-2);
+}
+.theme-toggle-btn i {
+    font-size: 0.9rem;
 }
 
 /* Layout */
