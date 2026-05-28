@@ -17,6 +17,11 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                         <i class="bi bi-people" aria-hidden="true"></i> Usuários
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="<?php echo $GLOBALS['register_url']; ?>" class="nav-link">
+                        <i class="bi bi-person-plus" aria-hidden="true"></i> Cadastrar Usuário
+                    </a>
+                </li>
             </ul>
 
             <div class="nav-section-label">Conta</div>
@@ -37,8 +42,15 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
 
         <!-- Cabeçalho -->
         <div class="page-header">
-            <h1><i class="bi bi-people me-2" aria-hidden="true"></i>Gerenciar Usuários</h1>
-            <p>Olá, <?php echo $userName; ?>. Gerencie os usuários cadastrados no sistema.</p>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1><i class="bi bi-people me-2" aria-hidden="true"></i>Gerenciar Usuários</h1>
+                    <p>Olá, <?php echo $userName; ?>. Gerencie os usuários cadastrados no sistema.</p>
+                </div>
+                <a href="<?php echo $GLOBALS['register_url']; ?>" class="btn btn-primary" style="white-space:nowrap;">
+                    <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Novo Usuário
+                </a>
+            </div>
         </div>
 
         <!-- Stats -->

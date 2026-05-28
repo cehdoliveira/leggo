@@ -3,7 +3,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    injectFloatingThemeToggle();
     initializeTheme();
     initializeSmoothScroll();
 });
@@ -36,18 +35,16 @@ function initializeSmoothScroll() {
 
 function initializeTheme() {
     const storageKey = 'leggo-theme';
-    const body = document.body;
     const root = document.documentElement;
 
     const applyTheme = (theme) => {
         const isDark = theme === 'dark';
-        body.classList.toggle('theme-dark', isDark);
         root.setAttribute('data-theme', isDark ? 'dark' : 'light');
 
         document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
             button.innerHTML = isDark
-                ? '<i class="bi bi-sun"></i><span class="d-none d-md-inline">Claro</span>'
-                : '<i class="bi bi-moon-stars"></i><span class="d-none d-md-inline">Escuro</span>';
+                ? '<i class="bi bi-sun"></i><span class="d-none d-md-inline ms-1">Claro</span>'
+                : '<i class="bi bi-moon-stars"></i><span class="d-none d-md-inline ms-1">Escuro</span>';
             button.setAttribute(
                 'aria-label',
                 isDark ? 'Ativar tema claro' : 'Ativar tema escuro',
@@ -65,9 +62,8 @@ function initializeTheme() {
             return;
         }
 
-        const nextTheme = body.classList.contains('theme-dark')
-            ? 'light'
-            : 'dark';
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const nextTheme = isDark ? 'light' : 'dark';
         localStorage.setItem(storageKey, nextTheme);
         applyTheme(nextTheme);
     });

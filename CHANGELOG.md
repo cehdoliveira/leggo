@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.5.0.0] - 2026-05-28
+
+### Added
+- Cadastro de novos usuários admin no painel Manager: rotas GET/POST /cadastro
+  (autenticadas) com formulário de nome, email e login. Senha não é mais
+  definida pelo admin — o novo usuário recebe um email com link para definir
+  sua própria senha via /definir-senha/{token}.
+- Rotas públicas GET/POST /definir-senha/{token} no Manager para o fluxo de
+  ativação de conta.
+- Novos métodos no auth_controller do Manager: display_set_password e
+  set_password, validando token diretamente no banco (sem dependência de
+  sessão).
+- Template set_password.php no Manager.
+
+### Changed
+- Template new_admin_credentials.php: botão agora é "Definir minha senha"
+  com link para o fluxo de set-password, em vez de "Acessar o painel".
+  Copy do email corrigida — não menciona mais "senha temporária".
+
+### Fixed
+- Toggle de tema no Manager: adicionado seletor CSS [data-theme="light"] com
+  variáveis de tema claro. Botão movido do floating button quebrado para o
+  header, ao lado do botão Sair. Função injectFloatingThemeToggle removida.
+
 ## [1.4.2.0] - 2026-05-27
 
 ### Fixed

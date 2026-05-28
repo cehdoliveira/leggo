@@ -63,6 +63,14 @@ $dispatcher->add_route("POST", "/login(\.json|\.xml|\.html)?", "auth_controller:
 // Logout
 $dispatcher->add_route("GET", "/sair", "auth_controller:logout", null, $params);
 
+// Cadastro de novo usuário admin (requer autenticação)
+$dispatcher->add_route("GET",  "/cadastro(\.json|\.xml|\.html)?", "auth_controller:display_register", $authGuard, $params);
+$dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controller:register",         $authGuard, $params);
+
+// Definição de senha para novos usuários (público — usuário ainda não autenticado)
+$dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
+$dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
+
 // Admin (requer autenticação)
 $dispatcher->add_route("GET",  "/?",     "site_controller:dashboard", $authGuard, $params);
 $dispatcher->add_route("GET",  "/admin", "site_controller:dashboard", $authGuard, $params);
