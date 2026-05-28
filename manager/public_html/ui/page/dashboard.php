@@ -17,11 +17,6 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                         <i class="bi bi-people" aria-hidden="true"></i> Usuários
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="<?php echo $GLOBALS['register_url']; ?>" class="nav-link">
-                        <i class="bi bi-person-plus" aria-hidden="true"></i> Cadastrar Usuário
-                    </a>
-                </li>
             </ul>
 
             <div class="nav-section-label">Conta</div>
