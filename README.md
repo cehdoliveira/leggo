@@ -108,7 +108,7 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
   ```
 - **Prepared statements** — `set_filter()` aceita `?` com valores no segundo parâmetro. `populate()` + `save()` usam bind automático.
 - **Soft-delete**: `active = 'yes'/'no'`. Nunca `DELETE FROM`.
-- **CSRF one-time-use**: tokens consumidos via `validate_csrf()`, regenerados a cada página.
+- **CSRF com grace period**: tokens válidos por 10s após primeiro uso via `validate_csrf()`, regenerados a cada página.
 - **Sessão**: `$_SESSION[cAppKey]["credential"]`. Chave diferente por ambiente.
 - **Testes com banco**: estenda `DBTestCase` (transação + rollback automático). Testes sem banco: `TestCase`.
 - **Logging**: `Logger::getInstance()->warning("msg", ["key" => $val])`. Nível controlado por `LOG_LEVEL` no kernel.php.
@@ -157,5 +157,6 @@ define("LOG_LEVEL", "info"); // debug | info | warning | error
 | GET | `/`, `/admin` | Sim |
 | GET/POST | `/login` | Não |
 | GET | `/sair` | Não |
-| GET/POST | `/cadastro` | Não |
-| GET | `/usuarios` | Sim |
+| GET/POST | `/cadastro` | Sim |
+| GET/POST | `/definir-senha/{token}` | Não |
+| GET/POST | `/usuarios` | Sim |

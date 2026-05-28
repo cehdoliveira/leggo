@@ -90,7 +90,11 @@ Both share the same MySQL database and Redis instance. Kafka topics are separate
 - **Routes** registered via `$dispatcher->add_route("GET", "/path", "controller:method", $guard, $params)`.
   The Dispatcher only accepts `GET` and `POST`. PUT/PATCH/DELETE are silently ignored.
 
-- **CSRF tokens are one-time-use**. `validate_csrf()` consumes the token; it's regenerated on next page load.
+- **CSRF tokens**: `validate_csrf()` consome o token com grace period de 10 segundos (armazenado em `_csrf_used` com timestamp). Tokens expirados são limpos automaticamente. Isso evita erro de "Requisição inválida" no F5 após submit.
+
+- **Transaction management**: `localPDO` auto-inicia uma transação global por request. `basic_redir()` é o gate de commit/rollback — `basic_redir($url)` commita, `basic_redir($url, rollback: true)` reverte. O `__destruct()` do `localPDO` faz safety rollback se nenhum redirect explícito ocorrer. Controllers não precisam chamar `commit()`/`rollback()` manualmente.
+
+- **Canonical URLs**: use `canonical_url('SITE_CANONICAL_URL')` ou `canonical_url('MANAGER_CANONICAL_URL')` para compor links em emails. O helper valida contra `ALLOWED_HOSTS` e loga warning se nenhuma proteção estiver ativa.
 
 - **Auth guard**: `fn() => auth_controller::check_login()`. Checks `$_SESSION[cAppKey]["credential"]["idx"]`.
 
