@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1.2] - 2026-05-27
+
+### Fixed
+- Verificação de e-mail agora é idempotente: clicar no link de verificação
+  mais de uma vez não mostra mais "Link inválido, expirado ou já utilizado".
+  O token permanece válido até a senha ser definida, e o segundo acesso
+  redireciona amigavelmente para a página de definir senha.
+
 ## [1.4.1.1] - 2026-05-27
 
 ### Changed
