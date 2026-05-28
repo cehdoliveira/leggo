@@ -740,4 +740,84 @@ function handle_upload(array $file, string $subDir, array $options = []): string
   return '/assets/upload/' . $subDir . '/' . $filename;
 }
 
+function time_ago(?string $datetime): string
+{
+  if (empty($datetime)) {
+    return '—';
+  }
+
+  $now  = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
+  $then = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $datetime, new DateTimeZone('America/Sao_Paulo'));
+
+  if (!$then) {
+    return '—';
+  }
+
+  $diff = $now->diff($then);
+  $seconds = $diff->s + $diff->i * 60 + $diff->h * 3600
+              + $diff->days * 86400 + $diff->m * 2592000 + $diff->y * 31536000;
+
+  if ($diff->invert === 0) {
+    $seconds = -$seconds;
+  }
+
+  $isFuture = $seconds < 0;
+  $seconds = abs($seconds);
+
+  $prefix = $isFuture ? 'em ' : '';
+
+  if ($seconds < 60) {
+    return $isFuture ? 'agora mesmo' : 'agora mesmo';
+  }
+
+  $minutes = (int)($seconds / 60);
+  if ($minutes < 60) {
+    if ($minutes === 1) {
+      return $prefix . '1 minuto';
+    }
+    return $prefix . $minutes . ' minutos';
+  }
+
+  $hours = (int)($minutes / 60);
+  if ($hours < 24) {
+    if ($hours === 1) {
+      return $isFuture ? 'em 1 hora' : 'há 1 hora';
+    }
+    return $isFuture ? "em {$hours} horas" : "há {$hours} horas";
+  }
+
+  $days = (int)($hours / 24);
+  if ($days === 1) {
+    $time = $then->format('H:i');
+    return $isFuture ? "amanhã às {$time}" : "ontem às {$time}";
+  }
+
+  if ($days < 7) {
+    $time = $then->format('H:i');
+    return $isFuture ? "em {$days} dias" : "há {$days} dias";
+  }
+
+  if ($days < 30) {
+    $weeks = (int)($days / 7);
+    if ($weeks === 1) {
+      return $prefix . '1 semana';
+    }
+    return $prefix . $weeks . ' semanas';
+  }
+
+  if ($days < 365) {
+    $months = (int)($days / 30);
+    if ($months === 1) {
+      return $prefix . '1 mês';
+    }
+    return $prefix . $months . ' meses';
+  }
+
+  $years = (int)($days / 365);
+  if ($years === 1) {
+    return $prefix . '1 ano';
+  }
+  return $prefix . $years . ' anos';
+}
+
 
