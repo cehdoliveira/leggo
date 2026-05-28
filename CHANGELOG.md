@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.2.0] - 2026-05-27
+
+### Fixed
+- Links em emails agora usam o helper `canonical_url()` que protege contra
+  Host Header Injection. Se `CANONICAL_URL` não está definida, o fallback para
+  `cFrontend` só ocorre após validação contra `ALLOWED_HOSTS`. Sem nenhuma
+  proteção configurada, um warning é logado. Substitui 9 padrões manuais de
+  composição de URL em controllers e templates de email.
+
 ## [1.4.1.2] - 2026-05-27
 
 ### Fixed
