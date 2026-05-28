@@ -595,4 +595,149 @@ function verify_password_with_migration(string $storedHash, string $inputPasswor
   return $authenticated;
 }
 
+function handle_upload(array $file, string $subDir, array $options = []): string|false
+{
+  if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+    Logger::getInstance()->warning("Upload error", ["error_code" => $file['error'] ?? 'no_file']);
+    return false;
+  }
+
+  if (!is_uploaded_file($file['tmp_name'])) {
+    Logger::getInstance()->warning("Upload bypass attempt", ["name" => $file['name'] ?? 'unknown']);
+    return false;
+  }
+
+  $subDir = trim($subDir, '/');
+  if ($subDir === '' || str_contains($subDir, '..') || str_contains($subDir, '\\')) {
+    Logger::getInstance()->warning("Upload invalid subDir", ["subDir" => $subDir]);
+    return false;
+  }
+
+  $allowedStr = $options['allowed_types']
+    ?? (defined('UPLOAD_ALLOWED_TYPES') ? constant('UPLOAD_ALLOWED_TYPES') : 'jpg,jpeg,png,gif,pdf');
+  $allowedTypes = array_map('trim', explode(',', strtolower($allowedStr)));
+  $maxSize  = ($options['max_size_mb'] ?? (defined('UPLOAD_MAX_SIZE') ? constant('UPLOAD_MAX_SIZE') : 10)) * 1024 * 1024;
+  $convert    = $options['convert'] ?? null;
+  $maxWidth   = $options['max_width'] ?? 0;
+  $maxHeight  = $options['max_height'] ?? 0;
+  $quality    = $options['quality'] ?? 80;
+
+  $finfo = finfo_open(FILEINFO_MIME_TYPE);
+  $mime  = finfo_file($finfo, $file['tmp_name']);
+  finfo_close($finfo);
+
+  $mimeMap = [
+    'image/jpeg'    => 'jpg',
+    'image/png'     => 'png',
+    'image/gif'     => 'gif',
+    'image/webp'    => 'webp',
+    'image/avif'    => 'avif',
+    'application/pdf' => 'pdf',
+    'application/msword' => 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+    'application/vnd.ms-excel' => 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+    'text/csv'      => 'csv',
+  ];
+
+  $realExt = $mimeMap[$mime] ?? null;
+  if (!$realExt || !in_array($realExt, $allowedTypes)) {
+    Logger::getInstance()->warning("Upload invalid type", [
+      "mime"        => $mime,
+      "allowed"     => $allowedTypes,
+      "name"        => $file['name'] ?? '',
+    ]);
+    return false;
+  }
+
+  if ($file['size'] > $maxSize) {
+    Logger::getInstance()->warning("Upload size exceeded", [
+      "size"    => $file['size'],
+      "max"     => $maxSize,
+      "name"    => $file['name'] ?? '',
+    ]);
+    return false;
+  }
+
+  $uploadBase = defined('UPLOAD_DIR') ? rtrim(constant('UPLOAD_DIR'), '/') : sys_get_temp_dir() . '/leggo_upload';
+  $uploadDir  = $uploadBase . '/' . $subDir;
+
+  if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+    Logger::getInstance()->error("Upload dir creation failed", ["dir" => $uploadDir]);
+    return false;
+  }
+
+  $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+  $originalName = generate_slug($originalName);
+  $originalName = substr($originalName, 0, 80) ?: 'arquivo';
+
+  $isImage     = str_starts_with($mime, 'image/');
+  $shouldConvert = $convert && $isImage && extension_loaded('gd');
+  $targetExt   = $shouldConvert ? $convert : $realExt;
+  $filename    = sprintf('%s_%s.%s', $originalName, date('Y-m-d_H-i-s'), $targetExt);
+  $destPath    = $uploadDir . '/' . $filename;
+
+  if ($shouldConvert) {
+    try {
+      $srcImage = match ($mime) {
+        'image/jpeg' => imagecreatefromjpeg($file['tmp_name']),
+        'image/png'  => imagecreatefrompng($file['tmp_name']),
+        'image/gif'  => imagecreatefromgif($file['tmp_name']),
+        'image/webp' => imagecreatefromwebp($file['tmp_name']),
+        'image/avif' => function_exists('imagecreatefromavif') ? imagecreatefromavif($file['tmp_name']) : false,
+        default      => false,
+      };
+
+      if (!$srcImage) {
+        move_uploaded_file($file['tmp_name'], $destPath);
+        return '/assets/upload/' . $subDir . '/' . $filename;
+      }
+
+      $origW = imagesx($srcImage);
+      $origH = imagesy($srcImage);
+
+      if ($maxWidth > 0 || $maxHeight > 0) {
+        $targetW = $maxWidth > 0 ? min($maxWidth, $origW) : $origW;
+        $targetH = $maxHeight > 0 ? min($maxHeight, $origH) : $origH;
+        $ratio   = min($targetW / $origW, $targetH / $origH);
+        $newW    = (int)($origW * $ratio);
+        $newH    = (int)($origH * $ratio);
+
+        $dstImage = imagecreatetruecolor($newW, $newH);
+        imagealphablending($dstImage, false);
+        imagesavealpha($dstImage, true);
+
+        imagecopyresampled($dstImage, $srcImage, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+        imagedestroy($srcImage);
+        $srcImage = $dstImage;
+      }
+
+      if ($convert === 'webp') {
+        imagewebp($srcImage, $destPath, $quality);
+      } elseif ($convert === 'avif' && function_exists('imageavif')) {
+        imageavif($srcImage, $destPath, $quality);
+      } else {
+        imagejpeg($srcImage, $destPath, $quality);
+      }
+
+      imagedestroy($srcImage);
+      return '/assets/upload/' . $subDir . '/' . $filename;
+    } catch (\Throwable $e) {
+      Logger::getInstance()->error("Image conversion failed", [
+        "error" => $e->getMessage(),
+        "name"  => $file['name'] ?? '',
+      ]);
+      @unlink($destPath);
+      return false;
+    }
+  }
+
+  if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+    Logger::getInstance()->error("Upload move failed", ["dest" => $destPath]);
+    return false;
+  }
+
+  return '/assets/upload/' . $subDir . '/' . $filename;
+}
+
 
