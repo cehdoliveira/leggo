@@ -747,7 +747,7 @@ function time_ago(?string $datetime): string
   }
 
   $then = strtotime($datetime);
-  if ($then === false) {
+  if ($then === false || $then < 0) {
     return '—';
   }
 
