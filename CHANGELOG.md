@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0.1] - 2026-05-28
+
+### Added
+- Função `json_response()` em CommonFunctions.php: helper para respostas
+  JSON padronizadas com http_response_code, Content-Type, cache headers,
+  a_walk para encoding UTF-8, e fallback para erro 500 se json_encode falhar.
+
 ## [1.8.0.0] - 2026-05-28
 
 ### Added
