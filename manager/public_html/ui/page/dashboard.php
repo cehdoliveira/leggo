@@ -106,9 +106,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                     $isRemoved  = ($u['active'] ?? 'yes') === 'no';
                                     $isEnabled  = ($u['enabled'] ?? 'yes') === 'yes';
                                     $isVerified = !empty($u['email_verified_at']);
-                                    $lastLogin  = !empty($u['last_login'])
-                                        ? date('d/m/Y H:i', strtotime($u['last_login']))
-                                        : '—';
+                                    $lastLogin  = time_ago($u['last_login'] ?? null);
                                     $userIdx    = (int)$u['idx'];
                                     $isSelf     = $userIdx === $adminIdx;
                                     $jsName     = htmlspecialchars(json_encode($u['name'] ?? ''), ENT_QUOTES, 'UTF-8');

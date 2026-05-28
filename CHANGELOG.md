@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.0.0] - 2026-05-28
+
+### Added
+- Função `time_ago()` em CommonFunctions.php: exibe datas no formato
+  relativo em PT-BR ("há 5 minutos", "ontem às 14:30", "há 3 semanas").
+  Suporta datas passadas e futuras, com fallback "—" para valores
+  vazios ou inválidos. Aplicada no dashboard do Manager na coluna
+  "Último login".
+
 ## [1.6.0.0] - 2026-05-28
 
 ### Added
