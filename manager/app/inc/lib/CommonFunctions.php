@@ -755,7 +755,7 @@ function time_ago(?string $datetime): string
 
   $diff = $now->diff($then);
   $seconds = $diff->s + $diff->i * 60 + $diff->h * 3600
-              + $diff->days * 86400 + $diff->m * 2592000 + $diff->y * 31536000;
+              + $diff->days * 86400;
 
   if ($diff->invert === 0) {
     $seconds = -$seconds;
