@@ -846,4 +846,36 @@ function old(string $key, mixed $default = ''): string
   return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+function array_to_csv(array $data, string $filename = 'export.csv', ?array $headers = null): never
+{
+  header('Content-Type: text/csv; charset=UTF-8');
+  header('Content-Disposition: attachment; filename="' . addslashes($filename) . '"');
+  header('Cache-Control: no-store, no-cache');
+  header('Pragma: no-cache');
+
+  $output = fopen('php://output', 'w');
+
+  if (empty($data)) {
+    fclose($output);
+    exit();
+  }
+
+  if ($headers === null) {
+    $headers = array_keys(reset($data));
+  }
+
+  fputcsv($output, $headers, ';', '"', '\\');
+
+  foreach ($data as $row) {
+    $csvRow = [];
+    foreach ($headers as $key) {
+      $csvRow[] = $row[$key] ?? '';
+    }
+    fputcsv($output, $csvRow, ';', '"', '\\');
+  }
+
+  fclose($output);
+  exit();
+}
+
 

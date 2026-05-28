@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.0.0] - 2026-05-28
+
+### Added
+- Função `array_to_csv()` em CommonFunctions.php: exporta arrays para CSV
+  com download forçado via headers Content-Type e Content-Disposition.
+  Delimitador `;` (padrão Excel PT-BR), headers automáticos ou customizados.
+- Botão "Exportar CSV" no dashboard do Manager e ação `export-csv` no
+  users_action. O admin pode baixar a lista completa de usuários em CSV.
+
 ## [1.7.0.2] - 2026-05-28
 
 ### Added

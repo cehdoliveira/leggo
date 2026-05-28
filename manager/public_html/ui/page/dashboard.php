@@ -42,9 +42,18 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                     <h1><i class="bi bi-people me-2" aria-hidden="true"></i>Gerenciar Usuários</h1>
                     <p>Olá, <?php echo $userName; ?>. Gerencie os usuários cadastrados no sistema.</p>
                 </div>
-                <a href="<?php echo $GLOBALS['register_url']; ?>" class="btn btn-primary" style="white-space:nowrap;">
-                    <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Novo Usuário
-                </a>
+                <div class="d-flex gap-2">
+                    <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>" style="display:inline;">
+                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
+                        <input type="hidden" name="action" value="export-csv">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm" style="white-space:nowrap;">
+                            <i class="bi bi-download me-1" aria-hidden="true"></i> Exportar CSV
+                        </button>
+                    </form>
+                    <a href="<?php echo $GLOBALS['register_url']; ?>" class="btn btn-primary" style="white-space:nowrap;">
+                        <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Novo Usuário
+                    </a>
+                </div>
             </div>
         </div>
 
