@@ -1,7 +1,7 @@
 <?php
 $name       = isset($name)       ? (string) $name       : '';
 $verifyLink = isset($verifyLink) ? (string) $verifyLink : '#';
-$logoUrl    = rtrim(constant('cFrontend'), '/') . '/assets/img/logo.png';
+$logoUrl    = canonical_url('SITE_CANONICAL_URL') . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">

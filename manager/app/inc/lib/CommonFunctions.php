@@ -453,6 +453,24 @@ function validate_csrf(?string $token, string $redirectUrl): void
   }
 }
 
+function canonical_url(string $canonicalConstant): string
+{
+  if (defined($canonicalConstant) && constant($canonicalConstant) !== '') {
+    return rtrim(constant($canonicalConstant), '/');
+  }
+
+  if (defined('ALLOWED_HOSTS') && constant('ALLOWED_HOSTS') !== '') {
+    return rtrim(constant('cFrontend'), '/');
+  }
+
+  Logger::getInstance()->warning("Canonical URL falling back to cFrontend without ALLOWED_HOSTS", [
+    "constant" => $canonicalConstant,
+    "host"     => $_SERVER['HTTP_HOST'] ?? 'unknown',
+  ]);
+
+  return rtrim(constant('cFrontend'), '/');
+}
+
 function check_rate_limit(?object $redis, string $key, int $max): bool
 {
   if (!$redis) return false;

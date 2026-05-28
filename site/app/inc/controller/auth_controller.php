@@ -142,9 +142,7 @@ class auth_controller
             if (isset($info["idx"]) && $info["idx"] > 0) {
                 $newUser->save_attach($info, ["profiles"]);
 
-                $canonicalBase = (defined('SITE_CANONICAL_URL') && constant('SITE_CANONICAL_URL') !== '')
-                    ? rtrim(constant('SITE_CANONICAL_URL'), '/')
-                    : rtrim(constant('cFrontend'), '/');
+                $canonicalBase = canonical_url('SITE_CANONICAL_URL');
                 $verifyLink = $canonicalBase . '/verificar-email/' . $token;
                 $subject = "Confirme seu cadastro — " . constant('cTitle');
                 ob_start();
@@ -423,7 +421,7 @@ class auth_controller
             ]);
             $users->save();
 
-            $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
+            $canonicalBase = canonical_url('SITE_CANONICAL_URL');
 
             if ($user['enabled'] === 'no') {
                 $verifyLink = $canonicalBase . '/verificar-email/' . $token;

@@ -94,8 +94,7 @@ class site_controller
                     ]);
                     $resetUser->save();
 
-                    $canonicalBase = rtrim(constant('SITE_CANONICAL_URL'), '/');
-                    $resetLink = $canonicalBase . '/redefinir-senha/' . $token;
+                    $resetLink = canonical_url('SITE_CANONICAL_URL') . '/redefinir-senha/' . $token;
                     $name      = $user['name'];
                     $subject   = "Redefinição de senha — " . constant('cTitle');
                     ob_start();

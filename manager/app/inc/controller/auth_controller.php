@@ -160,10 +160,7 @@ class auth_controller
                 try {
                     $name      = $info["post"]["name"];
                     $login     = $info["post"]["login"];
-                    $canonicalBase = (defined('MANAGER_CANONICAL_URL') && constant('MANAGER_CANONICAL_URL') !== '')
-                        ? rtrim(constant('MANAGER_CANONICAL_URL'), '/')
-                        : rtrim(constant('cFrontend'), '/');
-                    $loginLink = $canonicalBase . '/login';
+                    $loginLink = canonical_url('MANAGER_CANONICAL_URL') . '/login';
                     $subject   = "Seus dados de acesso — " . constant('cTitle');
                     ob_start();
                     include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
