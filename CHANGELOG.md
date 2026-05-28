@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0.2] - 2026-05-28
+
+### Added
+- Função `old()` em CommonFunctions.php: helper para repopular campos
+  de formulário após erro de validação. Busca em `$_POST` com fallback
+  para default e aplica htmlspecialchars automaticamente.
+
 ## [1.7.0.1] - 2026-05-28
 
 ### Added
