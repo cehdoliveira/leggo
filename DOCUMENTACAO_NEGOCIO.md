@@ -458,7 +458,6 @@ Histórico de correções (2026-05-28):
   ✅ Tema: toggle de tema claro/escuro funcional no header do Manager
 
 Pontos de atenção remanescentes:
-  1. TRANSAÇÃO GLOBAL: localPDO auto-begin no singleton. basic_redir() é o gate de commit/rollback.
-     Destructor faz safety rollback. Controllers devem usar basic_redir($url, rollback: true) nos catch
-     blocks para sinalizar erro. Se esquecerem, o safety net do destructor evita corrupção.
+  Nenhum. Todos os 8 pontos identificados na auditoria original foram corrigidos
+  ou documentados como decisões de design intencionais.
 ```
