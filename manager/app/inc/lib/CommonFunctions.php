@@ -415,16 +415,42 @@ function array_to_xml(array $data, SimpleXMLElement &$xml): void
 
 function validate_csrf(?string $token, string $redirectUrl): void
 {
-  if (
-    empty($token) ||
-    !isset($_SESSION['_csrf_token']) ||
-    !hash_equals($_SESSION['_csrf_token'], $token)
-  ) {
+  $now = time();
+  $graceSeconds = 10;
+  $validTokens = [];
+
+  if (isset($_SESSION['_csrf_token'])) {
+    $validTokens[] = $_SESSION['_csrf_token'];
+  }
+
+  if (!empty($_SESSION['_csrf_used']) && is_array($_SESSION['_csrf_used'])) {
+    foreach ($_SESSION['_csrf_used'] as $usedToken => $usedAt) {
+      if ($now - $usedAt <= $graceSeconds) {
+        $validTokens[] = $usedToken;
+      } else {
+        unset($_SESSION['_csrf_used'][$usedToken]);
+      }
+    }
+  }
+
+  $isValid = false;
+  foreach ($validTokens as $validToken) {
+    if (!empty($token) && hash_equals($validToken, $token)) {
+      $isValid = true;
+      break;
+    }
+  }
+
+  if (!$isValid) {
     $_SESSION["messages_app"]["danger"] = ["Requisição inválida. Tente novamente."];
     basic_redir($redirectUrl);
     exit();
   }
-  unset($_SESSION['_csrf_token']);
+
+  if (isset($_SESSION['_csrf_token'])) {
+    $_SESSION['_csrf_used'][$_SESSION['_csrf_token']] = $now;
+    unset($_SESSION['_csrf_token']);
+  }
 }
 
 function check_rate_limit(?object $redis, string $key, int $max): bool
