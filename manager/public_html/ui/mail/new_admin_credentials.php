@@ -75,7 +75,7 @@ $logoUrl   = canonical_url('MANAGER_CANONICAL_URL') . '/assets/img/logo.png';
                           </tr>
                           <tr>
                             <td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#b0bec5;line-height:1.65;">
-                              Uma senha temporária foi gerada automaticamente. Por segurança, altere-a imediatamente após o primeiro acesso.
+                              Para ativar sua conta e acessar o painel, defina sua senha clicando no botão abaixo.
                             </td>
                           </tr>
                         </table>
@@ -94,7 +94,7 @@ $logoUrl   = canonical_url('MANAGER_CANONICAL_URL') . '/assets/img/logo.png';
                   <table border="0" cellpadding="0" cellspacing="0">
                     <tr>
                       <td style="background-color:#2563eb;border-radius:8px;">
-                        <a href="<?php echo htmlspecialchars($loginLink, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" style="display:inline-block;padding:15px 40px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">Acessar o painel administrativo</a>
+                        <a href="<?php echo htmlspecialchars($setPasswordLink, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" style="display:inline-block;padding:15px 40px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">Definir minha senha</a>
                       </td>
                     </tr>
                   </table>
