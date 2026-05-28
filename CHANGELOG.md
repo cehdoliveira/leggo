@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1.0] - 2026-05-27
+
+### Fixed
+- Tokens CSRF agora têm grace period de 10 segundos após o primeiro uso. Isso
+  resolve o erro "Requisição inválida" que ocorria quando o usuário pressionava
+  F5 após submeter um formulário — o token consumido permanecia inválido e o
+  browser reenviava o POST. Com o grace period, o mesmo token é aceito por até
+  10 segundos antes de expirar definitivamente.
+
 ## [1.4.0.3] - 2026-05-27
 
 ### Changed
