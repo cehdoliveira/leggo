@@ -458,12 +458,7 @@ Histórico de correções (2026-05-28):
   ✅ Tema: toggle de tema claro/escuro funcional no header do Manager
 
 Pontos de atenção remanescentes:
-  1. DUAS IMPLEMENTAÇÕES DE REGISTRO: manager/auth_controller:register e site/auth_controller:register
-     agora seguem o mesmo padrão (senha aleatória, verificação por email), mas ainda são implementações
-     duplicadas com pequenas variações — risco de manutenção a longo prazo.
-  2. RATE LIMIT FAIL-OPEN: se Redis e filesystem falharem simultaneamente, check_and_increment_rate_limit()
-     retorna false (não bloqueia). Aceitável para disponibilidade — warnings são logados.
-  3. TRANSAÇÃO GLOBAL: localPDO auto-begin no singleton. basic_redir() é o gate de commit/rollback.
+  1. TRANSAÇÃO GLOBAL: localPDO auto-begin no singleton. basic_redir() é o gate de commit/rollback.
      Destructor faz safety rollback. Controllers devem usar basic_redir($url, rollback: true) nos catch
      blocks para sinalizar erro. Se esquecerem, o safety net do destructor evita corrupção.
 ```
