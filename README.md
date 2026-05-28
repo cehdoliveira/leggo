@@ -93,9 +93,9 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 | Cache | `RedisCache.php` | Singleton Redis com TTL, fail-open |
 | Email | `EmailProducer.php` | Producer Kafka assíncrono (fallback sem rdkafka) |
 | Migrations | `MigrationRunner.php` | Runner idempotente de arquivos .sql |
-| Auth | `auth_controller.php` | Login bcrypt + migração MD5, CSRF one-time, rate limit |
+| Auth | `auth_controller.php` | Login bcrypt + migração MD5, CSRF com grace period de 10s, rate limit |
 | Logger | `Logger.php` | Log estruturado em JSON com níveis debug/info/warning/error |
-| Util | `CommonFunctions.php` | `generate_slug()`, `sanitize_string()`, `basic_redir()`, CSRF |
+| Util | `CommonFunctions.php` | `generate_slug()`, `sanitize_string()`, `basic_redir()`, `canonical_url()`, CSRF |
 
 ### Convenções
 
