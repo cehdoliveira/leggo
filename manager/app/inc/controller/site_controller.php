@@ -42,6 +42,17 @@ class site_controller
 
         validate_csrf($post['_csrf_token'] ?? null, $users_url);
 
+        if ($action === 'export-csv') {
+            $model = new users_model();
+            $model->set_field([" idx ", " name ", " mail ", " login ", " enabled ", " active ", " created_at ", " last_login "]);
+            $model->set_filter([" idx > 0 "]);
+            $model->set_order([" created_at DESC "]);
+            $model->load_data();
+
+            $headers = ['idx', 'name', 'mail', 'login', 'enabled', 'active', 'created_at', 'last_login'];
+            array_to_csv($model->data, 'usuarios_' . date('Y-m-d') . '.csv', $headers);
+        }
+
         if ($idx <= 0) {
             basic_redir($users_url);
             return;
