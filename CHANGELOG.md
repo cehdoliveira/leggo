@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0.1] - 2026-05-28
+
+### Added
+- Função `str_limit()` em CommonFunctions.php: trunca strings no limite
+  de caracteres com sufixo configurável (default "..."), usando mb_substr
+  para suporte a UTF-8 e strip_tags automático para segurança.
+
 ## [1.7.0.0] - 2026-05-28
 
 ### Added
