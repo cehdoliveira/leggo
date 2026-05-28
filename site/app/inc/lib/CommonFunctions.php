@@ -820,4 +820,19 @@ function time_ago(?string $datetime): string
   return $prefix . $years . ' anos';
 }
 
+function str_limit(?string $value, int $limit = 100, string $end = '...'): string
+{
+  if ($value === null || $value === '') {
+    return '';
+  }
+
+  $value = strip_tags($value);
+
+  if (mb_strlen($value) <= $limit) {
+    return $value;
+  }
+
+  return mb_substr($value, 0, $limit) . $end;
+}
+
 
