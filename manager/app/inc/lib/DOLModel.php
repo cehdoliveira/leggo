@@ -92,9 +92,9 @@ class DOLModel extends rootOBJ
 			$assignments[] = " modified_by = ? ";
 			$params[] = $userId;
 
-			// Prepend filter params (WHERE placeholders) before SET params
+			// Append filter params (WHERE placeholders) after SET params
 			if (!empty($this->filterParams)) {
-				$params = array_merge($this->filterParams, $params);
+				$params = array_merge($params, $this->filterParams);
 			}
 
 			$sql = sprintf(
@@ -131,11 +131,10 @@ class DOLModel extends rootOBJ
 			? $_SESSION[constant("cAppKey")]["credential"]["idx"]
 			: 0;
 
-		$params = [];
+		$params = [$userId];
 		if (!empty($this->filterParams)) {
-			$params = $this->filterParams;
+			$params = array_merge($params, $this->filterParams);
 		}
-		$params[] = $userId;
 
 		$sql = sprintf(
 			"UPDATE %s SET active = 'no', removed_at = now(), removed_by = ? %s",
@@ -316,31 +315,71 @@ class DOLModel extends rootOBJ
 	{
 		$new_data = array();
 		$_data = $this->get_data();
-		foreach ($_data as $key => $value) {
-			$new_data[$key] = $value;
-			$flt = array(" active = 'yes' ");
-			$params = array();
-			foreach ((array)$fw_key as $fw_keys => $data_value) {
-				if (isset($value[$data_value])) {
-					if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fw_keys)) {
-						continue;
-					}
-					$flt[] = $fw_keys . " = ? ";
-					$params[] = $value[$data_value];
+
+		// Determine the foreign key column name (first entry in $fw_key)
+		$fwColumn = null;
+		$dataKey  = null;
+		foreach ((array)$fw_key as $col => $dk) {
+			$fwColumn = $col;
+			$dataKey  = $dk;
+			break;
+		}
+
+		// Batch query when possible (no per-row #IDX# options)
+		if ($options === null && $fwColumn !== null && $dataKey !== null && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fwColumn)) {
+			$lookupIds = [];
+			foreach ($_data as $value) {
+				if (isset($value[$dataKey])) {
+					$lookupIds[] = (int)$value[$dataKey];
 				}
 			}
-			if (count($flt) > 1 || ! empty($options)) {
-				$optionsSql = '';
-				if ($options !== null) {
-					$optionsSql = ' ' . str_replace("#IDX#", "?", $options);
-					$params[] = (int)$value["idx"];
-				}
+			$lookupIds = array_unique($lookupIds);
+
+			$batchResults = [];
+			if (!empty($lookupIds)) {
+				$placeholders = implode(',', array_fill(0, count($lookupIds), '?'));
 				$fields = isset($field) ? implode(", ", $field) : "*";
-				$sql = sprintf("SELECT %s FROM %s WHERE %s%s", $fields, $table, implode(" and ", $flt), $optionsSql);
-				$r = $this->con->executePrepared($sql, $params);
-				$new_data[$key][$name . "_attach"] = $this->con->results($r);
-			} else {
-				$new_data[$key][$name . "_attach"] = array();
+				$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND %s IN (%s)",
+					$fields, $table, $fwColumn, $placeholders);
+				$r = $this->con->executePrepared($sql, $lookupIds);
+				foreach ($this->con->results($r) as $row) {
+					$batchResults[$row[$fwColumn]][] = $row;
+				}
+			}
+
+			foreach ($_data as $key => $value) {
+				$new_data[$key] = $value;
+				$lookupVal = isset($value[$dataKey]) ? (int)$value[$dataKey] : null;
+				$new_data[$key][$name . "_attach"] = $batchResults[$lookupVal] ?? [];
+			}
+		} else {
+			// Per-row fallback for queries with #IDX# options
+			foreach ($_data as $key => $value) {
+				$new_data[$key] = $value;
+				$flt = array(" active = 'yes' ");
+				$params = array();
+				foreach ((array)$fw_key as $fw_keys => $data_value) {
+					if (isset($value[$data_value])) {
+						if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fw_keys)) {
+							continue;
+						}
+						$flt[] = $fw_keys . " = ? ";
+						$params[] = $value[$data_value];
+					}
+				}
+				if (count($flt) > 1 || ! empty($options)) {
+					$optionsSql = '';
+					if ($options !== null) {
+						$optionsSql = ' ' . str_replace("#IDX#", "?", $options);
+						$params[] = (int)$value["idx"];
+					}
+					$fields = isset($field) ? implode(", ", $field) : "*";
+					$sql = sprintf("SELECT %s FROM %s WHERE %s%s", $fields, $table, implode(" and ", $flt), $optionsSql);
+					$r = $this->con->executePrepared($sql, $params);
+					$new_data[$key][$name . "_attach"] = $this->con->results($r);
+				} else {
+					$new_data[$key][$name . "_attach"] = array();
+				}
 			}
 		}
 		$this->set_data($new_data);

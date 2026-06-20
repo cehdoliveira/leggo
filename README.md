@@ -21,7 +21,7 @@ cp site/app/inc/kernel.php.example site/app/inc/kernel.php
 # 3. Suba os containers
 docker compose -f docker/docker-compose.yml up -d --build
 
-# 4. Habilite pre-commit hooks (PHPStan + PHPUnit)
+# 4. Habilite pre-commit hooks (PHPStan)
 git config core.hooksPath .githooks
 
 # 5. Acesse
@@ -48,9 +48,9 @@ site/                  ← Site público (leggo.local)
   public_html/         ← Raiz web
   tests/               ← Testes PHPUnit
 
-migrations/            ← Migrations SQL (compartilhadas)
-docker/                ← Dockerfile, nginx, php.ini, entrypoint
-.githooks/             ← Pre-commit hooks
+migrations/            ← Migrations SQL (compartilhadas) — atômicas (transaction por arquivo)
+docker/                ← Dockerfile, nginx, php.ini, entrypoint, .env.example
+.githooks/             ← pre-commit (PHPStan) + pre-push (PHPUnit)
 .editorconfig          ← Estilo de código
 ```
 
@@ -88,7 +88,7 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 | Componente | Arquivo | Função |
 |-----------|---------|--------|
 | Router | `Dispatcher.php` | `add_route(METHOD, pattern, "controller:method", guard, args)` |
-| ORM | `DOLModel.php` | Active record com soft-delete, `populate()`/`save()`/`remove()`, prepared statements |
+| ORM | `DOLModel.php` | Active record com soft-delete, `populate()`/`save()`/`remove()`, prepared statements, batch `join()` |
 | Database | `localPDO.php` | Wrapper PDO com `select()`, `insert()`, `update()`, `executePrepared(sql, params)` |
 | Cache | `RedisCache.php` | Singleton Redis com TTL, fail-open |
 | Email | `EmailProducer.php` | Producer Kafka assíncrono (fallback sem rdkafka) |
@@ -134,6 +134,15 @@ $dispatcher->add_route("GET", "/minha-rota", "meu_controller:meu_metodo", $authG
 define("LOG_LEVEL", "info"); // debug | info | warning | error
 ```
 
+## Segurança
+
+- **CSRF em todas as rotas POST**, incluindo logout (formulário POST com token, não link GET)
+- **Senhas bcrypt** com migração automática de hashes MD5 legados
+- **Rate limit** de login (5 tentativas/60s por IP) com fallback via arquivo se Redis indisponível
+- **CSP, X-Frame-Options, HSTS** configurados no nginx (nginx `default.conf`)
+- **Credenciais** extraídas do `docker-compose.yml` para `docker/.env` (gitignored)
+- **Logs SQL** não incluem queries completas — previne vazamento de PII em erros de banco
+
 ## Rotas
 
 ### Site (`leggo.local`)
@@ -146,7 +155,7 @@ define("LOG_LEVEL", "info"); // debug | info | warning | error
 | GET/POST | `/definir-senha/{token}` | Não |
 | GET/POST | `/esqueci-minha-senha` | Não |
 | GET/POST | `/redefinir-senha/{token}` | Não |
-| GET | `/sair` | Não |
+| POST | `/sair` | Não |
 | GET | `/area` | Sim |
 | GET | `/termos-de-uso` | Não |
 | GET | `/politica-de-privacidade` | Não |
@@ -156,7 +165,7 @@ define("LOG_LEVEL", "info"); // debug | info | warning | error
 |--------|------|------|
 | GET | `/`, `/admin` | Sim |
 | GET/POST | `/login` | Não |
-| GET | `/sair` | Não |
+| POST | `/sair` | Não |
 | GET/POST | `/cadastro` | Sim |
 | GET/POST | `/definir-senha/{token}` | Não |
 | GET/POST | `/usuarios` | Sim |

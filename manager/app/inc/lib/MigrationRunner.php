@@ -200,26 +200,37 @@ class MigrationRunner
     /**
      * Executa SQL contendo múltiplas queries
      */
-    private function executeMigration(string $sql): void
-    {
-        // Remover comentários SQL
-        $sql = preg_replace('/(\/\*[\s\S]*?\*\/)|(--[^\n]*)/m', '', $sql);
-        $sql = trim($sql);
+	private function executeMigration(string $sql): void
+	{
+		// Remover comentários SQL
+		$sql = preg_replace('/(\/\*[\s\S]*?\*\/)|(--[^\n]*)/m', '', $sql);
+		$sql = trim($sql);
 
-        if (empty($sql)) {
-            return;
-        }
+		if (empty($sql)) {
+			return;
+		}
 
-        // Dividir por ; para executar queries separadamente
-        $queries = array_filter(
-            array_map('trim', explode(';', $sql)),
-            fn($q) => !empty($q)
-        );
+		// Dividir por ; para executar queries separadamente
+		$queries = array_filter(
+			array_map('trim', explode(';', $sql)),
+			fn($q) => !empty($q)
+		);
 
-        foreach ($queries as $query) {
-            $this->pdo->exec($query);
-        }
-    }
+		if (empty($queries)) {
+			return;
+		}
+
+		$this->pdo->beginTransaction();
+		try {
+			foreach ($queries as $query) {
+				$this->pdo->exec($query);
+			}
+			$this->pdo->commit();
+		} catch (\Exception $e) {
+			$this->pdo->rollBack();
+			throw $e;
+		}
+	}
 
     /**
      * Registra execução da migration no banco

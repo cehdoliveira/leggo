@@ -11,13 +11,13 @@
 define('APP_PATH', realpath(__DIR__ . '/../app'));
 
 require_once APP_PATH . '/inc/kernel.php';
-require_once APP_PATH . '/inc/lib/local_pdo.php';
+require_once APP_PATH . '/inc/lib/localPDO.php';
 require_once APP_PATH . '/inc/lib/MigrationRunner.php';
 
 header('Content-Type: text/html; charset=utf-8');
 
 try {
-    $pdo = new local_pdo();
+    $pdo = new localPDO();
     $runner = new MigrationRunner($pdo);
 
     $shouldRun = isset($_GET['run']) && $_GET['run'] === '1';

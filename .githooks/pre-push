@@ -1,0 +1,32 @@
+#!/bin/bash
+# Leggo pre-push hook — runs PHPUnit before pushing.
+# Requires a running MySQL database (Docker: docker compose -f docker/docker-compose.yml up -d mysql).
+# Setup: git config core.hooksPath .githooks
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+PHPUNIT_FAILED=false
+
+for DIR in manager site; do
+    if [ -f "$DIR/phpunit.xml" ]; then
+        echo "→ PHPUnit ($DIR)..."
+        if php -d memory_limit=512M "$DIR/app/inc/lib/vendor/bin/phpunit" -c "$DIR/phpunit.xml" --no-interaction 2>&1; then
+            echo -e "${GREEN}  PHPUnit OK${NC}"
+        else
+            echo -e "${RED}  PHPUnit FAILED — push blocked${NC}"
+            PHPUNIT_FAILED=true
+        fi
+    fi
+done
+
+if [ "$PHPUNIT_FAILED" = true ]; then
+    echo -e "\n${YELLOW}Dica: certifique-se de que o MySQL está rodando (docker compose -f docker/docker-compose.yml up -d mysql).${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Pre-push checks passed.${NC}"

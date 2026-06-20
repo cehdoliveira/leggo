@@ -1,6 +1,27 @@
 # Changelog
 
-## [1.8.0.2] - 2026-05-28
+## [1.8.1.0] - 2026-06-20
+
+### Fixed
+- `DOLModel::save()` UPDATE com filtros parametrizados — ordem dos parâmetros invertida escrevia dados errados nas linhas erradas. Corrigido `array_merge()` para alinhar SET antes de WHERE.
+- `DOLModel::remove()` soft-delete — mesmo bug de ordenação de parâmetros. `$userId` agora precede `filterParams` no bind.
+- `migrations.php` (manager e site) — referência a `local_pdo.php` (minúsculo) corrigida para `localPDO.php`. A UI web de migrations agora funciona.
+- `kafka_email_worker.php` (manager e site) — constantes SMTP (`mail_from_host`, `mail_from_user`, etc.) agora usam `defined()` com fallback seguro, evitando warnings em PHP 8.4.
+- `MigrationRunner::executeMigration()` — cada arquivo de migration agora executa dentro de uma transação (`beginTransaction/commit/rollback`), garantindo atomicidade.
+
+### Changed
+- Logout alterado de GET para POST com validação CSRF em ambos os ambientes. Header renderiza `<form>` com token oculto em vez de `<a href>`.
+- Pre-commit hook agora roda apenas PHPStan (rápido, sem banco). PHPUnit movido para hook pre-push.
+- Credenciais MySQL extraídas do `docker-compose.yml` para `docker/.env` (gitignored). Template `.env.example` commitado.
+- CSP adicionado no nginx (`default.conf`) permitindo `cdn.jsdelivr.net`, `fonts.googleapis.com`, `fonts.gstatic.com`. Headers `X-XSS-Protection` e `Access-Control-Allow-Origin: *` removidos.
+- `localPDO::fields_config()` agora cacheia schema por tabela em propriedade estática — elimina queries `SHOW COLUMNS` repetidas por request.
+- `localPDO` não loga mais queries SQL completas em erros — previne vazamento de PII em logs.
+
+### Performance
+- `DOLModel::join()` agora faz batch query com `IN()` em vez de N+1 queries por linha, quando sem opções `#IDX#` por linha.
+
+### Removed
+- `phpoffice/phpspreadsheet` removido do `composer.json` (nunca referenciado no código — ~50MB a menos no vendor).
 
 ### Changed
 - Função `random_token()` adicionada como wrapper para

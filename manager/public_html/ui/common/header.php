@@ -14,11 +14,13 @@
                             title="Alternar tema" aria-label="Ativar tema claro">
                             <i class="bi bi-sun"></i><span class="d-none d-md-inline ms-1">Claro</span>
                         </button>
-                        <a class="btn btn-sm btn-outline-danger"
-                            href="<?php echo $GLOBALS['logout_url']; ?>"
-                            style="font-size:0.8rem; padding:0.3rem 0.75rem;">
-                            <i class="bi bi-box-arrow-right me-1"></i>Sair
-                        </a>
+                        <form method="POST" action="<?php echo $GLOBALS['logout_url']; ?>" style="display:inline;">
+                            <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                style="font-size:0.8rem; padding:0.3rem 0.75rem; border:none; background:none; cursor:pointer;">
+                                <i class="bi bi-box-arrow-right me-1"></i>Sair
+                            </button>
+                        </form>
                     </div>
                 <?php } else { ?>
                     <a class="btn btn-sm btn-outline-secondary"

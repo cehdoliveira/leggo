@@ -6,6 +6,7 @@ class localPDO
 	private bool $inTransaction = false;
 	private static ?localPDO $instance = null;
 	private bool $ownsTransaction = false;
+	private static array $schemaCache = [];
 
 	public function __construct()
 	{
@@ -16,12 +17,15 @@ class localPDO
 
 		try {
 			$dsn = "mysql:host={$host};dbname={$database};charset=utf8mb4";
-			$this->pdo = new PDO($dsn, $user, $pass, [
+			$pdoOptions = [
 				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 				PDO::ATTR_EMULATE_PREPARES => false,
-				PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
-			]);
+			];
+			if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+				$pdoOptions[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
+			}
+			$this->pdo = new PDO($dsn, $user, $pass, $pdoOptions);
 		} catch (PDOException $e) {
 			throw $e;
 		}
@@ -145,7 +149,7 @@ class localPDO
 			if ($this->inTransaction) {
 				$this->rollback();
 			}
-		Logger::getInstance()->error("SQL error", ['query' => $query, 'error' => $this->error]);
+		Logger::getInstance()->error("SQL error", ['error' => $this->error]);
 			throw new RuntimeException("Database error");
 		}
 	}
@@ -192,6 +196,10 @@ class localPDO
 
 	public function fields_config(string $table): array
 	{
+		if (isset(self::$schemaCache[$table])) {
+			return self::$schemaCache[$table];
+		}
+
 		$object = [];
 		$res = $this->my_query(
 			sprintf(
@@ -221,6 +229,8 @@ class localPDO
 				$object[$data["Field"]]["auto_increment"] = true;
 			}
 		}
+
+		self::$schemaCache[$table] = $object;
 		return $object;
 	}
 
@@ -259,7 +269,7 @@ class localPDO
 			if ($this->inTransaction) {
 				$this->rollback();
 			}
-			Logger::getInstance()->error("SQL prepared error", ['query' => $sql, 'error' => $this->error]);
+			Logger::getInstance()->error("SQL prepared error", ['error' => $this->error]);
 			throw new RuntimeException("Database error");
 		}
 	}
