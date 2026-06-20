@@ -61,7 +61,7 @@ $dispatcher->add_route("GET",  "/login(\.json|\.xml|\.html)?", "auth_controller:
 $dispatcher->add_route("POST", "/login(\.json|\.xml|\.html)?", "auth_controller:login",   null, $params);
 
 // Logout
-$dispatcher->add_route("GET", "/sair", "auth_controller:logout", null, $params);
+$dispatcher->add_route("POST", "/sair", "auth_controller:logout", null, $params);
 
 // Cadastro de novo usuário admin (requer autenticação)
 $dispatcher->add_route("GET",  "/cadastro(\.json|\.xml|\.html)?", "auth_controller:display_register", $authGuard, $params);

@@ -20,10 +20,13 @@
                         <button type="button" class="btn-theme-toggle" data-theme-toggle title="Alternar tema" aria-label="Alternar tema">
                             <i class="bi bi-sun" aria-hidden="true"></i>
                         </button>
-                        <a class="btn btn-ghost btn-sm" href="<?php echo $GLOBALS['logout_url']; ?>">
-                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Sair</span>
-                        </a>
+                        <form method="POST" action="<?php echo $GLOBALS['logout_url']; ?>" style="display:inline;">
+                            <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                            <button type="submit" class="btn btn-ghost btn-sm" style="border:none;background:none;cursor:pointer;font:inherit;color:inherit;padding:0.5rem 1rem;">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                <span class="d-none d-sm-inline">Sair</span>
+                            </button>
+                        </form>
                     </div>
                 <?php else: ?>
                     <div class="ss-navbar-actions">

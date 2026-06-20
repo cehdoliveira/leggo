@@ -107,18 +107,21 @@ function sendEmailViaPHPMailer(array $emailData): bool
     try {
         $mail = new PHPMailer(true);
 
-        // Configuração SMTP usando constantes do kernel.php
-        $mail->isSMTP();
-        $mail->Host = mail_from_host;
-        $mail->SMTPAuth = true;
-        $mail->Username = mail_from_user;
-        $mail->Password = mail_from_pwd;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = mail_from_port;
-        $mail->CharSet = 'UTF-8';
+		// Configuração SMTP usando constantes do kernel.php
+		$mail->isSMTP();
+		$mail->Host       = defined('mail_from_host') ? mail_from_host : 'localhost';
+		$mail->SMTPAuth   = true;
+		$mail->Username   = defined('mail_from_user') ? mail_from_user : '';
+		$mail->Password   = defined('mail_from_pwd') ? mail_from_pwd : '';
+		$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+		$mail->Port       = defined('mail_from_port') ? mail_from_port : 587;
+		$mail->CharSet    = 'UTF-8';
 
-        // Remetente
-        $mail->setFrom(mail_from_mail, mail_from_name);
+		// Remetente
+		$mail->setFrom(
+			defined('mail_from_mail') ? mail_from_mail : 'noreply@localhost',
+			defined('mail_from_name') ? mail_from_name : 'Leggo'
+		);
 
         // Destinatários
         foreach ($emailData['to'] as $recipient) {

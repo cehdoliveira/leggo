@@ -81,7 +81,7 @@ $dispatcher->add_route("GET",  "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controll
 $dispatcher->add_route("POST", "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controller:reset_password",          null, $params);
 
 // Logout
-$dispatcher->add_route("GET", "/sair", "auth_controller:logout", null, $params);
+$dispatcher->add_route("POST", "/sair", "auth_controller:logout", null, $params);
 
 // Home pública (detecta auth internamente e renderiza Mode 1 ou Mode 2)
 $dispatcher->add_route("GET", "/?", "site_controller:home", null, $params);

@@ -1,6 +1,8 @@
 #!/bin/bash
-# Leggo pre-commit hook — runs PHPStan and PHPUnit on staged PHP files.
+# Leggo pre-commit hook — runs PHPStan on staged PHP files.
 # Setup: git config core.hooksPath .githooks
+#
+# PHPUnit moved to pre-push hook (requires DB connection, too slow for commit).
 
 set -e
 
@@ -15,24 +17,13 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 for DIR in manager site; do
-    # PHPStan (only if phpstan.neon exists)
+    # PHPStan (fast static analysis — no DB needed)
     if [ -f "$DIR/phpstan.neon" ]; then
         echo "→ PHPStan ($DIR)..."
         if HTTP_HOST=localhost php -d memory_limit=512M "$DIR/app/inc/lib/vendor/bin/phpstan" analyse -c "$DIR/phpstan.neon" --no-progress --no-interaction 2>&1; then
             echo -e "${GREEN}  PHPStan OK${NC}"
         else
             echo -e "${RED}  PHPStan FAILED — commit blocked${NC}"
-            exit 1
-        fi
-    fi
-
-    # PHPUnit (only if phpunit.xml exists)
-    if [ -f "$DIR/phpunit.xml" ]; then
-        echo "→ PHPUnit ($DIR)..."
-        if php -d memory_limit=512M "$DIR/app/inc/lib/vendor/bin/phpunit" -c "$DIR/phpunit.xml" --no-interaction 2>&1; then
-            echo -e "${GREEN}  PHPUnit OK${NC}"
-        else
-            echo -e "${RED}  PHPUnit FAILED — commit blocked${NC}"
             exit 1
         fi
     fi

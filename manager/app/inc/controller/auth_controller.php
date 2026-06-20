@@ -10,9 +10,10 @@ class auth_controller
         }
     }
 
-    public function logout(): never
-    {
-        $_SESSION = [];
+	public function logout(array $info): never
+	{
+		validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["home_url"]);
+		$_SESSION = [];
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(
