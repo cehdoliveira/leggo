@@ -47,6 +47,16 @@ docker exec leggo php /var/www/leggo/site/cgi-bin/run_migrations.php
 docker compose -f docker/docker-compose.yml up -d --build --no-cache
 ```
 
+```bash
+# Full verification (run before merging framework changes)
+cd site && php app/inc/lib/vendor/bin/phpstan analyse
+cd manager && php app/inc/lib/vendor/bin/phpstan analyse
+docker exec leggo php /var/www/leggo/site/app/inc/lib/vendor/bin/phpunit
+docker exec leggo php /var/www/leggo/manager/app/inc/lib/vendor/bin/phpunit
+```
+
+Or run all of the above at once: `bin/test.sh`
+
 ## Architecture
 
 ```
