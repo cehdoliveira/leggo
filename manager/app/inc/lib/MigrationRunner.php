@@ -4,17 +4,15 @@ class MigrationRunner
 {
     private ?\PDO $pdo;
     private string $migrations_dir = '/var/www/leggo/migrations';
-    private \Closure|Logger|null $logger;
+    private \Closure|Logger $logger;
 
     public function __construct(localPDO|\PDO $pdo, ?string $migrations_dir = null)
     {
         // Suporte para local_pdo ou PDO nativo
-        if ($pdo && method_exists($pdo, 'getPdo')) {
+        if (method_exists($pdo, 'getPdo')) {
             $this->pdo = $pdo->getPdo();
-        } else if ($pdo) {
-            $this->pdo = $pdo;
         } else {
-            $this->pdo = null;
+            $this->pdo = $pdo;
         }
 
         // Determinar diretório de migrations

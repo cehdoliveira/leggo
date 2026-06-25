@@ -55,14 +55,12 @@ class site_controller
 
         if ($idx <= 0) {
             basic_redir($users_url);
-            return;
         }
 
         $adminId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
 
         if ($action === 'remover' && $idx === $adminId) {
             basic_redir($users_url);
-            return;
         }
 
         $rollback = false;
