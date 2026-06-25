@@ -212,7 +212,7 @@ class DOLModel extends rootOBJ
 		$this->set_field($field);
 		$this->set_filter($filter);
 		$this->set_paginate(array(1));
-		$this->load_data();
+		$this->load_data(false);
 
 		if (count($attach)) {
 			foreach ($attach as $k => $v) {
@@ -242,7 +242,7 @@ class DOLModel extends rootOBJ
 		return current($this->data);
 	}
 
-	public function load_data(): void
+	public function load_data(bool $withCount = true): void
 	{
 		$ff = isset($this->field) ? implode(",", $this->field) : " * ";
 		$fi = isset($this->filter) ? " where " . implode(" and ", $this->filter) . " " : "";
@@ -258,10 +258,14 @@ class DOLModel extends rootOBJ
 		$r = $this->con->executePrepared($sql, $this->filterParams);
 		$this->set_data($this->con->results($r));
 
-		$countSql = sprintf("SELECT count( %s ) as q FROM %s %s %s",
-			$countExpr, $this->table, $fi, $gp);
-		$countStmt = $this->con->executePrepared($countSql, $this->filterParams);
-		$this->set_recordset($this->con->result($countStmt, "q", 0));
+		if ($withCount) {
+			$countSql = sprintf("SELECT count( %s ) as q FROM %s %s %s",
+				$countExpr, $this->table, $fi, $gp);
+			$countStmt = $this->con->executePrepared($countSql, $this->filterParams);
+			$this->set_recordset($this->con->result($countStmt, "q", 0));
+		} else {
+			$this->set_recordset(count($this->data));
+		}
 	}
 
 	/**
