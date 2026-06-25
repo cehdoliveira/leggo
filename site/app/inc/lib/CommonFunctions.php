@@ -55,34 +55,6 @@ function generate_key(int $size = 10): string
 }
 
 /**
- * Exibe array formatado para debug
- * Mostra o conteúdo de uma variável com print_r em formato legível
- */
-function print_pre(mixed $data, bool $stop = false): void
-{
-  print("<pre>");
-  print_r($data);
-  print("</pre>");
-  if ($stop) {
-    exit();
-  }
-}
-
-/**
- * Exibe variável com var_dump formatado
- * Mostra detalhes completos da variável incluindo tipos para debug
- */
-function var_pre(mixed $data, bool $stop = false): void
-{
-  print("<pre>");
-  var_dump($data);
-  print("</pre>");
-  if ($stop) {
-    exit();
-  }
-}
-
-/**
  * Converte entidades HTML para caracteres acentuados
  * Transforma &aacute; em á, &ccedil; em ç, etc
  */
@@ -308,17 +280,6 @@ function identifyDevice(): bool
 function json_domainmail(string $mail): bool
 {
   return preg_match('/^([a-zA-Z0-9\._-])*([@])([a-z0-9]).([a-z]{2,3})/', $mail) && (checkdnsrr(preg_replace("/[^@\s]*@(.+)$/", "$1", $mail), 'A') || checkdnsrr(preg_replace("/[^@\s]*@(.+)$/", "$1", $mail), 'MX'));
-}
-
-/**
- * Desserializa dados corrigindo tamanho de strings UTF-8
- * Útil para dados serializados que podem ter problemas de encoding
- */
-function utf8_unserialize(string $data): mixed
-{
-  return unserialize(preg_replace_callback('/s:([0-9]+):\"(.*?)\";/', function ($matches) {
-    return "s:" . strlen($matches[2]) . ':"' . $matches[2] . '";';
-  }, $data));
 }
 
 /**
