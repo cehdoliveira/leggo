@@ -53,9 +53,14 @@ if (
 ) {
     $_detected_protocol = 'https';
 }
+// ===== SEGURANÇA: ALLOWED_HOSTS =====
+// Definido ANTES da validacao de Host abaixo (que usa esta constante) e antes de
+// cFrontend (que deriva de HTTP_HOST). PRODUÇÃO: defina obrigatoriamente; se vazio
+// E SITE_CANONICAL_URL vazio, canonical_url() lança exceção (fail closed) para
+// impedir poisoning via Host header. Exemplo: "leggo.com.br,www.leggo.com.br"
+define("ALLOWED_HOSTS", "leggo.local");
+
 // Validar HTTP_HOST contra ALLOWED_HOSTS para prevenir Host Header Injection.
-// Em producao, defina ALLOWED_HOSTS com os dominios reais.
-// Exemplo: define("ALLOWED_HOSTS", "leggo.com.br,manager.leggo.com.br,www.leggo.com.br");
 if (defined('ALLOWED_HOSTS') && constant('ALLOWED_HOSTS') !== '') {
 	$allowedHosts = array_map('trim', explode(',', constant('ALLOWED_HOSTS')));
 	$requestHost = $_SERVER["HTTP_HOST"] ?? '';
@@ -67,13 +72,6 @@ if (defined('ALLOWED_HOSTS') && constant('ALLOWED_HOSTS') !== '') {
 define("cFrontend", sprintf("%s://%s%s", $_detected_protocol, $_SERVER["HTTP_HOST"] ?? "localhost", constant("cAppRoot")));
 unset($_detected_protocol);
 define("cAssets", sprintf("%s%s", constant("cFrontend"), "assets/"));
-
-// ===== SEGURANÇA =====
-// ALLOWED_HOSTS: lista de dominios validos separados por virgula.
-// PRODUÇÃO: defina obrigatoriamente. Se vazio E *_CANONICAL_URL vazio, canonical_url() lança
-// exceção (fail closed) para impedir poisoning via Host header.
-// DEFINIR em producao! Exemplo: "leggo.com.br,www.leggo.com.br"
-define("ALLOWED_HOSTS", "leggo.local");
 
 define("DEFAULT_USER_PROFILE_ID", 2);
 define("APP_VERSION", "1.0.0");
