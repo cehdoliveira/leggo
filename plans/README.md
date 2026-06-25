@@ -39,19 +39,19 @@ and update your status row when done.
 |------|-------|----------|--------|------------|--------|
 | 001 | Remove public unauthenticated migration runner | P1 | S | — | DONE (merged to main, commit `be54f0a`) |
 | 002 | Document verification baseline + `bin/test.sh` (level 3) | P2 | S | — | DONE (worktree `agent-a9e1257fcebfc9e24`, commit `86e28f1`; awaiting user merge) |
-| 003 | Fix `set_url()` query-string parsing | P3 | S | — | TODO |
-| 004 | Guard `load_data()` count against missing primary key | P3 | S | — | TODO |
-| 005 | Remove dead / risky helper functions | P3 | S | — | TODO |
-| 006 | Make `load_data()` COUNT query opt-in (perf) | P2 | M | — | TODO |
-| 007 | Tighten Content-Security-Policy | P3 | M | — | TODO |
-| 008 | De-duplicate shared framework lib across envs | P3 | L | — | TODO |
-| 009 | Clean dead code → raise PHPStan to level 4 | P3 | M | — | TODO |
-| **010** | **CSV formula injection in `array_to_csv`** | **P1** | **S** | — | **TODO** |
-| **011** | **Eliminate legacy unparameterized SQL path** | **P1** | **M** | 002 | **TODO** |
-| **012** | **Kafka email worker: data loss + crash fixes** | **P1** | **M** | — | **TODO** |
-| **013** | **Migration runner: lock + idempotent seeds** | **P2** | **M** | — | **TODO** |
-| **014** | **Redact tokens from persisted email bodies** | **P2** | **S–M** | — | **TODO** |
-| **015** | **`canonical_url` fail-closed (Host-header poisoning)** | **P2** | **S** | — | **TODO** |
+| 003 | Fix `set_url()` query-string parsing | P3 | S | — | DONE — [PR #41](https://github.com/cehdoliveira/leggo/pull/41) (aguarda merge + PHPUnit) |
+| 004 | Guard `load_data()` count against missing primary key | P3 | S | — | DONE — [PR #43](https://github.com/cehdoliveira/leggo/pull/43) (aguarda merge + PHPUnit) |
+| 005 | Remove dead / risky helper functions | P3 | S | — | DONE — [PR #44](https://github.com/cehdoliveira/leggo/pull/44) (aguarda merge + PHPUnit) |
+| 006 | Make `load_data()` COUNT query opt-in (perf) | P2 | M | — | DONE — [PR #45](https://github.com/cehdoliveira/leggo/pull/45) (aguarda merge + PHPUnit) |
+| 007 | Tighten Content-Security-Policy | P3 | M | — | DONE — [PR #42](https://github.com/cehdoliveira/leggo/pull/42) (aguarda merge + nginx reload/console) |
+| 008 | De-duplicate shared framework lib across envs | P3 | L | — | DONE (Steps 1–3; Step 4 spike não feito) — [PR #49](https://github.com/cehdoliveira/leggo/pull/49) |
+| 009 | Clean dead code → raise PHPStan to level 4 | P3 | M | — | DONE — [PR #52](https://github.com/cehdoliveira/leggo/pull/52): código morto removido (53→0 / 39→0) **e nível elevado para 4** nos dois envs, via `ignoreErrors` escopado da guarda `ALLOWED_HOSTS` em `canonical_url` (decisão do operador). Aguarda merge + PHPUnit. |
+| **010** | **CSV formula injection in `array_to_csv`** | **P1** | **S** | — | DONE — [PR #40](https://github.com/cehdoliveira/leggo/pull/40) (aguarda merge + PHPUnit) |
+| **011** | **Eliminate legacy unparameterized SQL path** | **P1** | **M** | 002 | DONE — [PR #46](https://github.com/cehdoliveira/leggo/pull/46) (aguarda merge + PHPUnit) |
+| **012** | **Kafka email worker: data loss + crash fixes** | **P1** | **M** | — | DONE (Steps 1–5) — [PR #48](https://github.com/cehdoliveira/leggo/pull/48) (aguarda merge + teste integração Kafka/SMTP) |
+| **013** | **Migration runner: lock + idempotent seeds** | **P2** | **M** | — | DONE (Steps 1–5) — [PR #50](https://github.com/cehdoliveira/leggo/pull/50) (aguarda merge + dup-check em DB; deduplicar antes da 006) |
+| **014** | **Redact tokens from persisted email bodies** | **P2** | **S–M** | — | DONE — [PR #51](https://github.com/cehdoliveira/leggo/pull/51) (aguarda merge + PHPUnit) |
+| **015** | **`canonical_url` fail-closed (Host-header poisoning)** | **P2** | **S** | — | DONE — [PR #47](https://github.com/cehdoliveira/leggo/pull/47) (aguarda merge + PHPUnit) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale)
 
