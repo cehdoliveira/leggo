@@ -75,90 +75,6 @@ class localPDO
 		return true;
 	}
 
-	public function real_escape_string(string $string): string
-	{
-		return trim($this->pdo->quote($string), "'");
-	}
-
-	public function select(string $fields, string $table, string $options): \PDOStatement|false
-	{
-		$res = $this->my_query(
-			sprintf(
-				"SELECT %s FROM %s %s",
-				$fields,
-				$table,
-				$options
-			)
-		);
-		return $res;
-	}
-
-	public function insert(string $fields, string $table, string $options): \PDOStatement|false
-	{
-		return $this->my_query(
-			sprintf(
-				"INSERT INTO %s SET %s %s",
-				$table,
-				$fields,
-				$options
-			)
-		);
-	}
-
-	public function replace(string $fields, string $table): \PDOStatement|false
-	{
-		return $this->my_query(
-			sprintf(
-				"REPLACE INTO %s SET %s",
-				$table,
-				$fields
-			)
-		);
-	}
-
-	public function update(string $fields, string $table, string $options): \PDOStatement|false
-	{
-		return $this->my_query(
-			sprintf(
-				"UPDATE %s SET %s %s",
-				$table,
-				$fields,
-				$options
-			)
-		);
-	}
-
-	public function delete(string $table, string $options): \PDOStatement|false
-	{
-		return $this->my_query(
-			sprintf(
-				"DELETE FROM %s %s",
-				$table,
-				$options
-			)
-		);
-	}
-
-	public function my_query(string $query): \PDOStatement
-	{
-		try {
-			$stmt = $this->pdo->query($query);
-			return $stmt;
-		} catch (PDOException $e) {
-			$this->error = $e->getMessage();
-			if ($this->inTransaction) {
-				$this->rollback();
-			}
-		Logger::getInstance()->error("SQL error", ['error' => $this->error]);
-			throw new RuntimeException("Database error");
-		}
-	}
-
-	public function query(string $query): \PDOStatement
-	{
-		return $this->my_query($query);
-	}
-
 	public function recordcount(\PDOStatement|false $res): int
 	{
 		if (!is_object($res)) return 0;
@@ -201,12 +117,16 @@ class localPDO
 		}
 
 		$object = [];
-		$res = $this->my_query(
-			sprintf(
-				"SHOW COLUMNS FROM %s",
-				$table
-			)
-		);
+		try {
+			$res = $this->pdo->query(sprintf("SHOW COLUMNS FROM %s", $table));
+		} catch (PDOException $e) {
+			$this->error = $e->getMessage();
+			if ($this->inTransaction) {
+				$this->rollback();
+			}
+			Logger::getInstance()->error("SQL error", ['error' => $this->error]);
+			throw new RuntimeException("Database error");
+		}
 
 		foreach ($this->results($res) as $key => $data) {
 			if ($data["Key"] == "PRI") {
