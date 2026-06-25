@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `mail_UNIQUE` (`mail`)
 );
 
-INSERT INTO
+-- INSERT IGNORE: `mail` já é UNIQUE, então uma re-execução desta migration
+-- (ex.: por estado inconsistente em migrations_log) não lança erro de duplicata.
+INSERT IGNORE INTO
     `users` (
         `created_at`,
         `created_by`,

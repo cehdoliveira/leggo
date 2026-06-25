@@ -63,41 +63,56 @@ class MigrationRunner
             'failed' => []
         ];
 
-        // Criar tabela de log se não existir
-        $this->createMigrationsTable();
-
-        // Ler todos os .sql files da pasta
-        $files = $this->getMigrationFiles();
-
-        if (empty($files)) {
-            $this->log("Nenhuma migration encontrada em {$this->migrations_dir}");
+        // Lock advisório no banco para evitar execução concorrente.
+        // GET_LOCK(..., 0) retorna imediatamente: se outro processo (ex.: tick
+        // anterior do cron ainda rodando) detém o lock, recebemos '0' e pulamos.
+        $got = $this->pdo
+            ->query("SELECT GET_LOCK('leggo_migrations', 0) AS l")
+            ->fetch(\PDO::FETCH_ASSOC);
+        if (($got['l'] ?? '0') !== '1') {
+            $this->log("Outro processo de migration está em execução — pulando este ciclo.");
             return $results;
         }
 
-        foreach ($files as $filename) {
-            $migration_name = pathinfo($filename, PATHINFO_FILENAME);
+        try {
+            // Criar tabela de log se não existir
+            $this->createMigrationsTable();
 
-            // Verificar se já foi executada
-            if ($this->isExecuted($migration_name)) {
-                // $this->log("⏭️  SKIP: {$migration_name}"); Descomentar para Debug
-                $results['skipped'][] = $migration_name;
-                continue;
+            // Ler todos os .sql files da pasta
+            $files = $this->getMigrationFiles();
+
+            if (empty($files)) {
+                $this->log("Nenhuma migration encontrada em {$this->migrations_dir}");
+                return $results;
             }
 
-            // Executar migration
-            $filepath = $this->migrations_dir . '/' . $filename;
-            $sql = file_get_contents($filepath);
+            foreach ($files as $filename) {
+                $migration_name = pathinfo($filename, PATHINFO_FILENAME);
 
-            try {
-                $this->executeMigration($sql);
-                $this->recordMigration($migration_name, 'success', null);
-                // $this->log("✅ OK: {$migration_name}"); Descomentar para Debug
-                $results['executed'][] = $migration_name;
-            } catch (Exception $e) {
-                $this->recordMigration($migration_name, 'failed', $e->getMessage());
-                // $this->log("❌ ERRO: {$migration_name} - {$e->getMessage()}"); Descomentar para Debug
-                $results['failed'][] = $migration_name;
+                // Verificar se já foi executada
+                if ($this->isExecuted($migration_name)) {
+                    // $this->log("⏭️  SKIP: {$migration_name}"); Descomentar para Debug
+                    $results['skipped'][] = $migration_name;
+                    continue;
+                }
+
+                // Executar migration
+                $filepath = $this->migrations_dir . '/' . $filename;
+                $sql = file_get_contents($filepath);
+
+                try {
+                    $this->executeMigration($sql);
+                    $this->recordMigration($migration_name, 'success', null);
+                    // $this->log("✅ OK: {$migration_name}"); Descomentar para Debug
+                    $results['executed'][] = $migration_name;
+                } catch (Exception $e) {
+                    $this->recordMigration($migration_name, 'failed', $e->getMessage());
+                    // $this->log("❌ ERRO: {$migration_name} - {$e->getMessage()}"); Descomentar para Debug
+                    $results['failed'][] = $migration_name;
+                }
             }
+        } finally {
+            $this->pdo->query("SELECT RELEASE_LOCK('leggo_migrations')");
         }
 
         return $results;
@@ -154,7 +169,10 @@ class MigrationRunner
         try {
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
-            // Tabela já existe ou outro erro
+            // CREATE TABLE IF NOT EXISTS não deve falhar por "já existe".
+            // Qualquer outro erro (permissão, conexão) precisa ser visível —
+            // logar em vez de engolir, pois sem migrations_log nada funciona.
+            $this->log("⚠️  Falha ao garantir migrations_log: {$e->getMessage()}");
         }
     }
 
@@ -220,6 +238,12 @@ class MigrationRunner
 			return;
 		}
 
+		// ATENÇÃO: este wrapper transacional NÃO torna migrations com DDL atômicas.
+		// No MySQL, instruções DDL (CREATE TABLE, ALTER ...) disparam um COMMIT
+		// implícito antes e depois, então um rollBack() após um DDL bem-sucedido é
+		// um no-op. A transação só protege migrations puramente DML. Por isso cada
+		// migration precisa ser idempotente por conta própria (INSERT IGNORE /
+		// ON DUPLICATE KEY + constraints UNIQUE — ver migrations/006_*).
 		$this->pdo->beginTransaction();
 		try {
 			foreach ($queries as $query) {
@@ -237,19 +261,19 @@ class MigrationRunner
      */
     private function recordMigration(string $name, string $status, ?string $error): void
     {
-        try {
-            $stmt = $this->pdo->prepare("
-                INSERT INTO migrations_log (migration_name, status, error_message)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                  status = VALUES(status),
-                  error_message = VALUES(error_message),
-                  executed_at = CURRENT_TIMESTAMP
-            ");
-            $stmt->execute([$name, $status, $error]);
-        } catch (PDOException $e) {
-            // Falha silenciosa para não quebrar flow
-        }
+        // NÃO engolir falhas aqui: se uma migration foi aplicada mas o registro
+        // de 'success' não persistir, isExecuted() continuará falso e o arquivo
+        // será re-executado a cada tick. Deixar a exceção propagar para o
+        // operador ver o estado inconsistente.
+        $stmt = $this->pdo->prepare("
+            INSERT INTO migrations_log (migration_name, status, error_message)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              status = VALUES(status),
+              error_message = VALUES(error_message),
+              executed_at = CURRENT_TIMESTAMP
+        ");
+        $stmt->execute([$name, $status, $error]);
     }
 
     /**
