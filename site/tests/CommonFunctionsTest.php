@@ -106,4 +106,12 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringContainsString("debug=", $url);
         $this->assertStringContainsString("x=1", $url);
     }
+
+    public function test_canonical_url_uses_configured_constant(): void
+    {
+        if (!defined('SITE_CANONICAL_URL')) {
+            define('SITE_CANONICAL_URL', 'http://leggo.local');
+        }
+        $this->assertSame('http://leggo.local', canonical_url('SITE_CANONICAL_URL'));
+    }
 }
