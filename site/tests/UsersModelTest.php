@@ -61,4 +61,26 @@ final class UsersModelTest extends DBTestCase
 
         $this->assertIsArray($model->data);
     }
+
+    public function testLoadDataDefaultPopulatesRecordset(): void
+    {
+        $model = new users_model();
+        $model->set_field([" idx "]);
+        $model->set_filter(["active = 'yes'"]);
+        $model->set_paginate([5]);
+        $model->load_data();                 // default: real count
+
+        $this->assertIsInt($model->get_recordset());
+    }
+
+    public function testLoadDataWithoutCountUsesRowCount(): void
+    {
+        $model = new users_model();
+        $model->set_field([" idx "]);
+        $model->set_filter(["active = 'yes'"]);
+        $model->set_paginate([3]);
+        $model->load_data(false);            // opt-out: recordset == rows fetched
+
+        $this->assertSame(count($model->data), $model->get_recordset());
+    }
 }
