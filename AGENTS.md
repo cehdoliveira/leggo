@@ -77,6 +77,27 @@ docker/      ← Dockerfile, nginx vhosts, php.ini, entrypoint
 
 Both share the same MySQL database and Redis instance. Kafka topics are separate.
 
+### Código compartilhado vs. por ambiente
+
+O código de framework é mantido em **duas cópias byte-a-byte idênticas** (uma em `manager/`,
+outra em `site/`). Toda correção de framework precisa ser aplicada nas duas.
+
+| Caminho | Regra | Motivo |
+|---|---|---|
+| `app/inc/lib/` | **Compartilhado — DEVE ser idêntico** entre `manager/` e `site/` | Framework comum (CommonFunctions, DOLModel, localPDO, etc.) |
+| `app/inc/model/` | **Compartilhado — DEVE ser idêntico** | Models de framework (users, profiles, messages) |
+| `app/inc/controller/` | **Por ambiente** — pode divergir | Ex.: `auth_controller.php` do manager tem o gate de admin |
+| `public_html/index.php` | **Por ambiente** | Rotas diferem |
+| `app/inc/urls.php` | **Por ambiente** | Rotas diferem |
+| `app/inc/kernel.php` | **Por ambiente** | Constantes/config diferentes |
+| `ui/` (views) | **Por ambiente** | Templates específicos |
+| `tests/` | Idêntico em espírito, **não** byte-a-byte | Bootstrap difere apenas pelo `HTTP_HOST` |
+
+O guard `bin/check-shared-sync.sh` faz `diff -rq` de `app/inc/lib` e `app/inc/model` entre os
+dois ambientes (ignorando `vendor/` e `tests/`) e falha com exit não-zero listando os arquivos
+divergentes. Ele roda automaticamente no hook `.githooks/pre-commit`, então esquecer de editar
+uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-sync.sh`.
+
 ## Framework conventions
 
 - **Models** extend `DOLModel`. Define `$field` (columns to SELECT) and `$filter` (WHERE clauses) as arrays of raw SQL strings. Use `populate($data)` to set values, `save()` to INSERT/UPDATE, `remove()` to soft-delete, `load_data()` to query.
