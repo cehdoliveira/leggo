@@ -834,6 +834,15 @@ function old(string $key, mixed $default = ''): string
   return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+function csv_sanitize_cell(mixed $value): string
+{
+  $value = (string) ($value ?? '');
+  if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+    return "'" . $value;
+  }
+  return $value;
+}
+
 function array_to_csv(array $data, string $filename = 'export.csv', ?array $headers = null): never
 {
   header('Content-Type: text/csv; charset=UTF-8');
@@ -857,7 +866,7 @@ function array_to_csv(array $data, string $filename = 'export.csv', ?array $head
   foreach ($data as $row) {
     $csvRow = [];
     foreach ($headers as $key) {
-      $csvRow[] = $row[$key] ?? '';
+      $csvRow[] = csv_sanitize_cell($row[$key] ?? '');
     }
     fputcsv($output, $csvRow, ';', '"', '\\');
   }

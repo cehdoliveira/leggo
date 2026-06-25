@@ -80,4 +80,16 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringContainsString("a=1", $url);
         $this->assertStringContainsString("b=2", $url);
     }
+
+    public function test_csv_sanitize_cell_prefixes_formula_leading_chars(): void
+    {
+        $this->assertSame("'=HYPERLINK(\"x\")", csv_sanitize_cell('=HYPERLINK("x")'));
+        $this->assertSame("'+1+1", csv_sanitize_cell('+1+1'));
+        $this->assertSame("'-2", csv_sanitize_cell('-2'));
+        $this->assertSame("'@SUM(1)", csv_sanitize_cell('@SUM(1)'));
+        // Benign values pass through untouched
+        $this->assertSame('Carlos', csv_sanitize_cell('Carlos'));
+        $this->assertSame('a@b.com', csv_sanitize_cell('a@b.com')); // '@' only matched at position 0
+        $this->assertSame('', csv_sanitize_cell(null));
+    }
 }
