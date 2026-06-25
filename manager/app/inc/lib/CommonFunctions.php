@@ -459,16 +459,20 @@ function canonical_url(string $canonicalConstant): string
     return rtrim(constant($canonicalConstant), '/');
   }
 
+  // cFrontend só é confiável se já tiver sido validado contra ALLOWED_HOSTS no bootstrap.
   if (defined('ALLOWED_HOSTS') && constant('ALLOWED_HOSTS') !== '') {
     return rtrim(constant('cFrontend'), '/');
   }
 
-  Logger::getInstance()->warning("Canonical URL falling back to cFrontend without ALLOWED_HOSTS", [
+  // Fail closed: sem URL canônica e sem ALLOWED_HOSTS, cFrontend deriva de HTTP_HOST
+  // (controlável pelo atacante) — recusar em vez de gerar link envenenável.
+  Logger::getInstance()->error("canonical_url sem configuração segura — recusando", [
     "constant" => $canonicalConstant,
     "host"     => $_SERVER['HTTP_HOST'] ?? 'unknown',
   ]);
-
-  return rtrim(constant('cFrontend'), '/');
+  throw new RuntimeException(
+    "URL canônica não configurada: defina {$canonicalConstant} ou ALLOWED_HOSTS no kernel.php"
+  );
 }
 
 function check_rate_limit(?object $redis, string $key, int $max): bool
