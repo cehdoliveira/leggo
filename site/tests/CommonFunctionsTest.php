@@ -114,4 +114,13 @@ final class CommonFunctionsTest extends TestCase
         }
         $this->assertSame('http://leggo.local', canonical_url('SITE_CANONICAL_URL'));
     }
+
+    public function test_redact_email_body_strips_token_urls_and_hex(): void
+    {
+        $html = '<a href="https://x.tld/redefinir-senha/abc123def456abc123def456abc123de">link</a> ref deadbeefdeadbeefdeadbeefdeadbeef';
+        $out  = redact_email_body($html);
+        $this->assertStringNotContainsString('abc123def456abc123def456abc123de', $out);
+        $this->assertStringNotContainsString('deadbeefdeadbeefdeadbeefdeadbeef', $out);
+        $this->assertStringContainsString('[REDACTED]', $out);
+    }
 }

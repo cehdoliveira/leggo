@@ -873,4 +873,20 @@ function random_token(int $bytes = 32): string
   return bin2hex(random_bytes($bytes));
 }
 
+/**
+ * Remove tokens sensíveis (links de verificação/reset) do corpo do email
+ * antes de persistir no log de mensagens. O email enviado ao usuário continua
+ * com o token; apenas a cópia armazenada é redigida.
+ */
+function redact_email_body(string $html): string
+{
+  // Redige o caminho/token de qualquer href (verificar-email/<t>, redefinir-senha/<t>, definir-senha/<t>)
+  $html = preg_replace('/(href=["\'][^"\']*\/(?:verificar-email|redefinir-senha|definir-senha)\/)[^"\']+/i', '$1[REDACTED]', (string) $html);
+  // Redige o token exposto como texto (o link aparece tambem em texto puro no template)
+  $html = preg_replace('/(\/(?:verificar-email|redefinir-senha|definir-senha)\/)[a-z0-9]+/i', '$1[REDACTED]', (string) $html);
+  // Redige qualquer sequencia hex longa solta (tokens random_token() = 64 chars hex)
+  $html = preg_replace('/\b[a-f0-9]{32,}\b/i', '[REDACTED]', (string) $html);
+  return $html ?? '';
+}
+
 
