@@ -61,4 +61,17 @@ final class UsersModelTest extends DBTestCase
 
         $this->assertIsArray($model->data);
     }
+
+    public function testStaticFilterWithoutParamsStillLoads(): void
+    {
+        // Filtro estatico legado (sem params) deve continuar funcionando
+        // pelo caminho unico preparado, apos remocao do branch else cru.
+        $model = new users_model();
+        $model->set_field([" idx ", " name "]);
+        $model->set_filter(["active = 'yes'"]);
+        $model->set_paginate([10]);
+        $model->load_data();
+
+        $this->assertIsArray($model->data);
+    }
 }
