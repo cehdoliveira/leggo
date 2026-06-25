@@ -250,19 +250,23 @@ class DOLModel extends rootOBJ
 		$gp = isset($this->group) ? " group by " . implode(" , ", $this->group) . " " : "";
 		$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
 
+		$countExpr = (isset($this->keys["pk"]) && !empty($this->keys["pk"]))
+			? implode(",", $this->keys["pk"])
+			: "*";
+
 		if (!empty($this->filterParams)) {
 			$sql = sprintf("SELECT %s FROM %s %s %s %s %s", $ff, $this->table, $fi, $gp, $or, $pa);
 			$r = $this->con->executePrepared($sql, $this->filterParams);
 			$this->set_data($this->con->results($r));
 
 			$countSql = sprintf("SELECT count( %s ) as q FROM %s %s %s",
-				implode(",", $this->keys["pk"]), $this->table, $fi, $gp);
+				$countExpr, $this->table, $fi, $gp);
 			$countStmt = $this->con->executePrepared($countSql, $this->filterParams);
 			$this->set_recordset($this->con->result($countStmt, "q", 0));
 		} else {
 			$r = $this->con->select($ff, $this->table, $fi . $gp . $or . $pa);
 			$this->set_data($this->con->results($r));
-			$this->set_recordset($this->con->result($this->con->select(" count( " . implode(",", $this->keys["pk"]) . ") as q ", $this->table, $fi . $gp), "q", 0));
+			$this->set_recordset($this->con->result($this->con->select(" count( " . $countExpr . ") as q ", $this->table, $fi . $gp), "q", 0));
 		}
 	}
 
