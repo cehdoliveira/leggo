@@ -80,4 +80,13 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringContainsString("a=1", $url);
         $this->assertStringContainsString("b=2", $url);
     }
+
+    public function test_redact_email_body_strips_token_urls_and_hex(): void
+    {
+        $html = '<a href="https://x.tld/redefinir-senha/abc123def456abc123def456abc123de">link</a> ref deadbeefdeadbeefdeadbeefdeadbeef';
+        $out  = redact_email_body($html);
+        $this->assertStringNotContainsString('abc123def456abc123def456abc123de', $out);
+        $this->assertStringNotContainsString('deadbeefdeadbeefdeadbeefdeadbeef', $out);
+        $this->assertStringContainsString('[REDACTED]', $out);
+    }
 }

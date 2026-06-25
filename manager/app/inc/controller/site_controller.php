@@ -126,7 +126,7 @@ class site_controller
                         $msgModel->populate([
                             "to_mail" => $user['mail'],
                             "subject" => $subject,
-                            "body"    => $body,
+                            "body"    => redact_email_body($body),
                             "sent_at" => date("Y-m-d H:i:s"),
                         ]);
                         $msgModel->save();
