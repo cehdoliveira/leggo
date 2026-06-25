@@ -200,8 +200,7 @@ function runWorker()
         $conf->set('metadata.broker.list', KAFKA_HOST . ':' . KAFKA_PORT);
         $conf->set('group.id', 'email-worker-group');
         $conf->set('auto.offset.reset', 'earliest'); // earliest para não perder mensagens
-        $conf->set('enable.auto.commit', 'true'); // Auto commit para marcar mensagens processadas
-        $conf->set('auto.commit.interval.ms', '1000'); // Commit a cada 1 segundo
+        $conf->set('enable.auto.commit', 'false'); // Commit manual: só após envio confirmado (at-least-once)
 
         // Configurar callbacks para debug de rebalance
         $conf->setRebalanceCb(function ($kafka, $err, array $partitions = null) {
@@ -230,7 +229,7 @@ function runWorker()
         log_message("  Broker: " . KAFKA_HOST . ':' . KAFKA_PORT);
         log_message("  Group ID: email-worker-group");
         log_message("  Auto offset reset: earliest");
-        log_message("  Auto commit: true (interval: 1s)");
+        log_message("  Auto commit: false (commit manual após envio)");
         log_message("  Tópico: " . KAFKA_TOPIC_EMAIL);
 
         // Criar consumer
@@ -255,12 +254,17 @@ function runWorker()
         while (true) {
             $message = $consumer->consume(30 * 1000); // 30 segundos de timeout (reduzido)
 
-            // Log de heartbeat a cada 20 tentativas sem mensagem
+            // Log de heartbeat a cada 20 tentativas sem mensagem.
+            // null/timeout: nada a processar — continua o loop SEM dereferenciar $message
+            // (consume() pode retornar null; acessar $message->err aqui causaria
+            // "Attempt to read property err on null").
             if ($message === null || $message->err === RD_KAFKA_RESP_ERR__TIMED_OUT) {
                 $messageCount++;
                 if ($messageCount % 20 === 0) {
                     log_message("Heartbeat: Worker ativo, aguardando mensagens... (ciclo #{$messageCount})");
                 }
+                pcntl_signal_dispatch(); // mantém tratamento de sinais responsivo enquanto ocioso
+                continue;
             }
 
             switch ($message->err) {
@@ -278,27 +282,37 @@ function runWorker()
 
                     $emailData = json_decode($message->payload, true);
 
-                    if ($emailData === null) {
-                        log_message("❌ Mensagem inválida (JSON malformado)", 'WARNING');
-                        log_message("Payload raw: " . substr($message->payload, 0, 200));
+                    // Mensagem malformada/poison (JSON inválido ou campos obrigatórios
+                    // ausentes): nunca poderá ter sucesso. Comitamos para descartar e
+                    // não bloquear a partição indefinidamente — mas logamos alto.
+                    if (!is_array($emailData) || empty($emailData['to']) || empty($emailData['subject'])) {
+                        log_message("❌ Mensagem inválida/poison descartada (JSON ou campos ausentes)", 'WARNING');
+                        log_message("Payload raw: " . substr((string) $message->payload, 0, 200));
                         $consumer->commit($message);
-                        continue 2;
+                        break; // sai do switch; loop continua
                     }
 
                     log_message("📧 Processando email...");
                     log_message("   Assunto: {$emailData['subject']}");
                     log_message("   Destinatários: " . implode(', ', $emailData['to']));
 
-                    // Processar email
-                    $success = sendEmailViaPHPMailer($emailData);
+                    // Processar email. Envolvido em Throwable para que uma mensagem
+                    // poison (que dispare TypeError/Error) não mate o loop.
+                    try {
+                        $success = sendEmailViaPHPMailer($emailData);
+                    } catch (\Throwable $e) {
+                        log_message("Erro inesperado ao enviar email: " . $e->getMessage(), 'ERROR');
+                        $success = false;
+                    }
 
                     if ($success) {
+                        $consumer->commit($message); // avança offset SOMENTE em sucesso
                         log_message("✅ Email processado e enviado com sucesso!");
-                        // Não precisa commit manual - auto commit está ativo
                     } else {
-                        log_message("❌ Falha ao processar email", 'ERROR');
-                        // Mesmo com falha, auto commit vai marcar como processado
-                        // Para implementar retry, usar dead letter queue
+                        // Falha transitória (SMTP/rede): NÃO comitar -> a mensagem será
+                        // reentregue no próximo poll (at-least-once).
+                        log_message("❌ Falha no envio — offset NÃO comitado, será reprocessado", 'ERROR');
+                        sleep(2); // backoff pequeno para uma queda dura de SMTP não virar hot-loop
                     }
 
                     break;
@@ -330,6 +344,10 @@ function runWorker()
 
 // Handler de sinais para shutdown gracioso
 if (function_exists('pcntl_signal')) {
+    // Sinais assíncronos: SIGTERM do `docker stop` é honrado prontamente, sem
+    // esperar até o timeout de 30s do consume() (o que causaria SIGKILL no meio de um envio).
+    pcntl_async_signals(true);
+
     pcntl_signal(SIGTERM, function () {
         log_message("Recebido SIGTERM, encerrando worker...");
         exit(0);
