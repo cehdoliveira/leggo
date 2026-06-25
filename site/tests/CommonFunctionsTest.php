@@ -80,4 +80,18 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringContainsString("a=1", $url);
         $this->assertStringContainsString("b=2", $url);
     }
+
+    public function testSetUrlPreservesValueWithEquals(): void
+    {
+        $url = set_url("http://example.com?redirect=a=b", ["page" => "1"]);
+        $this->assertStringContainsString("redirect=a=b", $url);
+    }
+
+    public function testSetUrlHandlesValuelessSegment(): void
+    {
+        // Must not emit a warning and must keep the flag
+        $url = set_url("http://example.com?debug&x=1", ["y" => "2"]);
+        $this->assertStringContainsString("debug=", $url);
+        $this->assertStringContainsString("x=1", $url);
+    }
 }
