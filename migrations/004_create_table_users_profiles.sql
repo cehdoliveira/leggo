@@ -13,10 +13,13 @@ CREATE TABLE IF NOT EXISTS `users_profiles` (
     PRIMARY KEY (`idx`),
     KEY `idx_users_id` (`users_id`),
     KEY `idx_profiles_id` (`profiles_id`),
-    KEY `idx_active` (`active`)
+    KEY `idx_active` (`active`),
+    UNIQUE KEY `uq_users_profiles` (`users_id`, `profiles_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Relação many-to-many entre users e profiles';
 
-INSERT INTO
+-- INSERT IGNORE: com UNIQUE (users_id, profiles_id), re-execuções não duplicam
+-- a atribuição de perfil do admin.
+INSERT IGNORE INTO
     `users_profiles` (
         `created_at`,
         `created_by`,

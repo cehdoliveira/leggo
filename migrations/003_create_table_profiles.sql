@@ -11,14 +11,16 @@ CREATE TABLE IF NOT EXISTS `profiles` (
     `active` ENUM('yes', 'no') DEFAULT 'yes',
     `name` VARCHAR(255) DEFAULT NULL,
     `editabled` ENUM('yes', 'no') DEFAULT 'yes',
-    `slug` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL UNIQUE,
     `adm` ENUM('yes', 'no') DEFAULT 'no',
     `parent` INT DEFAULT '0',
     PRIMARY KEY (`idx`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Perfis de sistema
-INSERT INTO
+-- INSERT IGNORE: com `slug` UNIQUE, re-execuções viram no-op em vez de
+-- acumular perfis duplicados (admin/user).
+INSERT IGNORE INTO
     `profiles` (
         `created_at`,
         `created_by`,
