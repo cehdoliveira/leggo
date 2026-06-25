@@ -40,6 +40,8 @@ AGENTS.md
 # ============================================================
 *.md
 !README.md
+# Planos de implementação (advisory / handoff) — versionados de propósito
+!plans/*.md
 
 
 # ============================================================
