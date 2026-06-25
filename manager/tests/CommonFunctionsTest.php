@@ -109,10 +109,13 @@ final class CommonFunctionsTest extends TestCase
 
     public function test_canonical_url_uses_configured_constant(): void
     {
-        if (!defined('SITE_CANONICAL_URL')) {
-            define('SITE_CANONICAL_URL', 'http://leggo.local');
+        // Usa uma constante dedicada ao teste: SITE_CANONICAL_URL pode já vir
+        // definida (vazia) pelo kernel de teste, o que dispararia o fail-closed
+        // de canonical_url. Uma constante própria garante o branch "configurado".
+        if (!defined('TEST_CANONICAL_URL')) {
+            define('TEST_CANONICAL_URL', 'http://leggo.local');
         }
-        $this->assertSame('http://leggo.local', canonical_url('SITE_CANONICAL_URL'));
+        $this->assertSame('http://leggo.local', canonical_url('TEST_CANONICAL_URL'));
     }
 
     public function test_redact_email_body_strips_token_urls_and_hex(): void
