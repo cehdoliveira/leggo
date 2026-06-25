@@ -55,7 +55,7 @@ class DOLModel extends rootOBJ
 
 	public function save(): int|bool|\PDOStatement
 	{
-		if (!isset($this->values) || empty($this->values)) {
+		if (empty($this->values)) {
 			return false;
 		}
 
@@ -77,13 +77,9 @@ class DOLModel extends rootOBJ
 			$params[] = $val;
 		}
 
-		$isUpdateFilter = isset($this->filter) && is_array($this->filter);
-
 		// Se o filtro for APENAS o default "active = 'yes'" (definido na classe do model),
 		// trata como INSERT, nao UPDATE — mesma logica do codigo original.
-		if ($isUpdateFilter && count($this->filter) === 1 && ltrim(rtrim($this->filter[0])) === "active = 'yes'") {
-			$isUpdateFilter = false;
-		}
+		$isUpdateFilter = !(count($this->filter) === 1 && ltrim(rtrim($this->filter[0])) === "active = 'yes'");
 
 		if ($isUpdateFilter) {
 			$fi = " where " . implode(" and ", $this->filter) . " ";
@@ -121,10 +117,6 @@ class DOLModel extends rootOBJ
 
 	public function remove(): ?\PDOStatement
 	{
-		if (!isset($this->filter)) {
-			return null;
-		}
-
 		$fi = " where " . implode(" and ", $this->filter) . " ";
 		$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";
 		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
@@ -164,10 +156,6 @@ class DOLModel extends rootOBJ
 
 	public function populate(array $data, bool $encode = false)
 	{
-		if (!isset($this->values)) {
-			$this->values = [];
-		}
-
 		$array = array();
 		foreach ($this->schema as $key => $value) {
 			if (isset($data[$key])) {
@@ -244,8 +232,8 @@ class DOLModel extends rootOBJ
 
 	public function load_data(): void
 	{
-		$ff = isset($this->field) ? implode(",", $this->field) : " * ";
-		$fi = isset($this->filter) ? " where " . implode(" and ", $this->filter) . " " : "";
+		$ff = implode(",", $this->field);
+		$fi = " where " . implode(" and ", $this->filter) . " ";
 		$or = isset($this->order) ? " order by " . implode(" , ", $this->order) . " " : "";
 		$gp = isset($this->group) ? " group by " . implode(" , ", $this->group) . " " : "";
 		$pa = isset($this->paginate) ? " limit " . implode(" , ", $this->paginate) . " " : "";

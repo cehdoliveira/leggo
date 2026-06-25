@@ -16,7 +16,6 @@ function m_autoload(string $name): bool
     return false;
   }
 
-  $file_name = false;
   try {
     foreach (["controller", "lib", "model"] as $dir) {
       $file = sprintf(
@@ -27,21 +26,17 @@ function m_autoload(string $name): bool
       );
 
       if (file_exists($file)) {
-        $file_name = $file;
         if (! class_exists($name, false)) {
           require_once($file);
         }
         return true;
       }
     }
-    if ($file_name === false) {
-      throw new Exception('Class ' . $name . ' not exists');
-    }
+    throw new Exception('Class ' . $name . ' not exists');
   } catch (Exception $e) {
     error_log("Autoload Error: " . $e->getMessage());
     return false;
   }
-  return false;
 }
 spl_autoload_register('m_autoload');
 
@@ -263,13 +258,11 @@ function get_request_server(string|false $auth = false, ?bool $https = null): st
  */
 function a_walk(array &$array): array
 {
-  if (is_array($array)) {
-    foreach ($array as $k => $v) {
-      if (is_array($v)) {
-        $array[$k] = a_walk($v);
-      } else {
-        $array[$k] = toUtf8($v);
-      }
+  foreach ($array as $k => $v) {
+    if (is_array($v)) {
+      $array[$k] = a_walk($v);
+    } else {
+      $array[$k] = toUtf8($v);
     }
   }
   return $array;
@@ -371,7 +364,7 @@ function html_notification_print(): void
  */
 function sanitize_string(mixed $value, bool $digitsOnly = false): ?string
 {
-  if (!isset($value) || $value === null) {
+  if (!isset($value)) {
     return null;
   }
 
@@ -444,7 +437,6 @@ function validate_csrf(?string $token, string $redirectUrl): void
   if (!$isValid) {
     $_SESSION["messages_app"]["danger"] = ["Requisição inválida. Tente novamente."];
     basic_redir($redirectUrl);
-    exit();
   }
 
   if (isset($_SESSION['_csrf_token'])) {

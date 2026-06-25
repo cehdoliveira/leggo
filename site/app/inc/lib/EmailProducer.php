@@ -243,7 +243,7 @@ class EmailProducer
         return [
             'broker' => $this->config['host'] . ':' . $this->config['port'],
             'topic' => $this->config['topic'],
-            'connected' => $this->producer !== null,
+            'connected' => true,
         ];
     }
 

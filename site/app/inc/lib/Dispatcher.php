@@ -122,7 +122,7 @@ class Dispatcher
 							}
 						} else {
 							$class_method = explode(":", $entry["exec"]);
-							if (is_array($class_method) && count($class_method) == 2) {
+							if (count($class_method) == 2) {
 								list($class_name, $method_name) = $class_method;
 
 								if (class_exists($class_name)) {

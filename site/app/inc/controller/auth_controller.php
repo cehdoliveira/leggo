@@ -37,7 +37,6 @@ class auth_controller
         if (empty($info["post"]["login"]) || empty($info["post"]["password"])) {
             $_SESSION["messages_app"]["danger"] = ["Login e/ou Senha são obrigatórios para realizar o login"];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $redis   = $GLOBALS['redis'] ?? null;
@@ -45,7 +44,6 @@ class auth_controller
         if (check_and_increment_rate_limit($redis, $rateKey, 5, 60)) {
             $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde um momento antes de tentar novamente."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $users = new users_model();
@@ -84,7 +82,6 @@ class auth_controller
         }
 
         basic_redir($authenticated ? $GLOBALS["area_url"] : $GLOBALS["login_url"]);
-        exit();
     }
 
     public function display_register(array $info): void
@@ -110,7 +107,6 @@ class auth_controller
             if (empty($info["post"][$r])) {
                 $_SESSION["messages_app"]["danger"] = ["Campo $r é obrigatório"];
                 basic_redir($GLOBALS["register_url"]);
-                exit();
             }
         }
 
@@ -124,7 +120,6 @@ class auth_controller
             if (isset($users->data[0]["idx"])) {
                 $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
                 basic_redir($GLOBALS["register_url"]);
-                exit();
             }
 
             $token = random_token();
@@ -140,7 +135,7 @@ class auth_controller
             $newUser->populate($info["post"]);
             $info["idx"] = $newUser->save();
 
-            if (isset($info["idx"]) && $info["idx"] > 0) {
+            if ($info["idx"] > 0) {
                 $newUser->save_attach($info, ["profiles"]);
 
                 $canonicalBase = canonical_url('SITE_CANONICAL_URL');
@@ -177,22 +172,18 @@ class auth_controller
                 if (!$emailSent) {
                     $_SESSION["messages_app"]["danger"] = ["Cadastro realizado, mas não foi possível enviar o email de verificação. Entre em contato com o suporte."];
                     basic_redir($GLOBALS["register_url"]);
-                    exit();
                 }
 
                 $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
                 basic_redir($GLOBALS["login_url"]);
-                exit();
             } else {
                 $_SESSION["messages_app"]["danger"] = ["Falha ao criar usuário. Tente novamente mais tarde."];
                 basic_redir($GLOBALS["register_url"]);
-                exit();
             }
         } catch (Exception $e) {
             error_log("Erro ao criar usuário: " . $e->getMessage());
             $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login ou ocorreu um erro. Tente novamente."];
             basic_redir($GLOBALS["register_url"], rollback: true);
-            exit();
         }
     }
 
@@ -203,7 +194,6 @@ class auth_controller
         if (empty($token)) {
             $_SESSION["messages_app"]["danger"] = ["Link de verificação inválido."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $users = new users_model();
@@ -226,12 +216,10 @@ class auth_controller
                 $_SESSION['pending_set_password_idx'] = (int)$user["idx"];
                 $_SESSION["messages_app"]["success"] = ["Este e-mail já foi confirmado. Continue para definir sua senha."];
                 basic_redir(sprintf($GLOBALS["set_password_url"], $token));
-                exit();
             }
 
             $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
@@ -241,7 +229,6 @@ class auth_controller
 
         $_SESSION["messages_app"]["success"] = ["E-mail confirmado! Agora defina sua senha para ativar sua conta."];
         basic_redir(sprintf($GLOBALS["set_password_url"], $token));
-        exit();
     }
 
     public function display_set_password(array $info): void
@@ -252,7 +239,6 @@ class auth_controller
         if (empty($pendingIdx)) {
             $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Por favor, verifique seu e-mail novamente."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $users = new users_model();
@@ -266,7 +252,6 @@ class auth_controller
             unset($_SESSION['pending_set_password_idx']);
             $_SESSION["messages_app"]["danger"] = ["Link inválido ou já utilizado."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         if (empty($_SESSION['_csrf_token'])) {
@@ -295,19 +280,16 @@ class auth_controller
         if (empty($pendingIdx)) {
             $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Por favor, verifique seu e-mail novamente."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         if (empty($password) || strlen($password) < 6) {
             $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
             basic_redir(sprintf($GLOBALS["set_password_url"], $token));
-            exit();
         }
 
         if ($password !== $confirm) {
             $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
             basic_redir(sprintf($GLOBALS["set_password_url"], $token));
-            exit();
         }
 
         $users = new users_model();
@@ -321,7 +303,6 @@ class auth_controller
             unset($_SESSION['pending_set_password_idx']);
             $_SESSION["messages_app"]["danger"] = ["Link inválido ou já utilizado."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $hashedPwd = password_hash($password, PASSWORD_BCRYPT);
@@ -339,14 +320,12 @@ class auth_controller
 
         $_SESSION["messages_app"]["success"] = ["Senha definida! Você já pode fazer login."];
         basic_redir($GLOBALS["login_url"]);
-        exit();
     }
 
     public function display(array $info): void
     {
         if (self::check_login()) {
             basic_redir($GLOBALS["area_url"]);
-            return;
         }
 
         if (empty($_SESSION['_csrf_token'])) {
@@ -383,7 +362,6 @@ class auth_controller
         if (empty($mail)) {
             $_SESSION["messages_app"]["danger"] = ["Informe seu e-mail."];
             basic_redir($GLOBALS["forgot_password_url"]);
-            exit();
         }
 
         $redis   = $GLOBALS['redis'] ?? null;
@@ -391,7 +369,6 @@ class auth_controller
         if (check_and_increment_rate_limit($redis, $rateKey, 3, 300)) {
             $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde alguns minutos."];
             basic_redir($GLOBALS["forgot_password_url"]);
-            exit();
         }
 
         $users = new users_model();
@@ -464,14 +441,12 @@ class auth_controller
             if (!$emailSent) {
                 $_SESSION["messages_app"]["danger"] = ["Não foi possível enviar o email. Tente novamente mais tarde."];
                 basic_redir($GLOBALS["forgot_password_url"]);
-                exit();
             }
         }
 
         // Mensagem genérica — não revela se o e-mail existe
         $_SESSION["messages_app"]["success"] = ["Se o e-mail informado estiver cadastrado, você receberá um link em breve."];
         basic_redir($GLOBALS["login_url"]);
-        exit();
     }
 
     public function display_reset_password(array $info): void
@@ -490,13 +465,11 @@ class auth_controller
                 unset($_SESSION['pending_reset_idx']);
                 $_SESSION["messages_app"]["danger"] = ["Sessão inválida."];
                 basic_redir($GLOBALS["login_url"]);
-                exit();
             }
         } else {
             if (empty($token)) {
                 $_SESSION["messages_app"]["danger"] = ["Link inválido."];
                 basic_redir($GLOBALS["login_url"]);
-                exit();
             }
 
             $users      = new users_model();
@@ -510,7 +483,6 @@ class auth_controller
             if (!$user) {
                 $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
                 basic_redir($GLOBALS["login_url"]);
-                exit();
             }
 
             $users->set_filter(["idx = ?"], [(int)$user["idx"]]);
@@ -544,19 +516,16 @@ class auth_controller
         if (empty($pendingIdx)) {
             $_SESSION["messages_app"]["danger"] = ["Sessão expirada. Solicite um novo link de redefinição."];
             basic_redir($GLOBALS["forgot_password_url"]);
-            exit();
         }
 
         if (empty($password) || strlen($password) < 6) {
             $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
             basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
-            exit();
         }
 
         if ($password !== $confirm) {
             $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
             basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
-            exit();
         }
 
         $users   = new users_model();
@@ -570,7 +539,6 @@ class auth_controller
             unset($_SESSION['pending_reset_idx']);
             $_SESSION["messages_app"]["danger"] = ["Usuário não encontrado."];
             basic_redir($GLOBALS["login_url"]);
-            exit();
         }
 
         $users->set_filter(["idx = ?"], [$pendingIdx]);
@@ -585,6 +553,5 @@ class auth_controller
 
         $_SESSION["messages_app"]["success"] = ["Senha redefinida com sucesso! Faça login para continuar."];
         basic_redir($GLOBALS["login_url"]);
-        exit();
     }
 }
