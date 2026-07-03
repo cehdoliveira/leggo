@@ -56,6 +56,8 @@ docker/                ← Dockerfile, nginx, php.ini, entrypoint, .env.example
 
 ## Comandos
 
+CI (GitHub Actions) roda sync-guard + PHPStan + PHPUnit (com MySQL de serviço) em todo push/PR.
+
 ```bash
 # Análise estática — PHPStan nível 3
 cd manager && php app/inc/lib/vendor/bin/phpstan analyse
