@@ -158,8 +158,8 @@ class DOLModel extends rootOBJ
 	{
 		$array = array();
 		foreach ($this->schema as $key => $value) {
-			if (isset($data[$key])) {
-				if ($encode === true) {
+			if (array_key_exists($key, $data)) {
+				if ($encode === true && $data[$key] !== null) {
 					$data[$key] = mb_convert_encoding($data[$key], 'ISO-8859-1', 'UTF-8');
 				}
 				if ($data[$key] !== '') {
