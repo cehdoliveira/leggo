@@ -34,7 +34,7 @@ function initializeSmoothScroll() {
 }
 
 function initializeTheme() {
-    const storageKey = 'leggo-theme';
+    const storageKey = 'theme';
     const root = document.documentElement;
 
     const applyTheme = (theme) => {
