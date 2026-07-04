@@ -5,7 +5,7 @@
         <nav class="ss-navbar">
             <div class="container ss-navbar-inner">
                 <a class="ss-brand" href="<?php echo $GLOBALS['home_url']; ?>">
-                    <img src="<?php printf('%s%s', constant('cFrontend'), 'assets/img/logo.png'); ?>" width="28" height="28" alt="Logo" style="object-fit:contain">
+                    <span class="brand-logo" aria-hidden="true"><?php readfile(__DIR__ . '/../../assets/img/logo.svg'); ?></span>
                     <span><?php echo htmlspecialchars(constant('cTitle')); ?></span>
                 </a>
 

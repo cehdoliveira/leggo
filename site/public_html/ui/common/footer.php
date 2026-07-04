@@ -4,8 +4,7 @@
         <div class="container">
             <div class="ss-footer-inner">
                 <div class="ss-footer-brand">
-                    <img src="<?php printf('%s%s', constant('cFrontend'), 'assets/img/logo.png'); ?>"
-                        width="22" height="22" alt="Logo" style="object-fit:contain">
+                    <span class="brand-logo brand-logo-sm" aria-hidden="true"><?php readfile(__DIR__ . '/../../assets/img/logo.svg'); ?></span>
                     <span><?php echo htmlspecialchars(constant('cTitle')); ?> &copy; <?php echo date('Y'); ?></span>
                 </div>
                 <div class="ss-footer-links">

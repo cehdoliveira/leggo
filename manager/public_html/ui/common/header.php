@@ -5,7 +5,7 @@
         <nav class="navbar leggo-navbar">
             <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="<?php echo $GLOBALS['home_url']; ?>">
-                    <img src="<?php printf('%s%s', constant('cFrontend'), 'assets/img/logo.png'); ?>" width="28" height="28" alt="Logo" style="object-fit:contain">
+                    <span class="brand-logo" aria-hidden="true"><?php readfile(__DIR__ . '/../../assets/img/logo.svg'); ?></span>
                     <span class="brand-name"><?php echo htmlspecialchars(constant('cTitle')); ?></span>
                 </a>
                 <?php if (auth_controller::check_login()) { ?>
