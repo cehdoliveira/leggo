@@ -57,14 +57,9 @@ jobs:
             sed -i 's/define("DB_HOST", "mysql")/define("DB_HOST", "127.0.0.1")/' $env/app/inc/kernel.php
             sed -i 's/define("DB_USER", "user_leggo")/define("DB_USER", "root")/' $env/app/inc/kernel.php
             sed -i 's/define("DB_PASS", "SUA_SENHA_AQUI")/define("DB_PASS", "ci_root")/' $env/app/inc/kernel.php
-            # ALLOWED_HOSTS precisa bater com o HTTP_HOST que tests/bootstrap.php
-            # hardcoda ("manager.leggo.test" nas duas cópias) — ver "Current state"
-            # no plano 017 para o porque; sem isso o bootstrap do PHPUnit sai com
-            # "Invalid host header" antes de rodar qualquer teste.
-            sed -i 's/define("ALLOWED_HOSTS", ".*")/define("ALLOWED_HOSTS", "manager.leggo.test")/' $env/app/inc/kernel.php
           done
       - name: Rodar migrations (runner real)
-        run: HTTP_HOST=manager.leggo.test php site/cgi-bin/run_migrations.php
+        run: HTTP_HOST=leggo.local php site/cgi-bin/run_migrations.php
       - name: PHPUnit site
         run: HTTP_HOST=localhost php site/app/inc/lib/vendor/bin/phpunit -c site/phpunit.xml
       - name: PHPUnit manager
