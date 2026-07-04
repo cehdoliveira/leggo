@@ -139,8 +139,8 @@ class EmailProducer
             $this->producer->poll(0);
 
             // Flush com retry inteligente (timeout progressivo)
-            // Total: até 30s para garantir sucesso mesmo em ambiente de produção
-            $maxRetries = 30;
+            // Total: até ~3s para não bloquear o request em caso de broker lento/fora
+            $maxRetries = 3;
             $timeoutMs = 1000; // 1 segundo por tentativa
 
             for ($flushRetries = 0; $flushRetries < $maxRetries; $flushRetries++) {
@@ -148,8 +148,8 @@ class EmailProducer
 
                 if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
                     // Sucesso!
-                    if ($flushRetries > 5) {
-                        // Log se demorou mais que 5 tentativas (5s)
+                    if ($flushRetries > 0) {
+                        // Log se não teve sucesso já na primeira tentativa
                         error_log("EmailProducer::sendEmail - Sucesso após {$flushRetries} tentativas");
                     }
                     return true;
