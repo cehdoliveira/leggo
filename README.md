@@ -21,10 +21,14 @@ cp site/app/inc/kernel.php.example site/app/inc/kernel.php
 # 3. Suba os containers
 docker compose -f docker/docker-compose.yml up -d --build
 
-# 4. Habilite pre-commit hooks (PHPStan)
+# 4. Rode as migrations e ative a senha do admin (nasce desabilitado, sem senha usável)
+docker exec leggo php /var/www/leggo/site/cgi-bin/run_migrations.php
+echo 'sua-senha' | docker exec -i leggo php /var/www/leggo/manager/cgi-bin/set_admin_password.php
+
+# 5. Habilite pre-commit hooks (PHPStan)
 git config core.hooksPath .githooks
 
-# 5. Acesse
+# 6. Acesse
 # Manager: http://manager.leggo.local
 # Site:    http://leggo.local
 # Kafka UI: http://localhost:8080

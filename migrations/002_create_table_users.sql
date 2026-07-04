@@ -42,7 +42,7 @@ VALUES (
         'yes',
         'admin@leggo.com.br',
         'admin',
-        '$2y$10$ie5ckp.oFWWVU5UP3.P7tOY/XIGxKvuU5sZK7rwl0.88KXsBWuuG2',
+        '!disabled!',
         'Leggo Admin',
-        'yes'
+        'no'
     );
