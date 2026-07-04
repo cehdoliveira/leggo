@@ -20,6 +20,11 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                         <i class="bi bi-envelope" aria-hidden="true"></i> E-mails
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="<?php echo $GLOBALS['profiles_url']; ?>" class="nav-link">
+                        <i class="bi bi-person-badge" aria-hidden="true"></i> Perfis
+                    </a>
+                </li>
             </ul>
 
             <div class="nav-section-label">Conta</div>
