@@ -2,8 +2,6 @@
 // ===== TIMEZONE E ENCODING =====
 date_default_timezone_set("America/Sao_Paulo");
 ini_set("default_charset", "UTF-8");
-ini_set("post_max_size", "4096M");
-ini_set("upload_max_filesize", "4096M");
 
 // ===== BANCO DE DADOS =====
 // AVISO: Copie este arquivo para kernel.php e preencha com suas credenciais reais.

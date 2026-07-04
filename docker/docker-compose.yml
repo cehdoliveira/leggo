@@ -44,7 +44,7 @@ services:
     volumes:
       - ../_data/mysql-data/:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     expose:
       - "3306"
     networks:
@@ -65,7 +65,7 @@ services:
     volumes:
       - ../_data/redis-data/:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     expose:
       - "6379"
     networks:
@@ -100,8 +100,8 @@ services:
     volumes:
       - ../_data/kafka-data/:/var/lib/kafka/data
     ports:
-      - "9092:9092"
-      - "9093:9093"
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9093:9093"
     expose:
       - "9092"
       - "9093"
@@ -128,9 +128,9 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: leggo_cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      DYNAMIC_CONFIG_ENABLED: "true"
+      DYNAMIC_CONFIG_ENABLED: "false"
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     networks:
       leggo:
         ipv4_address: 172.29.0.6
