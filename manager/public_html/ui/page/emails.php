@@ -58,7 +58,7 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
             </div>
             <div class="content-panel-body p-0">
                 <?php if (empty($emails)): ?>
-                    <div class="p-4 text-center" style="color: var(--app-text-muted); font-size: 0.85rem;">
+                    <div class="p-4 text-center" style="color: var(--text-muted); font-size: 0.85rem;">
                         Nenhum e-mail registrado.
                     </div>
                 <?php else: ?>
@@ -76,11 +76,11 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                             <tbody>
                                 <?php foreach ($emails as $e): ?>
                                     <tr>
-                                        <td style="font-size:0.78rem;color:var(--app-text-muted);"><?php echo (int)$e['idx']; ?></td>
+                                        <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo (int)$e['idx']; ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($e['to_mail'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($e['subject'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td style="font-size:0.78rem;color:var(--app-text-muted);"><?php echo htmlspecialchars(str_limit($e['body'] ?? '', 120), ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td style="font-size:0.78rem;color:var(--app-text-muted);"><?php echo time_ago($e['sent_at'] ?? null); ?></td>
+                                        <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo htmlspecialchars(str_limit($e['body'] ?? '', 120), ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo time_ago($e['sent_at'] ?? null); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
