@@ -118,8 +118,8 @@ class auth_controller
             $users->load_data();
 
             if (isset($users->data[0]["idx"])) {
-                $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
-                basic_redir($GLOBALS["register_url"]);
+                $_SESSION["messages_app"]["success"] = ["Cadastro recebido! Se os dados forem válidos, você receberá um e-mail de confirmação."];
+                basic_redir($GLOBALS["login_url"]);
             }
 
             $token = random_token();
@@ -132,7 +132,15 @@ class auth_controller
             $info["post"]["email_token_expires_at"] = date("Y-m-d H:i:s", strtotime("+72 hours"));
 
             $newUser = new users_model();
-            $newUser->populate($info["post"]);
+            $newUser->populate([
+                "name"                   => $info["post"]["name"],
+                "mail"                   => $info["post"]["mail"],
+                "login"                  => $info["post"]["login"],
+                "password"               => $info["post"]["password"],
+                "enabled"                => $info["post"]["enabled"],
+                "email_token"            => $info["post"]["email_token"],
+                "email_token_expires_at" => $info["post"]["email_token_expires_at"],
+            ]);
             $info["idx"] = $newUser->save();
 
             if ($info["idx"] > 0) {
