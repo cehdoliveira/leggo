@@ -42,6 +42,12 @@ header("Permissions-Policy: geolocation=(), camera=(), microphone=()");
 // Carregar dependências principais
 require_once($_SERVER["DOCUMENT_ROOT"] . "/../app/inc/main.php");
 
+// CSP com nonce por request — precisa ser gerada em PHP (nginx não pode variar por
+// resposta). Exposta via $GLOBALS pois head.php é incluído dentro do escopo local dos
+// métodos de controller, não no escopo global deste arquivo.
+$GLOBALS["cspNonce"] = random_token(16);
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-" . $GLOBALS["cspNonce"] . "' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'self'");
+
 // Parâmetros da requisição (PHP 8.4 compatível)
 $params = [
 	"sr" => isset($_GET["sr"]) && (int)$_GET["sr"] > 1 ? (int)$_GET["sr"] : 0,
