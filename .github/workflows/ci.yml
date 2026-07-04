@@ -59,11 +59,8 @@ jobs:
             # "Invalid host header" antes de rodar qualquer teste.
             sed -i 's/define("ALLOWED_HOSTS", ".*")/define("ALLOWED_HOSTS", "manager.leggo.test")/' $env/app/inc/kernel.php
           done
-      - name: Aplicar migrations diretamente (run_migrations.php esta quebrado — ver Current state do plano 017)
-        run: |
-          for f in migrations/*.sql; do
-            mysql -h 127.0.0.1 -uroot -pci_root db_leggo < "$f"
-          done
+      - name: Rodar migrations (runner real)
+        run: HTTP_HOST=manager.leggo.test php site/cgi-bin/run_migrations.php
       - name: PHPUnit site
         run: HTTP_HOST=localhost php site/app/inc/lib/vendor/bin/phpunit -c site/phpunit.xml
       - name: PHPUnit manager

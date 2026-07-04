@@ -63,11 +63,11 @@ class MigrationRunner
 
         // Lock advisório no banco para evitar execução concorrente.
         // GET_LOCK(..., 0) retorna imediatamente: se outro processo (ex.: tick
-        // anterior do cron ainda rodando) detém o lock, recebemos '0' e pulamos.
+        // anterior do cron ainda rodando) detém o lock, recebemos int(0) e pulamos.
         $got = $this->pdo
             ->query("SELECT GET_LOCK('leggo_migrations', 0) AS l")
             ->fetch(\PDO::FETCH_ASSOC);
-        if (($got['l'] ?? '0') !== '1') {
+        if ((int) ($got['l'] ?? 0) !== 1) {
             $this->log("Outro processo de migration está em execução — pulando este ciclo.");
             return $results;
         }
@@ -247,9 +247,13 @@ class MigrationRunner
 			foreach ($queries as $query) {
 				$this->pdo->exec($query);
 			}
-			$this->pdo->commit();
+			if ($this->pdo->inTransaction()) {
+				$this->pdo->commit();
+			}
 		} catch (\Exception $e) {
-			$this->pdo->rollBack();
+			if ($this->pdo->inTransaction()) {
+				$this->pdo->rollBack();
+			}
 			throw $e;
 		}
 	}
