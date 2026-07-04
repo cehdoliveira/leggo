@@ -2,7 +2,7 @@
 > Gerado em: 2026-05-27
 > Atualizado em: 2026-05-28 — correções aplicadas (ver seção "Histórico de correções")
 > Ferramenta: OpenCode + DeepSeek V4 Pro
-> Versão do sistema: 1.8.0.2
+> Versão do sistema: 1.8.1.0
 
 ```
 SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
@@ -12,7 +12,7 @@ SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
 │   │   ├── GET  / (e /index.*)             → function:basic_redir (→ $home_url)
 │   │   ├── GET  /login(.*)?                → auth_controller:display
 │   │   ├── POST /login(.*)?                → auth_controller:login
-│   │   ├── GET  /sair                      → auth_controller:logout
+│   │   ├── POST /sair                      → auth_controller:logout
 │   │   ├── GET  /cadastro(.*)?             → auth_controller:display_register   (AUTH)
 │   │   ├── POST /cadastro(.*)?             → auth_controller:register           (AUTH)
 │   │   ├── GET  /definir-senha/{token}     → auth_controller:display_set_password
@@ -33,7 +33,7 @@ SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
 │       ├── POST /esqueci-minha-senha       → auth_controller:forgot_password
 │       ├── GET  /redefinir-senha/{token}   → auth_controller:display_reset_password
 │       ├── POST /redefinir-senha/{token}   → auth_controller:reset_password
-│       ├── GET  /sair                      → auth_controller:logout
+│       ├── POST /sair                      → auth_controller:logout
 │       ├── GET  /?                         → site_controller:home
 │       ├── GET  /termos-de-uso(.*)?        → site_controller:terms
 │       ├── GET  /politica-de-privacidade(.*)? → site_controller:privacy

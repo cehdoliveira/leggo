@@ -21,7 +21,8 @@ different `kernel.php` constants and routes.
 
 - Start the stack: `docker compose -f docker/docker-compose.yml up -d --build`
 
-- Pre-commit hooks (PHPStan + PHPUnit before each commit):
+- Hooks: pre-commit runs PHPStan + shared-sync guard; pre-push runs PHPUnit (in Docker,
+  skipped if the container isn't up):
   ```
   git config core.hooksPath .githooks
   ```
@@ -29,7 +30,7 @@ different `kernel.php` constants and routes.
 ## Commands
 
 ```bash
-# Static analysis — PHPStan level 3
+# Static analysis — PHPStan level 4
 cd manager && php app/inc/lib/vendor/bin/phpstan analyse
 cd site && php app/inc/lib/vendor/bin/phpstan analyse
 
@@ -182,7 +183,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 | `site/app/inc/kernel.php.example` | Site config template |
 | `manager/app/inc/lib/composer.json` | Composer deps + autoload config (same for both envs) |
 | `manager/phpunit.xml` | PHPUnit config (bootstrap: `tests/bootstrap.php`) |
-| `manager/phpstan.neon` | PHPStan config (level 3, excludes vendor) |
+| `manager/phpstan.neon` | PHPStan config (level 4, excludes vendor) |
 | `docker/docker-compose.yml` | All services: leggo (nginx+fpm), mysql, redis, kafka, kafka-ui |
 | `docker/interface/entrypoint.sh` | Startup: composer install, cron, kafka workers, nginx |
 | `docker/interface/default.conf` | Nginx vhosts for `manager.leggo.local` and `leggo.local` |
