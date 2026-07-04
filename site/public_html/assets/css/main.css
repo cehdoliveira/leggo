@@ -1446,3 +1446,10 @@ h6 {
         text-align: center;
     }
 }
+
+/* ---- BRAND LOGO (whitelabel) ----
+   O SVG é inlinado pelas views (readfile de assets/img/logo.svg) para herdar
+   currentColor. Troque o arquivo logo.svg para rebrandizar. */
+.brand-logo { display: inline-flex; color: var(--accent); }
+.brand-logo svg { height: 28px; width: auto; display: block; }
+.brand-logo.brand-logo-sm svg { height: 22px; }

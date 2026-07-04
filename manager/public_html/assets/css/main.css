@@ -285,3 +285,10 @@ h6 {
 .shadow-sm {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
 }
+
+/* ---- BRAND LOGO (whitelabel) ----
+   O SVG é inlinado pelas views (readfile de assets/img/logo.svg) para herdar
+   currentColor. Troque o arquivo logo.svg para rebrandizar. */
+.brand-logo { display: inline-flex; color: var(--app-primary); /* 040: vira --accent */ }
+.brand-logo svg { height: 28px; width: auto; display: block; }
+.brand-logo.brand-logo-sm svg { height: 22px; }

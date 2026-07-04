@@ -1,7 +1,6 @@
 <?php
 $name       = isset($name)       ? (string) $name       : '';
 $verifyLink = isset($verifyLink) ? (string) $verifyLink : '#';
-$logoUrl    = canonical_url('SITE_CANONICAL_URL') . '/assets/img/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -22,10 +21,7 @@ $logoUrl    = canonical_url('SITE_CANONICAL_URL') . '/assets/img/logo.png';
           <td style="background-color:#060b11;padding:36px 40px;">
             <table border="0" cellpadding="0" cellspacing="0" width="100%">
               <tr>
-                <td>
-                  <img src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(constant('cTitle')); ?>" height="36" style="display:block;border:0;">
-                </td>
-                <td align="right">
+                <td align="left">
                   <span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;letter-spacing:2px;color:#2563eb;"><?php echo htmlspecialchars(constant('cTitle'), ENT_QUOTES, 'UTF-8'); ?></span>
                 </td>
               </tr>
