@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/main.css"); ?>">
 
     <!-- Apply theme before render to prevent flash -->
-    <script>
+    <script nonce="<?php echo htmlspecialchars($GLOBALS['cspNonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
     (function () {
         var saved = localStorage.getItem('theme');
         var theme = saved
