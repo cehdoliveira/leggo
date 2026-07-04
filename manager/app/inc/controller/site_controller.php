@@ -7,21 +7,41 @@ class site_controller
             $_SESSION['_csrf_token'] = random_token();
         }
 
+        $perPage = 25;
+        $page    = (int)($info['get']['page'] ?? 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $perPage;
+
         try {
             $model = new users_model();
+
+            $countStmt = $model->execute_raw_prepared(
+                "SELECT COUNT(*) AS total, SUM(active = 'yes') AS ativos, SUM(active = 'yes' AND enabled = 'yes') AS habilitados FROM users WHERE idx > 0"
+            );
+            $counts = $countStmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'ativos' => 0, 'habilitados' => 0];
+
+            $total_users   = (int)$counts['total'];
+            $active_users  = (int)$counts['ativos'];
+            $enabled_users = (int)$counts['habilitados'];
+            $removed_users = $total_users - $active_users;
+
             $model->set_field([" idx ", " name ", " mail ", " login ", " active ", " enabled ", " created_at ", " last_login ", " email_verified_at "]);
             $model->set_filter([" idx > 0 "]);
             $model->set_order([" created_at DESC "]);
-            $model->load_data();
+            $model->set_paginate([$offset, $perPage]);
+            $model->load_data(false);
             $users = $model->data;
         } catch (RuntimeException $e) {
-            $users = [];
+            $users         = [];
+            $total_users   = 0;
+            $active_users  = 0;
+            $enabled_users = 0;
+            $removed_users = 0;
         }
 
-        $total_users   = count($users);
-        $active_users  = count(array_filter($users, fn($u) => $u['active'] === 'yes'));
-        $enabled_users = count(array_filter($users, fn($u) => $u['enabled'] === 'yes' && $u['active'] === 'yes'));
-        $removed_users = $total_users - $active_users;
+        $totalPages = (int)ceil($total_users / $perPage);
 
         $alpineControllers = ['dashboard'];
 
