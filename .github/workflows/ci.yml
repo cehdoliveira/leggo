@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Gerar kernel.php a partir dos examples (scanFiles do PHPStan precisa do arquivo)
+        run: |
+          cp site/app/inc/kernel.php.example site/app/inc/kernel.php
+          cp manager/app/inc/kernel.php.example manager/app/inc/kernel.php
       - name: Sync guard (lib/model identicos entre envs)
         run: bash bin/check-shared-sync.sh
       - uses: shivammathur/setup-php@v2
