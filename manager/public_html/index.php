@@ -84,6 +84,9 @@ $dispatcher->add_route("GET",  "/admin", "site_controller:dashboard", $authGuard
 $dispatcher->add_route("GET",  "/usuarios", "site_controller:dashboard",    $authGuard, $params);
 $dispatcher->add_route("POST", "/usuarios", "site_controller:users_action", $authGuard, $params);
 
+// Outbox de e-mails — spike/leitura (requer autenticação)
+$dispatcher->add_route("GET",  "/emails", "emails_controller:index", $authGuard, $params);
+
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
 	basic_redir($home_url);

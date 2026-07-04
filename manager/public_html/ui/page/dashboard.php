@@ -17,6 +17,11 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                         <i class="bi bi-people" aria-hidden="true"></i> Usuários
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="<?php echo $GLOBALS['emails_url']; ?>" class="nav-link">
+                        <i class="bi bi-envelope" aria-hidden="true"></i> E-mails
+                    </a>
+                </li>
             </ul>
 
             <div class="nav-section-label">Conta</div>
