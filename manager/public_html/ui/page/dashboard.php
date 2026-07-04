@@ -191,6 +191,25 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                     </div>
                 <?php endif; ?>
             </div>
+            <?php if (($totalPages ?? 0) > 1): ?>
+                <div class="content-panel-footer d-flex justify-content-center p-3">
+                    <nav aria-label="Paginação de usuários">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => max(1, $page - 1)]), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                            </li>
+                            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => $p]), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => min($totalPages, $page + 1)]), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Modal de edição -->
