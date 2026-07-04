@@ -118,8 +118,8 @@ class auth_controller
             $users->load_data();
 
             if (isset($users->data[0]["idx"])) {
-                $_SESSION["messages_app"]["danger"] = ["Já existe um usuário com esse e-mail/login"];
-                basic_redir($GLOBALS["register_url"]);
+                $_SESSION["messages_app"]["success"] = ["Cadastro recebido! Se os dados forem válidos, você receberá um e-mail de confirmação."];
+                basic_redir($GLOBALS["login_url"]);
             }
 
             $token = random_token();
