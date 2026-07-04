@@ -4,12 +4,12 @@
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">1. Controlador dos dados</h2>
-        <p class="mb-0">Carlos Eduardo Henrique Dias Oliveira — CPF: 022.749.701-57</p>
+        <p class="mb-0"><!-- WHITELABEL: preencha razão social / responsável legal --><?php echo htmlspecialchars(constant('cTitle')); ?> — CPF/CNPJ: 00.000.000/0000-00</p>
     </section>
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">2. Contato do encarregado (DPO)</h2>
-        <p class="mb-0">E-mail para solicitações e dúvidas: <a href="mailto:leggo@gmail.com">leggo@gmail.com</a></p>
+        <p class="mb-0">E-mail para solicitações e dúvidas: <a href="mailto:contato@example.com">contato@example.com</a></p>
     </section>
 
     <section class="mb-4">
@@ -42,7 +42,7 @@
     <section class="mb-4">
         <h2 class="h5 fw-semibold">7. Direitos do titular</h2>
         <p class="mb-2">O titular pode solicitar acesso, correção, exclusão e portabilidade dos dados.</p>
-        <p class="mb-0">As solicitações devem ser enviadas para <a href="mailto:leggo@gmail.com">leggo@gmail.com</a>.</p>
+        <p class="mb-0">As solicitações devem ser enviadas para <a href="mailto:contato@example.com">contato@example.com</a>.</p>
     </section>
 
     <section class="mb-1">

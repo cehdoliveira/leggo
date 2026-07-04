@@ -4,12 +4,12 @@
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">1. Identificação do fornecedor</h2>
-        <p class="mb-0">Carlos Eduardo Henrique Dias Oliveira — CPF: 022.749.701-57</p>
+        <p class="mb-0"><!-- WHITELABEL: preencha razão social / responsável legal --><?php echo htmlspecialchars(constant('cTitle')); ?> — CPF/CNPJ: 00.000.000/0000-00</p>
     </section>
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">2. Canal de atendimento</h2>
-        <p class="mb-0">Atendimento pelo e-mail: <a href="mailto:leggo@gmail.com">leggo@gmail.com</a></p>
+        <p class="mb-0">Atendimento pelo e-mail: <a href="mailto:contato@example.com">contato@example.com</a></p>
     </section>
 
     <section class="mb-4">
@@ -25,7 +25,7 @@
 
     <section class="mb-4">
         <h2 class="h5 fw-semibold">5. Cancelamento e reembolso</h2>
-        <p class="mb-0">Reembolsos são concedidos exclusivamente mediante solicitação enviada ao e-mail leggo@gmail.com, conforme análise de cada caso. O usuário tem direito a cancelamento em até 7 dias corridos após a contratação, nos termos do art. 49 do CDC.</p>
+        <p class="mb-0">Reembolsos são concedidos exclusivamente mediante solicitação enviada ao e-mail contato@example.com, conforme análise de cada caso. O usuário tem direito a cancelamento em até 7 dias corridos após a contratação, nos termos do art. 49 do CDC.</p>
     </section>
 
     <section class="mb-4">

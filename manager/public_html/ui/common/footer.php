@@ -23,7 +23,7 @@
                         |
                         <a href="<?php echo defined('SITE_URL') ? htmlspecialchars(constant('SITE_URL')) : '/'; ?>/politica-de-privacidade" target="_blank" rel="noopener">Política de Privacidade</a>
                     </small>
-                    <small>Carlos Oliveira | CPF: 022.749.701-57 | Contato: leggo@gmail.com</small>
+                    <small><!-- WHITELABEL: preencha responsável e contato --><?php echo htmlspecialchars(constant('cTitle')); ?> | Contato: contato@example.com</small>
                 </div>
             </div>
         </div>
