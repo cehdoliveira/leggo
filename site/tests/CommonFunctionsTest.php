@@ -81,6 +81,12 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringContainsString("b=2", $url);
     }
 
+    public function testSetUrlOverridesExistingParam(): void
+    {
+        $url = set_url("/lista?page=1&sort=asc", ["page" => "2"]);
+        $this->assertSame("/lista?sort=asc&page=2", $url);
+    }
+
     public function test_csv_sanitize_cell_prefixes_formula_leading_chars(): void
     {
         $this->assertSame("'=HYPERLINK(\"x\")", csv_sanitize_cell('=HYPERLINK("x")'));

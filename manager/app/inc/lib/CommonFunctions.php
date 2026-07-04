@@ -118,7 +118,7 @@ function set_url(string $url = "", array $params = []): string
       $parts = explode("=", $tmp_params, 2);
       $kp = $parts[0];
       $vp = $parts[1] ?? "";
-      if (! in_array($kp, $params)) {
+      if (! array_key_exists($kp, $params)) {
         $p .= $kp . "=" . $vp . "&";
       }
     }
