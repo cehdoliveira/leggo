@@ -124,12 +124,19 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 
 ### Personalização
 
-**Nome e marca** — altere no `kernel.php`:
-```php
-define("cTitle", "Meu Projeto");
-define("mail_from_name", "Meu Projeto");
+**Nome e marca** — rode `bin/init-whitelabel.sh` (protótipo) para gerar os dois
+`kernel.php` (site e manager) a partir do nome da marca e das URLs de produção:
+```bash
+bin/init-whitelabel.sh --name "Minha Marca" --site-url "https://minhamarca.com.br" \
+    --manager-url "https://manager.minhamarca.com.br"
 ```
-Substitua `public_html/assets/img/logo.png` e `favicon.svg`.
+Sem flags, o script pergunta interativamente. Ele não sobrescreve um `kernel.php`
+existente (use `--force` para isso) e não inventa segredos — `DB_PASS` e as
+credenciais SMTP continuam como placeholder para preenchimento manual.
+Inventário completo dos pontos de toque por-marca e follow-ups (logo, cor
+primária, etc.) em `plans/029-DESIGN.md`.
+
+Substitua `public_html/assets/img/logo.png` e `favicon.svg` manualmente.
 
 **Rotas** — adicione no `index.php` de cada ambiente:
 ```php
