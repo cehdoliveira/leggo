@@ -132,19 +132,45 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 
 ### Personalização
 
-**Nome e marca** — rode `bin/init-whitelabel.sh` (protótipo) para gerar os dois
-`kernel.php` (site e manager) a partir do nome da marca e das URLs de produção:
-```bash
-bin/init-whitelabel.sh --name "Minha Marca" --site-url "https://minhamarca.com.br" \
-    --manager-url "https://manager.minhamarca.com.br"
-```
-Sem flags, o script pergunta interativamente. Ele não sobrescreve um `kernel.php`
-existente (use `--force` para isso) e não inventa segredos — `DB_PASS` e as
-credenciais SMTP continuam como placeholder para preenchimento manual.
-Inventário completo dos pontos de toque por-marca e follow-ups (logo, cor
-primária, etc.) em `plans/029-DESIGN.md`.
+**Rebrand de um projeto novo** — pontos de toque, nesta ordem:
 
-Substitua `public_html/assets/img/logo.png` e `favicon.svg` manualmente.
+1. **Nome e URLs** — rode `bin/init-whitelabel.sh` (protótipo) para gerar os
+   dois `kernel.php` (site e manager) a partir do nome da marca e das URLs de
+   produção:
+   ```bash
+   bin/init-whitelabel.sh --name "Minha Marca" --site-url "https://minhamarca.com.br" \
+       --manager-url "https://manager.minhamarca.com.br"
+   ```
+   Sem flags, o script pergunta interativamente. Ele não sobrescreve um
+   `kernel.php` existente (use `--force` para isso) e não inventa segredos —
+   `DB_PASS` e as credenciais SMTP continuam como placeholder para
+   preenchimento manual.
+2. **Tokens de cor/tema** — edite o bloco `:root` (+ `[data-theme='light']`) no
+   topo de `site/public_html/assets/css/main.css` e
+   `manager/public_html/assets/css/main.css`. Os NOMES dos tokens são idênticos
+   entre os dois ambientes (contrato); os valores podem diferir por ambiente.
+   Principais: `--bg`, `--surface`, `--accent`, `--text`, `--border`.
+3. **Logo e favicon** — substitua o conteúdo de
+   `public_html/assets/img/logo.svg` nos dois ambientes (inlinado pelas views
+   via `readfile`; usa `currentColor`, então um SVG monocromático troca de cor
+   com o tema sozinho). Favicon: `public_html/assets/img/favicon.svg` nos dois
+   ambientes (cor fixa).
+4. **`theme-color`** — meta hardcoded em
+   `site/public_html/ui/common/head.php` e
+   `manager/public_html/ui/common/head.php`; casar com o valor de `--bg`.
+5. **Identidade legal/contato** — preencha os placeholders `WHITELABEL` em
+   `site/public_html/ui/page/terms.php`, `site/public_html/ui/page/privacy.php`
+   e `manager/public_html/ui/common/footer.php` (razão social, CPF/CNPJ,
+   e-mail de contato).
+6. **E-mails** (`public_html/ui/mail/*.php`, 5 arquivos) — cores em hex inline
+   (limitação de client de e-mail), não usam os tokens CSS. Para levar a
+   paleta da marca aos e-mails, faça find-replace dos hex principais:
+   `#060b11` (fundo), `#0d1520`/`#142030` (superfícies), `#2563eb`/`#3b82f6`
+   (accent), `#f1f5f9`/`#e2e8f0`/`#b0bec5`/`#7a8ba0` (textos).
+
+Notas: prefixos de classe `ss-*` (site) e `leggo-*` (manager) são convenção
+legada estável — não renomear ao clonar. Inventário completo de constantes e
+follow-ups em `plans/029-DESIGN.md`.
 
 **Rotas** — adicione no `index.php` de cada ambiente:
 ```php

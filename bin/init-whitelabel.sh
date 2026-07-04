@@ -143,5 +143,5 @@ echo
 echo "ATENCAO — preencha manualmente antes de subir para producao:"
 echo "  - DB_HOST/DB_NAME/DB_USER/DB_PASS (devem bater com docker/.env)"
 echo "  - mail_from_mail, mail_from_user, mail_from_pwd (credenciais SMTP reais)"
-echo "  - logo.png e favicon.svg em site/public_html/assets/img/ e manager/public_html/assets/img/"
+echo "  - logo.svg e favicon.svg em site/public_html/assets/img/ e manager/public_html/assets/img/ (e tokens de cor em assets/css/main.css — ver README > Personalização)"
 echo "  - cor primaria da marca (CSS de site/ e manager/) — ver plans/029-DESIGN.md"
