@@ -45,7 +45,7 @@ manager/               ← Painel admin (manager.leggo.local)
     kernel.php         ← Config sensível (gitignored, copiar do .example)
   public_html/         ← Raiz web
   tests/               ← Testes PHPUnit
-  phpstan.neon         ← PHPStan config (level 3)
+  phpstan.neon         ← PHPStan config (level 4)
 
 site/                  ← Site público (leggo.local)
   app/inc/             ← Mesma estrutura do manager
@@ -63,7 +63,7 @@ docker/                ← Dockerfile, nginx, php.ini, entrypoint, .env.example
 CI (GitHub Actions) roda sync-guard + PHPStan + PHPUnit (com MySQL de serviço) em todo push/PR.
 
 ```bash
-# Análise estática — PHPStan nível 3
+# Análise estática — PHPStan nível 4
 cd manager && php app/inc/lib/vendor/bin/phpstan analyse
 cd site && php app/inc/lib/vendor/bin/phpstan analyse
 
@@ -86,6 +86,9 @@ docker exec -it redis redis-cli
 # Rebuild após mudanças no Dockerfile
 docker compose -f docker/docker-compose.yml up -d --build
 ```
+
+**Release**: ao bumpar `VERSION`, atualize também `APP_VERSION` nos dois
+`kernel.php.example` (usado no cache-bust de assets `?v=` em `foot.php`).
 
 ## Framework LEGGO
 
