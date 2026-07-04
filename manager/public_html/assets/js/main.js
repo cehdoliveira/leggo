@@ -7,18 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeSmoothScroll();
 });
 
-window.nexoHelpers = {
-    formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-        }).format(value);
-    },
-    formatDate(date) {
-        return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
-    },
-};
-
 function initializeSmoothScroll() {
     document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         anchor.addEventListener('click', function (e) {
