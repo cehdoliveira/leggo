@@ -54,8 +54,13 @@ site/                  ← Site público (leggo.local)
 
 migrations/            ← Migrations SQL (compartilhadas) — atômicas (transaction por arquivo)
 docker/                ← Dockerfile, nginx, php.ini, entrypoint, .env.example
+bin/                   ← check-shared-sync.sh (guard de sincronia lib/model, roda no pre-commit)
+                          test.sh (verificação completa: PHPStan host + PHPUnit Docker, 2 envs)
+                          init-whitelabel.sh (gera os 2 kernel.php para uma marca nova)
+.github/workflows/     ← CI: sync-guard + PHPStan + PHPUnit (MySQL de serviço)
 .githooks/             ← pre-commit (PHPStan) + pre-push (PHPUnit)
 .editorconfig          ← Estilo de código
+plans/                 ← Planos de melhoria do advisor (histórico)
 ```
 
 ## Comandos
@@ -63,6 +68,9 @@ docker/                ← Dockerfile, nginx, php.ini, entrypoint, .env.example
 CI (GitHub Actions) roda sync-guard + PHPStan + PHPUnit (com MySQL de serviço) em todo push/PR.
 
 ```bash
+# Verificação completa (PHPStan host + PHPUnit via Docker, dois envs)
+bin/test.sh
+
 # Análise estática — PHPStan nível 4
 cd manager && php app/inc/lib/vendor/bin/phpstan analyse
 cd site && php app/inc/lib/vendor/bin/phpstan analyse
@@ -155,7 +163,10 @@ define("LOG_LEVEL", "info"); // debug | info | warning | error
 - **CSRF em todas as rotas POST**, incluindo logout (formulário POST com token, não link GET)
 - **Senhas bcrypt** com migração automática de hashes MD5 legados
 - **Rate limit** de login (5 tentativas/60s por IP) com fallback via arquivo se Redis indisponível
-- **CSP, X-Frame-Options, HSTS** configurados no nginx (nginx `default.conf`)
+- **CSP** com nonce por request, emitida no PHP (`public_html/index.php` de
+  cada ambiente), sem `unsafe-inline` em `script-src`
+- **X-Frame-Options, HSTS, X-Content-Type-Options, Referrer-Policy,
+  Permissions-Policy** configurados no nginx (`docker/interface/default.conf`)
 - **Credenciais** extraídas do `docker-compose.yml` para `docker/.env` (gitignored)
 - **Logs SQL** não incluem queries completas — previne vazamento de PII em erros de banco
 
@@ -185,3 +196,5 @@ define("LOG_LEVEL", "info"); // debug | info | warning | error
 | GET/POST | `/cadastro` | Sim |
 | GET/POST | `/definir-senha/{token}` | Não |
 | GET/POST | `/usuarios` | Sim |
+| GET | `/emails` | Sim |
+| GET/POST | `/perfis` | Sim |
