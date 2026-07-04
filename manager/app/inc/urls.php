@@ -7,5 +7,6 @@ $password_url = sprintf("%s%s", constant("cFrontend"), "senha");
 $tkpwd_url    = sprintf("%s%s/%s", constant("cFrontend"), "tkpwd", "%s");
 $register_url      = sprintf("%s%s", constant("cFrontend"), "cadastro");
 $users_url         = sprintf("%s%s", constant("cFrontend"), "usuarios");
+$emails_url        = sprintf("%s%s", constant("cFrontend"), "emails");
 $verify_email_url  = sprintf("%s%s/%s", constant("cFrontend"), "verificar-email", "%s");
 $set_password_url  = sprintf("%s%s/%s", constant("cFrontend"), "definir-senha", "%s");
