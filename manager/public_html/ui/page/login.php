@@ -6,7 +6,7 @@
 
             <div class="text-center mb-4">
                 <h4 class="fw-bold mb-1">Painel Administrativo</h4>
-                <p class="small" style="color: var(--app-text-muted);"><?php echo htmlspecialchars(constant("cTitle")); ?> — acesso restrito</p>
+                <p class="small" style="color: var(--text-muted);"><?php echo htmlspecialchars(constant("cTitle")); ?> — acesso restrito</p>
             </div>
 
             <div class="card shadow-sm">

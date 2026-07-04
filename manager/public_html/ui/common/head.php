@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="color-scheme" content="dark">
+    <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#0a0e14">
     <title><?php echo htmlspecialchars(constant("cTitle")); ?></title>
 
@@ -22,3 +22,14 @@
 
     <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/main.css"); ?>">
     <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/dashboard.css"); ?>">
+
+    <!-- Apply theme before render to prevent flash -->
+    <script nonce="<?php echo htmlspecialchars($GLOBALS['cspNonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+    (function () {
+        var saved = localStorage.getItem('theme');
+        var theme = saved
+            ? saved
+            : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>

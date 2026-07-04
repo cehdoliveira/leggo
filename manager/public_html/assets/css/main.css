@@ -5,19 +5,19 @@
    ================================================ */
 
 :root {
-    --app-primary: #2563eb;
-    --app-primary-glow: rgba(37, 99, 235, 0.2);
-    --app-primary-bright: #3b82f6;
-    --app-bg: #0a0a0b;
-    --app-surface: #111113;
-    --app-surface-2: #18181b;
-    --app-text: #d4d8e0;
-    --app-text-muted: #60657a;
-    --app-border: #1e1e24;
-    --app-navbar-bg: #080808;
-    --app-footer-bg: #080808;
-    --app-footer-text: rgba(212, 216, 224, 0.38);
-    --app-focus-ring: rgba(37, 99, 235, 0.28);
+    --accent: #2563eb;
+    --accent-glow: rgba(37, 99, 235, 0.2);
+    --accent-hover: #3b82f6;
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --text: #d4d8e0;
+    --text-muted: #60657a;
+    --border: #1e1e24;
+    --navbar-bg: #080808;
+    --footer-bg: #080808;
+    --footer-text: rgba(212, 216, 224, 0.38);
+    --focus-ring: rgba(37, 99, 235, 0.28);
 
     /* Bootstrap overrides */
     --bs-body-color: #d4d8e0;
@@ -25,19 +25,19 @@
 }
 
 [data-theme="light"] {
-    --app-primary: #2563eb;
-    --app-primary-glow: rgba(37, 99, 235, 0.15);
-    --app-primary-bright: #1d4ed8;
-    --app-bg: #f1f5f9;
-    --app-surface: #ffffff;
-    --app-surface-2: #f8fafc;
-    --app-text: #1e293b;
-    --app-text-muted: #64748b;
-    --app-border: #e2e8f0;
-    --app-navbar-bg: #ffffff;
-    --app-footer-bg: #f8fafc;
-    --app-footer-text: rgba(30, 41, 59, 0.5);
-    --app-focus-ring: rgba(37, 99, 235, 0.25);
+    --accent: #2563eb;
+    --accent-glow: rgba(37, 99, 235, 0.15);
+    --accent-hover: #1d4ed8;
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --navbar-bg: #ffffff;
+    --footer-bg: #f8fafc;
+    --footer-text: rgba(30, 41, 59, 0.5);
+    --focus-ring: rgba(37, 99, 235, 0.25);
 
     --bs-body-color: #1e293b;
     --bs-btn-color: #1e293b;
@@ -46,8 +46,8 @@
 /* Theme toggle button in header */
 .theme-toggle-btn {
     background: transparent;
-    border: 1px solid var(--app-border);
-    color: var(--app-text-muted);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
     border-radius: 0.375rem;
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
@@ -56,9 +56,9 @@
     line-height: 1.5;
 }
 .theme-toggle-btn:hover {
-    color: var(--app-text);
-    border-color: var(--app-primary);
-    background: var(--app-surface-2);
+    color: var(--text);
+    border-color: var(--accent);
+    background: var(--surface-2);
 }
 .theme-toggle-btn i {
     font-size: 0.9rem;
@@ -70,8 +70,8 @@ html {
 }
 
 body {
-    background-color: var(--app-bg);
-    color: var(--app-text);
+    background-color: var(--bg);
+    color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     display: flex;
@@ -97,8 +97,8 @@ h6 {
 
 /* Bootstrap primary override */
 .btn-primary {
-    background-color: var(--app-primary);
-    border-color: var(--app-primary);
+    background-color: var(--accent);
+    border-color: var(--accent);
     color: #ffffff;
     font-weight: 600;
     font-family: 'Inter', sans-serif;
@@ -108,30 +108,30 @@ h6 {
 
 .btn-primary:hover,
 .btn-primary:focus {
-    background-color: var(--app-primary-bright);
-    border-color: var(--app-primary-bright);
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
     color: #ffffff;
-    box-shadow: 0 0 0 0.15rem var(--app-focus-ring);
+    box-shadow: 0 0 0 0.15rem var(--focus-ring);
 }
 
 .btn-primary:disabled {
-    background-color: var(--app-primary);
-    border-color: var(--app-primary);
+    background-color: var(--accent);
+    border-color: var(--accent);
     color: #ffffff;
     opacity: 0.5;
 }
 
 /* Navbar */
 .leggo-navbar {
-    background-color: var(--app-navbar-bg);
-    border-bottom: 1px solid var(--app-border);
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 1030;
 }
 
 .leggo-navbar .navbar-brand {
-    color: var(--app-text);
+    color: var(--text);
 }
 
 .brand-name {
@@ -139,21 +139,21 @@ h6 {
     font-size: 0.9rem;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: var(--app-text);
+    color: var(--text);
 }
 
 .brand-gem {
-    color: var(--app-primary);
+    color: var(--accent);
     font-size: 1rem;
 }
 
 /* Footer */
 .leggo-footer {
-    background-color: var(--app-footer-bg);
-    color: var(--app-footer-text);
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
     padding: 0.6rem 0;
     flex-shrink: 0;
-    border-top: 1px solid var(--app-border);
+    border-top: 1px solid var(--border);
     font-size: 0.72rem;
 }
 
@@ -169,11 +169,11 @@ h6 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--app-footer-text);
+    color: var(--footer-text);
 }
 
 .leggo-brand-mark {
-    color: var(--app-primary);
+    color: var(--accent);
 }
 
 .leggo-footer-meta {
@@ -188,29 +188,29 @@ h6 {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: var(--app-primary);
+    background-color: var(--accent);
     flex-shrink: 0;
 }
 
 /* Cards */
 .card {
-    background-color: var(--app-surface);
-    border-color: var(--app-border);
-    color: var(--app-text);
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
     border-radius: 0.5rem;
 }
 
 .card-footer {
     background-color: transparent;
-    border-color: var(--app-border);
+    border-color: var(--border);
 }
 
 /* Forms */
 .form-control,
 .form-select {
-    background-color: var(--app-surface);
-    border-color: var(--app-border);
-    color: var(--app-text);
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
     border-radius: 0.375rem;
     font-family: 'Inter', sans-serif;
     font-size: 0.875rem;
@@ -218,31 +218,31 @@ h6 {
 
 .form-control:focus,
 .form-select:focus {
-    background-color: var(--app-surface);
-    color: var(--app-text);
-    border-color: var(--app-primary);
-    box-shadow: 0 0 0 0.15rem var(--app-focus-ring);
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.15rem var(--focus-ring);
 }
 
 .form-control:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 1000px var(--app-surface) inset !important;
-    -webkit-text-fill-color: var(--app-text) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+    -webkit-text-fill-color: var(--text) !important;
 }
 
 .form-label {
-    color: var(--app-text-muted);
+    color: var(--text-muted);
     font-size: 0.75rem;
     font-weight: 600;
     font-family: 'Inter', sans-serif;
 }
 
 .form-control::placeholder {
-    color: var(--app-text-muted);
+    color: var(--text-muted);
     opacity: 0.45;
 }
 
 .form-text {
-    color: var(--app-text-muted);
+    color: var(--text-muted);
     font-size: 0.72rem;
 }
 
@@ -279,7 +279,7 @@ h6 {
 
 /* Text helpers */
 .text-muted {
-    color: var(--app-text-muted) !important;
+    color: var(--text-muted) !important;
 }
 
 .shadow-sm {
@@ -289,6 +289,6 @@ h6 {
 /* ---- BRAND LOGO (whitelabel) ----
    O SVG é inlinado pelas views (readfile de assets/img/logo.svg) para herdar
    currentColor. Troque o arquivo logo.svg para rebrandizar. */
-.brand-logo { display: inline-flex; color: var(--app-primary); /* 040: vira --accent */ }
+.brand-logo { display: inline-flex; color: var(--accent); }
 .brand-logo svg { height: 28px; width: auto; display: block; }
 .brand-logo.brand-logo-sm svg { height: 22px; }

@@ -6,7 +6,7 @@
 
             <div class="text-center mb-4">
                 <h4 class="fw-bold mb-1">Definir senha</h4>
-                <p class="small" style="color: var(--app-text-muted);">Escolha uma senha para ativar sua conta</p>
+                <p class="small" style="color: var(--text-muted);">Escolha uma senha para ativar sua conta</p>
             </div>
 
             <div class="card shadow-sm">

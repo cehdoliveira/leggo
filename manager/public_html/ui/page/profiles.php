@@ -66,7 +66,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
             </div>
             <div class="content-panel-body p-0">
                 <?php if (empty($profiles)): ?>
-                    <div class="p-4 text-center" style="color: var(--app-text-muted); font-size: 0.85rem;">
+                    <div class="p-4 text-center" style="color: var(--text-muted); font-size: 0.85rem;">
                         Nenhum perfil cadastrado.
                     </div>
                 <?php else: ?>
@@ -101,7 +101,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                     $jsParent = (int)($p['parent'] ?? 0);
                                 ?>
                                     <tr>
-                                        <td style="font-size:0.78rem;color:var(--app-text-muted);"><?php echo $profileIdx; ?></td>
+                                        <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo $profileIdx; ?></td>
                                         <td><?php echo htmlspecialchars($p['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($p['slug'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td>
@@ -118,7 +118,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                                 <span class="user-badge badge-removed">Protegido</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td style="font-size:0.82rem;color:var(--app-text-muted);"><?php echo htmlspecialchars($parentName, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td style="font-size:0.82rem;color:var(--text-muted);"><?php echo htmlspecialchars($parentName, ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td>
                                             <?php if ($isEditabled): ?>
                                                 <div class="d-flex gap-1">
@@ -143,7 +143,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
 
                                                 </div>
                                             <?php else: ?>
-                                                <span style="font-size:0.72rem;color:var(--app-text-muted);">—</span>
+                                                <span style="font-size:0.72rem;color:var(--text-muted);">—</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -177,30 +177,30 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
         <!-- Modal de criação -->
         <div id="createProfileModal" class="modal fade" tabindex="-1" aria-labelledby="createProfileModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:var(--app-surface);border:1px solid var(--app-border);border-radius:0.5rem;">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;">
                     <form method="POST" action="<?php echo $GLOBALS['profiles_url']; ?>">
                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                         <input type="hidden" name="action" value="criar">
 
-                        <div class="modal-header" style="border-color:var(--app-border);padding:1rem 1.25rem 0.75rem;">
+                        <div class="modal-header" style="border-color:var(--border);padding:1rem 1.25rem 0.75rem;">
                             <h5 class="modal-title" id="createProfileModalLabel"
-                                style="font-size:0.9rem;font-weight:700;color:var(--app-text);">
-                                <i class="bi bi-plus-lg me-2" style="color:var(--app-primary)" aria-hidden="true"></i>Novo Perfil
+                                style="font-size:0.9rem;font-weight:700;color:var(--text);">
+                                <i class="bi bi-plus-lg me-2" style="color:var(--accent)" aria-hidden="true"></i>Novo Perfil
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                         </div>
 
                         <div class="modal-body" style="padding:1.25rem;">
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
                                 <input type="text" name="name" class="form-control" required autocomplete="off">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
                                 <input type="text" name="slug" class="form-control" required autocomplete="off">
                             </div>
                             <div class="mb-0">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
                                 <select name="parent" class="form-select">
                                     <option value="0">Nenhum (raiz)</option>
                                     <?php foreach ($availableParents as $ap): ?>
@@ -210,7 +210,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                             </div>
                         </div>
 
-                        <div class="modal-footer" style="border-color:var(--app-border);padding:0.75rem 1.25rem;justify-content:end;">
+                        <div class="modal-footer" style="border-color:var(--border);padding:0.75rem 1.25rem;justify-content:end;">
                             <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-sm btn-primary">Criar</button>
                         </div>
@@ -222,31 +222,31 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
         <!-- Modal de edição -->
         <div id="editProfileModal" class="modal fade" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:var(--app-surface);border:1px solid var(--app-border);border-radius:0.5rem;">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;">
                     <form method="POST" action="<?php echo $GLOBALS['profiles_url']; ?>">
                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                         <input type="hidden" name="action" value="editar">
                         <input type="hidden" name="idx" :value="editData.idx">
 
-                        <div class="modal-header" style="border-color:var(--app-border);padding:1rem 1.25rem 0.75rem;">
+                        <div class="modal-header" style="border-color:var(--border);padding:1rem 1.25rem 0.75rem;">
                             <h5 class="modal-title" id="editProfileModalLabel"
-                                style="font-size:0.9rem;font-weight:700;color:var(--app-text);">
-                                <i class="bi bi-pencil me-2" style="color:var(--app-primary)" aria-hidden="true"></i>Editar Perfil
+                                style="font-size:0.9rem;font-weight:700;color:var(--text);">
+                                <i class="bi bi-pencil me-2" style="color:var(--accent)" aria-hidden="true"></i>Editar Perfil
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                         </div>
 
                         <div class="modal-body" style="padding:1.25rem;">
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
                                 <input type="text" name="name" class="form-control" x-model="editData.name" required autocomplete="off">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
                                 <input type="text" name="slug" class="form-control" x-model="editData.slug" required autocomplete="off">
                             </div>
                             <div class="mb-0">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--app-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
+                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
                                 <select name="parent" class="form-select" x-model="editData.parent">
                                     <option value="0">Nenhum (raiz)</option>
                                     <?php foreach ($availableParents as $ap): ?>
@@ -256,7 +256,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                             </div>
                         </div>
 
-                        <div class="modal-footer" style="border-color:var(--app-border);padding:0.75rem 1.25rem;justify-content:end;">
+                        <div class="modal-footer" style="border-color:var(--border);padding:0.75rem 1.25rem;justify-content:end;">
                             <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
                         </div>

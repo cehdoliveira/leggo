@@ -6,7 +6,7 @@
 
             <div class="text-center mb-4">
                 <h4 class="fw-bold mb-1">Cadastrar Usuário</h4>
-                <p class="small" style="color: var(--app-text-muted);">O novo usuário receberá um email com as instruções para definir a senha</p>
+                <p class="small" style="color: var(--text-muted);">O novo usuário receberá um email com as instruções para definir a senha</p>
             </div>
 
             <div class="card shadow-sm">
@@ -45,7 +45,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="login" class="form-label">Login <small class="fw-normal" style="color: var(--app-text-muted);">(sem espaços)</small></label>
+                            <label for="login" class="form-label">Login <small class="fw-normal" style="color: var(--text-muted);">(sem espaços)</small></label>
                             <input type="text"
                                 class="form-control"
                                 :class="{ 'is-invalid': errors.login }"
@@ -67,7 +67,7 @@
                 </div>
 
                 <div class="card-footer text-center py-3">
-                    <small style="color: var(--app-text-muted);">
+                    <small style="color: var(--text-muted);">
                         <a href="<?php echo $GLOBALS['home_url']; ?>" class="text-decoration-none"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Voltar ao dashboard</a>
                     </small>
                 </div>
