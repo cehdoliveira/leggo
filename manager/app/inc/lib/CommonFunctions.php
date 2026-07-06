@@ -845,4 +845,13 @@ function redact_email_body(string $html): string
   return $html ?? '';
 }
 
+/**
+ * Valida formato de slug: minúsculas/dígitos, separados por '-' ou '_',
+ * sem separador nas pontas nem duplicado. Ex.: 'admin', 'meu-perfil', 'a_b1'.
+ */
+function valid_slug(?string $slug): bool
+{
+  return $slug !== null && preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/', $slug) === 1;
+}
+
 
