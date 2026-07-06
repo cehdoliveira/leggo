@@ -60,7 +60,7 @@ bin/                   ← check-shared-sync.sh (guard de sincronia lib/model, r
 .github/workflows/     ← CI: sync-guard + PHPStan + PHPUnit (MySQL de serviço)
 .githooks/             ← pre-commit (PHPStan) + pre-push (PHPUnit)
 .editorconfig          ← Estilo de código
-plans/                 ← Planos de melhoria do advisor (histórico)
+plans/                 ← Design docs de features (outbox de e-mails, CRUD scaffold, init whitelabel)
 ```
 
 ## Comandos

@@ -32,15 +32,15 @@ manager/public_html/assets/upload/
 .claude/
 .gstack
 CLAUDE.md
-AGENTS.md
 
 
 # ============================================================
-# Documentação interna — NÃO versionar (exceto README.md)
+# Documentação interna — NÃO versionar (exceto README.md/AGENTS.md)
 # ============================================================
 *.md
 !README.md
-# Planos de implementação (advisory / handoff) — versionados de propósito
+!AGENTS.md
+# Design docs de features referenciados por código/scripts (não apagar)
 !plans/*.md
 
 
