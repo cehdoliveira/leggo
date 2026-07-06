@@ -132,4 +132,47 @@ final class CommonFunctionsTest extends TestCase
         $this->assertStringNotContainsString('deadbeefdeadbeefdeadbeefdeadbeef', $out);
         $this->assertStringContainsString('[REDACTED]', $out);
     }
+
+    /**
+     * @dataProvider validSlugProvider
+     */
+    public function test_valid_slug_accepts_valid_formats(string $slug): void
+    {
+        $this->assertTrue(valid_slug($slug), "Esperava que '$slug' fosse um slug valido");
+    }
+
+    public static function validSlugProvider(): array
+    {
+        return [
+            ['admin'],
+            ['user'],
+            ['meu-perfil'],
+            ['a_b1'],
+            ['x9'],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidSlugProvider
+     */
+    public function test_valid_slug_rejects_invalid_formats(?string $slug): void
+    {
+        $this->assertFalse(valid_slug($slug), 'Esperava que o slug fosse invalido');
+    }
+
+    public static function invalidSlugProvider(): array
+    {
+        return [
+            [''],
+            [null],
+            ['Admin'],
+            ['meu perfil'],
+            ['até'],
+            ['-x'],
+            ['x-'],
+            ['a--b'],
+            ['a__b'],
+            ['a-'],
+        ];
+    }
 }
