@@ -19,12 +19,16 @@
 # Flags opcionais:
 #   --root <dir>   raiz do repo (default: raiz do git atual)
 #   --force        sobrescreve kernel.php existente (default: aborta com erro)
+#   --site-hosts "a.com,www.a.com"      hosts extras p/ ALLOWED_HOSTS do site (default: host da --site-url)
+#   --manager-hosts "m.a.com"           idem para o manager
 set -e
 
 ROOT=""
 BRAND_NAME=""
 SITE_URL=""
 MANAGER_URL=""
+SITE_HOSTS=""
+MANAGER_HOSTS=""
 FORCE=0
 
 while [ $# -gt 0 ]; do
@@ -34,6 +38,8 @@ while [ $# -gt 0 ]; do
         --manager-url) MANAGER_URL="$2"; shift 2 ;;
         --root) ROOT="$2"; shift 2 ;;
         --force) FORCE=1; shift ;;
+        --site-hosts) SITE_HOSTS="$2"; shift 2 ;;
+        --manager-hosts) MANAGER_HOSTS="$2"; shift 2 ;;
         *) echo "Flag desconhecida: $1" >&2; exit 1 ;;
     esac
 done
@@ -106,19 +112,24 @@ fi
 SITE_HOST="$(host_of "$SITE_URL")"
 MANAGER_HOST="$(host_of "$MANAGER_URL")"
 
+if [ -z "$SITE_HOSTS" ]; then SITE_HOSTS="$SITE_HOST"; fi
+if [ -z "$MANAGER_HOSTS" ]; then MANAGER_HOSTS="$MANAGER_HOST"; fi
+SITE_HOSTS="$(printf '%s' "$SITE_HOSTS" | tr -d '[:space:]')"
+MANAGER_HOSTS="$(printf '%s' "$MANAGER_HOSTS" | tr -d '[:space:]')"
+
 E_BRAND_NAME="$(escape_repl "$BRAND_NAME")"
 E_SLUG="$(escape_repl "$SLUG")"
 E_SITE_URL="$(escape_repl "$SITE_URL")"
 E_MANAGER_URL="$(escape_repl "$MANAGER_URL")"
-E_SITE_HOST="$(escape_repl "$SITE_HOST")"
-E_MANAGER_HOST="$(escape_repl "$MANAGER_HOST")"
+E_SITE_HOSTS="$(escape_repl "$SITE_HOSTS")"
+E_MANAGER_HOSTS="$(escape_repl "$MANAGER_HOSTS")"
 
 cp "$SITE_EXAMPLE" "$SITE_KERNEL"
 sed -i \
     -e "s#define(\"mail_from_name\", \"leggo\");#define(\"mail_from_name\", \"${E_BRAND_NAME}\");#" \
     -e "s#define(\"cAppKey\", \"leggo_site_session\");#define(\"cAppKey\", \"${E_SLUG}_site_session\");#" \
     -e "s#define(\"cTitle\", \"leggo\");#define(\"cTitle\", \"${E_BRAND_NAME}\");#" \
-    -e "s#define(\"ALLOWED_HOSTS\", \"leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_SITE_HOST}\");#" \
+    -e "s#define(\"ALLOWED_HOSTS\", \"leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_SITE_HOSTS}\");#" \
     -e "s#define(\"SITE_CANONICAL_URL\", \"http://leggo.local\");#define(\"SITE_CANONICAL_URL\", \"${E_SITE_URL}\");#" \
     -e "s#define(\"REDIS_PREFIX\", \"leggo:site:\");#define(\"REDIS_PREFIX\", \"${E_SLUG}:site:\");#" \
     -e "s#define(\"KAFKA_TOPIC_EMAIL\", \"leggo_site_emails\");#define(\"KAFKA_TOPIC_EMAIL\", \"${E_SLUG}_site_emails\");#" \
@@ -130,7 +141,7 @@ sed -i \
     -e "s#define(\"mail_from_name\", \"leggo Manager\");#define(\"mail_from_name\", \"${E_BRAND_NAME} Manager\");#" \
     -e "s#define(\"cAppKey\", \"leggo_manager_session\");#define(\"cAppKey\", \"${E_SLUG}_manager_session\");#" \
     -e "s#define(\"cTitle\", \"leggo Manager\");#define(\"cTitle\", \"${E_BRAND_NAME} Manager\");#" \
-    -e "s#define(\"ALLOWED_HOSTS\", \"manager.leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_MANAGER_HOST}\");#" \
+    -e "s#define(\"ALLOWED_HOSTS\", \"manager.leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_MANAGER_HOSTS}\");#" \
     -e "s#define(\"MANAGER_CANONICAL_URL\", \"http://manager.leggo.local\");#define(\"MANAGER_CANONICAL_URL\", \"${E_MANAGER_URL}\");#" \
     -e "s#define(\"REDIS_PREFIX\", \"leggo:manager:\");#define(\"REDIS_PREFIX\", \"${E_SLUG}:manager:\");#" \
     -e "s#define(\"KAFKA_TOPIC_EMAIL\", \"leggo_manager_emails\");#define(\"KAFKA_TOPIC_EMAIL\", \"${E_SLUG}_manager_emails\");#" \
