@@ -250,7 +250,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                 <select name="parent" class="form-select" x-model="editData.parent">
                                     <option value="0">Nenhum (raiz)</option>
                                     <?php foreach ($availableParents as $ap): ?>
-                                        <option value="<?php echo (int)$ap['idx']; ?>"><?php echo htmlspecialchars($ap['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></option>
+                                        <option value="<?php echo (int)$ap['idx']; ?>" :disabled="editData.idx === <?php echo (int)$ap['idx']; ?>"><?php echo htmlspecialchars($ap['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>

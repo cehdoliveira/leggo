@@ -49,6 +49,11 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                 <h1><i class="bi bi-envelope me-2" aria-hidden="true"></i>E-mails Enviados</h1>
                 <p>Olá, <?php echo $userName; ?>. Histórico de e-mails registrados pelo sistema (cadastro, redefinição de senha).</p>
             </div>
+            <form method="GET" action="<?php echo $GLOBALS['emails_url']; ?>" class="d-flex gap-2">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Filtrar por destinatário"
+                       value="<?php echo htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off">
+                <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+            </form>
         </div>
 
         <!-- Tabela de e-mails -->
@@ -93,15 +98,15 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                     <nav aria-label="Paginação de e-mails">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => max(1, $page - 1)]), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => max(1, $page - 1)] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
                             </li>
                             <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
-                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => $p]), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => $p] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => min($totalPages, $page + 1)]), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => min($totalPages, $page + 1)] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
                             </li>
                         </ul>
                     </nav>

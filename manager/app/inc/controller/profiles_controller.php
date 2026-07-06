@@ -81,6 +81,11 @@ class profiles_controller
                     basic_redir($profiles_url);
                 }
 
+                if (!valid_slug($slug)) {
+                    $_SESSION["messages_app"]["danger"] = ["Slug inválido: use minúsculas, números, '-' ou '_' (ex.: meu-perfil)."];
+                    basic_redir($profiles_url);
+                }
+
                 $profile = new profiles_model();
                 $profile->populate([
                     'name'      => $name,
@@ -124,6 +129,25 @@ class profiles_controller
             basic_redir($profiles_url);
         }
 
+        if ($action === 'editar') {
+            $name   = trim($post['name'] ?? '');
+            $slug   = trim($post['slug'] ?? '');
+            $parent = (int)($post['parent'] ?? 0);
+
+            if ($name === '' || $slug === '') {
+                $_SESSION["messages_app"]["danger"] = ["Nome e slug são obrigatórios."];
+                basic_redir($profiles_url);
+            }
+            if (!valid_slug($slug)) {
+                $_SESSION["messages_app"]["danger"] = ["Slug inválido: use minúsculas, números, '-' ou '_' (ex.: meu-perfil)."];
+                basic_redir($profiles_url);
+            }
+            if ($parent === $idx) {
+                $_SESSION["messages_app"]["danger"] = ["Um perfil não pode ser pai de si mesmo."];
+                basic_redir($profiles_url);
+            }
+        }
+
         $rollback = false;
 
         try {
@@ -131,18 +155,12 @@ class profiles_controller
             $update->set_filter(["idx = ?"], [$idx]);
 
             if ($action === 'editar') {
-                $name   = trim($post['name'] ?? '');
-                $slug   = trim($post['slug'] ?? '');
-                $parent = (int)($post['parent'] ?? 0);
-
-                if ($name !== '' && $slug !== '') {
-                    $update->populate([
-                        'name'   => $name,
-                        'slug'   => $slug,
-                        'parent' => $parent,
-                    ]);
-                    $update->save();
-                }
+                $update->populate([
+                    'name'   => $name,
+                    'slug'   => $slug,
+                    'parent' => $parent,
+                ]);
+                $update->save();
             } elseif ($action === 'remover') {
                 $update->remove();
             }
@@ -153,6 +171,7 @@ class profiles_controller
                 "action" => $action,
                 "idx"    => $idx,
             ]);
+            $_SESSION["messages_app"]["danger"] = ["Falha ao salvar o perfil. Verifique se o slug já está em uso."];
         }
 
         basic_redir($profiles_url, rollback: $rollback);
