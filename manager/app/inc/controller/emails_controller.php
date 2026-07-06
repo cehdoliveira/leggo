@@ -14,12 +14,21 @@ class emails_controller
             $page = 1;
         }
         $offset = ($page - 1) * $perPage;
+        $q      = trim($info['get']['q'] ?? '');
 
         try {
             $model = new messages_model();
 
-            $countStmt    = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM messages WHERE active = 'yes'");
-            $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+            if ($q !== '') {
+                $like         = '%' . addcslashes($q, '\\%_') . '%';
+                $countStmt    = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM messages WHERE active = 'yes' AND to_mail LIKE ?", [$like]);
+                $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+                $model->set_filter([" active = 'yes' ", " to_mail LIKE ? "], [$like]);
+            } else {
+                $countStmt    = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM messages WHERE active = 'yes'");
+                $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+            }
 
             $model->set_field([" idx ", " to_mail ", " subject ", " body ", " sent_at "]);
             $model->set_order([" sent_at DESC "]);
