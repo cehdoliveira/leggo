@@ -151,4 +151,79 @@ final class DolModelWriteTest extends DBTestCase
             'seed da migration 004 vincula o profile admin ao usuario admin — join() deve encontrar essa linha'
         );
     }
+
+    public function testUpdateChangesOnlyMatchingRowAndTouchesModifiedAt(): void
+    {
+        $idA = $this->newTestUser();
+        $idB = $this->newTestUser();
+
+        // Ordem dos params: SET tem modified_by=? (userId) injetado no inicio,
+        // depois "name = ?" com o valor do caller, depois o WHERE idx=?.
+        // Se a ordem quebrar, name receberia o userId ou o idA.
+        (new users_model())->update(["name = ?"], "WHERE idx = ?", ["Alvo Atualizado", $idA]);
+
+        $reloadA = new users_model();
+        $reloadA->set_field([" idx ", " name ", " modified_at "]);
+        $reloadA->set_filter(["idx = ?"], [$idA]);
+        $reloadA->set_paginate([1]);
+        $reloadA->load_data();
+        $this->assertSame('Alvo Atualizado', $reloadA->data[0]['name'], 'update() deve gravar o valor do caller na coluna certa');
+        $this->assertNotNull($reloadA->data[0]['modified_at'], 'update() deve preencher modified_at automaticamente');
+
+        $reloadB = new users_model();
+        $reloadB->set_field([" idx ", " name ", " modified_at "]);
+        $reloadB->set_filter(["idx = ?"], [$idB]);
+        $reloadB->set_paginate([1]);
+        $reloadB->load_data();
+        $this->assertSame('Write Test User', $reloadB->data[0]['name'], 'update() nao deve tocar linhas fora do WHERE');
+        $this->assertNull($reloadB->data[0]['modified_at'], 'linha fora do WHERE nao deve ter modified_at preenchido');
+    }
+
+    public function testUpdateWithoutWhereThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new users_model())->update(["name = ?"], null, ["qualquer"]);
+    }
+
+    public function testUpdateWithBlankWhereThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new users_model())->update(["name = ?"], "   ", ["qualquer"]);
+    }
+
+    public function testUpdateWithEmptyFieldsThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new users_model())->update([], "WHERE idx = ?", [1]);
+    }
+
+    public function testUpdateRecordsSessionUserAsModifiedBy(): void
+    {
+        $id = $this->newTestUser();
+
+        $_SESSION[constant("cAppKey")]["credential"]["idx"] = 999;
+        try {
+            (new users_model())->update(["name = ?"], "WHERE idx = ?", ["Editado por 999", $id]);
+        } finally {
+            unset($_SESSION[constant("cAppKey")]);
+        }
+
+        $reload = new users_model();
+        $reload->set_field([" idx ", " modified_by "]);
+        $reload->set_filter(["idx = ?"], [$id]);
+        $reload->set_paginate([1]);
+        $reload->load_data();
+        $this->assertSame(999, (int) $reload->data[0]['modified_by'], 'update() deve gravar o idx da sessao em modified_by');
+    }
+
+    public function testSelectReturnsMatchingRows(): void
+    {
+        $id = $this->newTestUser();
+
+        $stmt = (new users_model())->select([" idx ", " name "], "WHERE idx = ?", [$id]);
+        $rows = localPDO::getInstance()->results($stmt);
+
+        $this->assertCount(1, $rows, 'select() deve retornar o statement executado com os resultados');
+        $this->assertSame('Write Test User', $rows[0]['name']);
+    }
 }
