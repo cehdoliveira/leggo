@@ -23,7 +23,7 @@ class profiles_controller
         try {
             $model = new profiles_model();
 
-            $countStmt      = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM profiles WHERE active = 'yes'");
+            $countStmt      = $model->select([" COUNT(*) AS total "], "WHERE active = 'yes'");
             $total_profiles = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
             $model->set_field([" idx ", " name ", " slug ", " adm ", " editabled ", " parent ", " created_at "]);
