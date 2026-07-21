@@ -375,6 +375,8 @@ SISTEMA: Leggo — Whitelabel Starter PHP 8.4 + MySQL 8.0
 │       ├── load_data(): SELECT com prepared statements (filterParams) ou string interpolation (legado)
 │       ├── populate(): mapeia array associativo → colunas do schema da tabela
 │       ├── execute_raw_prepared(): prepared statement manual
+│       ├── select($fields, $where, $params): SELECT avulso na tabela do model, retorna \PDOStatement
+│       ├── update($fields, $where, $params): UPDATE avulso; exige $where não vazio (senão InvalidArgumentException — usar "WHERE 1=1" para afetar todas as linhas de propósito) e $fields não vazio; injeta modified_at/modified_by automaticamente
 │       └── Transação: herdada de localPDO (auto-begin no singleton, auto-commit no destruct, rollback em erro SQL)
 │
 ├── INFRAESTRUTURA

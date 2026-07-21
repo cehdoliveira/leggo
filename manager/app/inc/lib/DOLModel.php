@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @method void set_con(localPDO $con)
  * @method void set_table(string $table)
@@ -51,6 +52,35 @@ class DOLModel extends rootOBJ
 	public function getCon(): localPDO
 	{
 		return $this->con;
+	}
+
+	public function select(array $fields = array(), ?string $where = null, ?array $params = null): \PDOStatement
+	{
+		return $this->con->executePrepared(
+			sprintf("SELECT %s FROM %s %s", implode(", ", $fields), $this->table, $where ?? ''),
+			$params ?? []
+		);
+	}
+
+	public function update(array $fields = array(), ?string $where = null, ?array $params = null): \PDOStatement
+	{
+		if ($where === null || trim($where) === '') {
+			throw new \InvalidArgumentException('update() requires a WHERE clause; use "WHERE 1=1" to affect all rows intentionally.');
+		}
+		if (empty($fields)) {
+			throw new \InvalidArgumentException('update() requires at least one field to set.');
+		}
+		$userId = isset($_SESSION[constant("cAppKey")]["credential"]["idx"])
+			? $_SESSION[constant("cAppKey")]["credential"]["idx"]
+			: 0;
+
+		$assignments = array_merge([" modified_at = now() ", " modified_by = ? "], $fields);
+		$bindParams  = array_merge([$userId], $params ?? []);
+
+		return $this->con->executePrepared(
+			sprintf("UPDATE %s SET %s %s", $this->table, implode(", ", $assignments), $where),
+			$bindParams
+		);
 	}
 
 	public function save(): int|bool|\PDOStatement
@@ -247,8 +277,13 @@ class DOLModel extends rootOBJ
 		$this->set_data($this->con->results($r));
 
 		if ($withCount) {
-			$countSql = sprintf("SELECT count( %s ) as q FROM %s %s %s",
-				$countExpr, $this->table, $fi, $gp);
+			$countSql = sprintf(
+				"SELECT count( %s ) as q FROM %s %s %s",
+				$countExpr,
+				$this->table,
+				$fi,
+				$gp
+			);
 			$countStmt = $this->con->executePrepared($countSql, $this->filterParams);
 			$this->set_recordset($this->con->result($countStmt, "q", 0));
 		} else {
@@ -272,9 +307,11 @@ class DOLModel extends rootOBJ
 		foreach ($_data as $key => $value) {
 			$new_data[$key] = $value;
 			foreach ($classes as $class) {
-				$junctionTable = sprintf("%s_%s",
+				$junctionTable = sprintf(
+					"%s_%s",
 					$reverse_table ? $class : $this->table,
-					$reverse_table ? $this->table : $class);
+					$reverse_table ? $this->table : $class
+				);
 				$parentCol = sprintf("%s_id", $this->table);
 				$childCol  = sprintf("%s_id", $class);
 
@@ -292,8 +329,13 @@ class DOLModel extends rootOBJ
 				}
 				$placeholders = implode(',', array_fill(0, count($filter_key_vals), '?'));
 				$fields = isset($class_field) ? implode(", ", $class_field) : "*";
-				$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s) %s",
-					$fields, $class, $placeholders, $options ?? '');
+				$sql = sprintf(
+					"SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s) %s",
+					$fields,
+					$class,
+					$placeholders,
+					$options ?? ''
+				);
 				$r = $this->con->executePrepared($sql, $filter_key_vals);
 				$new_data[$key][$class . "_attach"] = $this->con->results($r);
 			}
@@ -329,8 +371,13 @@ class DOLModel extends rootOBJ
 			if (!empty($lookupIds)) {
 				$placeholders = implode(',', array_fill(0, count($lookupIds), '?'));
 				$fields = isset($field) ? implode(", ", $field) : "*";
-				$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND %s IN (%s)",
-					$fields, $table, $fwColumn, $placeholders);
+				$sql = sprintf(
+					"SELECT %s FROM %s WHERE active = 'yes' AND %s IN (%s)",
+					$fields,
+					$table,
+					$fwColumn,
+					$placeholders
+				);
 				$r = $this->con->executePrepared($sql, $lookupIds);
 				foreach ($this->con->results($r) as $row) {
 					$batchResults[$row[$fwColumn]][] = $row;
@@ -385,9 +432,11 @@ class DOLModel extends rootOBJ
 				if (isset($new_data[$key][$classesfather . "_attach"]) && count($new_data[$key][$classesfather . "_attach"])) {
 					foreach ($new_data[$key][$classesfather . "_attach"] as $k => $v) {
 						foreach ($classes as $class) {
-							$junctionTable = sprintf("%s_%s",
+							$junctionTable = sprintf(
+								"%s_%s",
 								$reverse_table ? $class : $classesfather,
-								$reverse_table ? $classesfather : $class);
+								$reverse_table ? $classesfather : $class
+							);
 							$fatherCol = sprintf("%s_id", $classesfather);
 							$childCol  = sprintf("%s_id", $class);
 
@@ -413,8 +462,13 @@ class DOLModel extends rootOBJ
 							}
 
 							$fields = isset($class_field[$class]) ? implode(", ", $class_field[$class]) : "*";
-							$sql = sprintf("SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s)%s",
-								$fields, $class, $placeholders, $optionsSql);
+							$sql = sprintf(
+								"SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s)%s",
+								$fields,
+								$class,
+								$placeholders,
+								$optionsSql
+							);
 							$r = $this->con->executePrepared($sql, array_merge($filter_key_vals, $optionsParams));
 							$new_data[$key][$classesfather . "_attach"][$k][$class . "_attach"] = $this->con->results($r);
 						}
@@ -442,9 +496,11 @@ class DOLModel extends rootOBJ
 				}
 
 				if (count($varexecute)) {
-					$junctionTable = sprintf(" %s_%s ",
+					$junctionTable = sprintf(
+						" %s_%s ",
 						$reverse_table ? $class : $this->table,
-						$reverse_table ? $this->table : $class);
+						$reverse_table ? $this->table : $class
+					);
 					$tableIdCol = sprintf(" %s_id ", $this->table);
 
 					$this->con->executePrepared(

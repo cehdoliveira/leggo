@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8.2.0] - 2026-07-21
+
+### Added
+- `DOLModel::select($fields, $where, $params)` e `DOLModel::update($fields, $where, $params)` — helpers padronizados para SELECT/UPDATE avulsos na tabela do model, irmãos de `execute_raw_prepared()`. `update()` exige `$where` não vazio (lança `InvalidArgumentException` caso contrário — evita UPDATE acidental na tabela inteira) e também exige ao menos um campo em `$fields`. Grava `modified_at`/`modified_by` automaticamente a partir do usuário da sessão.
+- Documentação de primeiro uso no `AGENTS.md`: ativação do admin seed via `set_admin_password.php` (lê senha por STDIN, nunca por argv).
+- Testes cobrindo os novos `select()`/`update()`: WHERE ausente/em branco, `$fields` vazio, gravação correta de `modified_by`/`modified_at` via sessão, e isolamento de linhas fora do filtro.
+
+### Changed
+- `emails_controller`, `profiles_controller` e `site_controller` migrados de `execute_raw_prepared()` para `DOLModel::select()` nas queries de contagem do dashboard (mesmo SQL, mesma vinculação de parâmetros).
+- `AGENTS.md` marcado como referência autoritativa do projeto (prevalece sobre `CLAUDE.md` em caso de conflito) e ampliado com detalhes de CI, rebranding, CSP nonce por request, rate limiting com fallback em arquivo, `canonical_url()` fail-closed, e inventário de arquivos-chave.
+
 ## [1.8.1.0] - 2026-06-20
 
 ### Fixed

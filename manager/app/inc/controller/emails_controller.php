@@ -21,12 +21,12 @@ class emails_controller
 
             if ($q !== '') {
                 $like         = '%' . addcslashes($q, '\\%_') . '%';
-                $countStmt    = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM messages WHERE active = 'yes' AND to_mail LIKE ?", [$like]);
+                $countStmt    = $model->select([" COUNT(*) AS total "], "WHERE active = 'yes' AND to_mail LIKE ?", [$like]);
                 $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
                 $model->set_filter([" active = 'yes' ", " to_mail LIKE ? "], [$like]);
             } else {
-                $countStmt    = $model->execute_raw_prepared("SELECT COUNT(*) AS total FROM messages WHERE active = 'yes'");
+                $countStmt    = $model->select([" COUNT(*) AS total "], "WHERE active = 'yes'");
                 $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
             }
 

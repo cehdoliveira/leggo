@@ -17,8 +17,9 @@ class site_controller
         try {
             $model = new users_model();
 
-            $countStmt = $model->execute_raw_prepared(
-                "SELECT COUNT(*) AS total, SUM(active = 'yes') AS ativos, SUM(active = 'yes' AND enabled = 'yes') AS habilitados FROM users WHERE idx > 0"
+            $countStmt = $model->select(
+                [" COUNT(*) AS total ", " SUM(active = 'yes') AS ativos ", " SUM(active = 'yes' AND enabled = 'yes') AS habilitados "],
+                "WHERE idx > 0"
             );
             $counts = $countStmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'ativos' => 0, 'habilitados' => 0];
 

@@ -105,7 +105,7 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 | Componente | Arquivo | Função |
 |-----------|---------|--------|
 | Router | `Dispatcher.php` | `add_route(METHOD, pattern, "controller:method", guard, args)` |
-| ORM | `DOLModel.php` | Active record com soft-delete, `populate()`/`save()`/`remove()`, prepared statements, batch `join()` |
+| ORM | `DOLModel.php` | Active record com soft-delete, `populate()`/`save()`/`remove()`, `select()`/`update()` avulsos, prepared statements, batch `join()` |
 | Database | `localPDO.php` | Wrapper PDO com `select()`, `insert()`, `update()`, `executePrepared(sql, params)` |
 | Cache | `RedisCache.php` | Singleton Redis com TTL, fail-open |
 | Email | `EmailProducer.php` | Producer Kafka assíncrono (fallback sem rdkafka) |
