@@ -218,6 +218,38 @@ class DOLModel extends rootOBJ
 		return $this->data;
 	}
 
+	/**
+	 * Devolve um mapa `chave => rótulo` — alimenta <select> de formulário e
+	 * serve como tabela de tradução.
+	 *
+	 * Uso direto (mapa para um <select>):
+	 *   $map = (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
+	 *
+	 * Uso invertido (traduz identificador público em identificador interno):
+	 *   $idx = (int)current((new profiles_model())->data4select("name", ["slug = ?"], "idx", [$slug]));
+	 *
+	 * Se $field vier como expressão com apelido ("CONCAT(a,b) as label"), o
+	 * apelido passa a valer como nome da coluna na ordenação e no resultado.
+	 *
+	 * @param string        $key     coluna que vira a chave do mapa
+	 * @param array<string> $filters condições WHERE (use ? para valores)
+	 * @param string        $field   coluna (ou expressão com apelido) que vira o rótulo
+	 * @param array<mixed>  $params  valores para bind dos ? em $filters
+	 * @return array<string|int, mixed>
+	 */
+	public function data4select(string $key = "idx", array $filters = array(" active = 'yes' "), string $field = "name", array $params = array()): array
+	{
+		$keyName   = trim($key);
+		$fieldName = trim((string)preg_replace("/.+ as (.+)$/i", "$1", trim($field)));
+
+		$this->set_field(array($key, $field));
+		$this->set_filter($filters, $params);
+		$this->set_order(array($fieldName . " asc "));
+		$this->load_data(false);
+
+		return array_column($this->data, $fieldName, $keyName);
+	}
+
 	public function _current_data(array $filter = array(), array $fields = array(), array $attach = array(), array $attach_son = array(), bool|array $availabled = false): array|false
 	{
 		$field = array(" idx ", " DATE_FORMAT( created_at , '%d/%m/%Y %H:%i' ) as created_at ", " DATE_FORMAT( modified_at , '%d/%m/%Y %H:%i' ) as modified_at ");
