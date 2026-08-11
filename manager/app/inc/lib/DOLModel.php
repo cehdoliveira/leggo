@@ -220,30 +220,32 @@ class DOLModel extends rootOBJ
 
 	/**
 	 * Devolve um mapa `chave => rótulo` — alimenta <select> de formulário e
-	 * serve como tabela de tradução.
+	 * serve como tabela de tradução. `active = 'yes'` é sempre mesclado aos
+	 * filtros, igual a `_list_data()` — o chamador não precisa (nem consegue)
+	 * incluir registros soft-deleted.
 	 *
 	 * Uso direto (mapa para um <select>):
-	 *   $map = (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
+	 *   $map = (new profiles_model())->data4select("idx", [], "name");
 	 *
 	 * Uso invertido (traduz identificador público em identificador interno):
 	 *   $idx = (int)current((new profiles_model())->data4select("name", ["slug = ?"], "idx", [$slug]));
 	 *
-	 * Se $field vier como expressão com apelido ("CONCAT(a,b) as label"), o
-	 * apelido passa a valer como nome da coluna na ordenação e no resultado.
+	 * Se $field ou $key vier como expressão com apelido ("CONCAT(a,b) as label"),
+	 * o apelido passa a valer como nome da coluna na ordenação e no resultado.
 	 *
-	 * @param string        $key     coluna que vira a chave do mapa
-	 * @param array<string> $filters condições WHERE (use ? para valores)
+	 * @param string        $key     coluna (ou expressão com apelido) que vira a chave do mapa
+	 * @param array<string> $filters condições WHERE além de active = 'yes' (use ? para valores)
 	 * @param string        $field   coluna (ou expressão com apelido) que vira o rótulo
 	 * @param array<mixed>  $params  valores para bind dos ? em $filters
 	 * @return array<string|int, mixed>
 	 */
-	public function data4select(string $key = "idx", array $filters = array(" active = 'yes' "), string $field = "name", array $params = array()): array
+	public function data4select(string $key = "idx", array $filters = array(), string $field = "name", array $params = array()): array
 	{
-		$keyName   = trim($key);
+		$keyName   = trim((string)preg_replace("/.+ as (.+)$/i", "$1", trim($key)));
 		$fieldName = trim((string)preg_replace("/.+ as (.+)$/i", "$1", trim($field)));
 
 		$this->set_field(array($key, $field));
-		$this->set_filter($filters, $params);
+		$this->set_filter(count($filters) ? array_merge(array(" active = 'yes' "), $filters) : array(" active = 'yes' "), $params);
 		$this->set_order(array($fieldName . " asc "));
 		$this->load_data(false);
 

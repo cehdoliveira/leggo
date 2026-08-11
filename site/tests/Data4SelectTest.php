@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /**
  * Cobre DOLModel::data4select() (plano 001) — mapa chave=>rotulo, uso
- * invertido para traduzir slug em idx, e bind de parametros.
+ * invertido para traduzir slug em idx, active='yes' sempre mesclado (mesmo
+ * quando o chamador nao inclui), e bind de parametros.
  */
 final class Data4SelectTest extends DBTestCase
 {
@@ -30,7 +31,7 @@ final class Data4SelectTest extends DBTestCase
 
         $map = (new profiles_model())->data4select(
             "idx",
-            [" active = 'yes' ", " slug LIKE ? "],
+            [" slug LIKE ? "],
             "name",
             ["%{$marker}"]
         );
@@ -49,7 +50,7 @@ final class Data4SelectTest extends DBTestCase
 
         $found = (int) current((new profiles_model())->data4select(
             "name",
-            [" active = 'yes' ", " slug = ? "],
+            [" slug = ? "],
             "idx",
             ["perfil-{$marker}"]
         ));
@@ -61,7 +62,7 @@ final class Data4SelectTest extends DBTestCase
     {
         $map = (new profiles_model())->data4select(
             "name",
-            [" active = 'yes' ", " slug = ? "],
+            [" slug = ? "],
             "idx",
             ['slug-que-nao-existe-' . uniqid()]
         );
@@ -77,7 +78,7 @@ final class Data4SelectTest extends DBTestCase
 
         $map = (new profiles_model())->data4select(
             "idx",
-            [" active = 'yes' ", " idx = ? "],
+            [" idx = ? "],
             "CONCAT(name, ' (', slug, ')') as label",
             [$id]
         );
@@ -94,11 +95,32 @@ final class Data4SelectTest extends DBTestCase
         // retornaria linhas indevidas. Bindado, e apenas um slug inexistente.
         $map = (new profiles_model())->data4select(
             "name",
-            [" active = 'yes' ", " slug = ? "],
+            [" slug = ? "],
             "idx",
             ["' OR 1=1 -- "]
         );
 
         $this->assertSame([], $map, 'Valor malicioso deve ser tratado como dado, nao como SQL');
+    }
+
+    public function testExcludesSoftDeletedRowsEvenWithoutExplicitActiveFilter(): void
+    {
+        $marker = uniqid();
+        $id = $this->makeProfile("Removido {$marker}", "removido-{$marker}");
+
+        $toRemove = new profiles_model();
+        $toRemove->set_filter(["idx = ?"], [$id]);
+        $toRemove->remove();
+
+        // Filtro do chamador nao menciona active — data4select() deve
+        // mesclar 'active = yes' incondicionalmente, igual _list_data().
+        $map = (new profiles_model())->data4select(
+            "idx",
+            [" slug = ? "],
+            "name",
+            ["removido-{$marker}"]
+        );
+
+        $this->assertArrayNotHasKey($id, $map, 'Registro soft-deleted nao pode aparecer no mapa mesmo sem filtro active explicito');
     }
 }
