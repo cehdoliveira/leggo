@@ -879,4 +879,52 @@ function valid_slug(?string $slug): bool
   return $slug !== null && preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/', $slug) === 1;
 }
 
+/**
+ * Decompoe o parametro "coluna-direcao" (ex.: "name-desc") em ORDER BY seguro.
+ *
+ * ORDER BY nao aceita parametro bindado — o nome da coluna vai literal no SQL.
+ * Por isso a coluna SO pode sair da allowlist; qualquer coisa fora dela cai no
+ * default silenciosamente (a tela nao deve dar erro por query string torta).
+ *
+ * @param array<string> $allowed colunas que a tela permite ordenar
+ * @return array{0: string, 1: string} [coluna, direcao] — direcao e 'asc' ou 'desc'
+ */
+function resolve_ordenation(?string $param, array $allowed, string $default = 'name', string $defaultDir = 'asc'): array
+{
+  $column    = $default;
+  $direction = $defaultDir === 'desc' ? 'desc' : 'asc';
+
+  if ($param !== null && preg_match('/^([a-zA-Z0-9_]+)-(asc|desc)$/', $param, $m) === 1) {
+    if (in_array($m[1], $allowed, true)) {
+      $column    = $m[1];
+      $direction = $m[2];
+    }
+  }
+
+  return [$column, $direction];
+}
+
+/**
+ * Estado de um cabecalho clicavel: o valor de `ordenation` que o link deve
+ * aplicar e o icone que representa a ordenacao vigente.
+ *
+ * Coluna que esta ordenando agora: o link oferece a direcao invertida e o icone
+ * mostra a direcao atual. Demais colunas: link com a direcao inicial (asc) e
+ * icone neutro.
+ *
+ * @return array{0: string, 1: string} [valor de ordenation, classe do icone]
+ */
+function ordenation_header(string $column, string $currentColumn, string $currentDirection): array
+{
+  if ($column !== $currentColumn) {
+    return [$column . '-asc', 'bi bi-arrow-down-up'];
+  }
+
+  if ($currentDirection === 'asc') {
+    return [$column . '-desc', 'bi bi-caret-up-fill'];
+  }
+
+  return [$column . '-asc', 'bi bi-caret-down-fill'];
+}
+
 
