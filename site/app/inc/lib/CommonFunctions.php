@@ -769,8 +769,31 @@ function csv_sanitize_cell(mixed $value): string
   return $value;
 }
 
+/**
+ * Fecha a transacao global antes de uma resposta terminal que nao passa por
+ * basic_redir(). Sem isso o request sai sem commit e o __destruct() do
+ * localPDO faz rollback de seguranca — a escrita some silenciosamente.
+ *
+ * Respostas de erro (>= 400) fazem rollback: se o handler decidiu falhar,
+ * nada do que ele gravou deve persistir.
+ */
+function close_request_transaction(int $code = 200): void
+{
+  try {
+    if ($code >= 400) {
+      localPDO::getInstance()->rollback();
+    } else {
+      localPDO::getInstance()->commit();
+    }
+  } catch (\Throwable) {
+    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu.
+  }
+}
+
 function array_to_csv(array $data, string $filename = 'export.csv', ?array $headers = null): never
 {
+  close_request_transaction();
+
   header('Content-Type: text/csv; charset=UTF-8');
   header('Content-Disposition: attachment; filename="' . addslashes($filename) . '"');
   header('Cache-Control: no-store, no-cache');
@@ -803,6 +826,8 @@ function array_to_csv(array $data, string $filename = 'export.csv', ?array $head
 
 function json_response(mixed $data, int $code = 200): never
 {
+  close_request_transaction($code);
+
   http_response_code($code);
   header('Content-Type: application/json; charset=UTF-8');
   header('Cache-Control: no-store, no-cache');

@@ -23,7 +23,7 @@ respeite as STOP conditions, e atualize a linha correspondente ao terminar.
 | Plano | Título | Prioridade | Esforço | Depende de | Status |
 |---|---|---|---|---|---|
 | 001 | `DOLModel::data4select()` com params bindados | P1 | S | — | DONE |
-| 002 | Commit gate em respostas terminais sem redirect | P1 | S | — | TODO |
+| 002 | Commit gate em respostas terminais sem redirect | P1 | S | — | DONE |
 | 003 | Helpers de ordenação com allowlist | P1 | S | — | TODO |
 | 004 | `attach()` em lote (fim do N+2) | P2 | M | — | TODO |
 | 005 | Padrão `display/form/save/remove` — exemplar em `profiles` | P1 | L | 001, 002, 003 | TODO |
