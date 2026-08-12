@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Cobre a query agregada de contadores do dashboard (site_controller::dashboard)
+ * Cobre a query agregada de contadores do dashboard (users_controller::display)
  * e a paginacao da listagem de usuarios, que substituiram os count()/array_filter()
  * em PHP sobre a base inteira.
  */

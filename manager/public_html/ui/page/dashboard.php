@@ -3,9 +3,10 @@ $credential = $_SESSION[constant("cAppKey")]["credential"] ?? [];
 $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-8');
 $adminIdx   = (int)($credential["idx"] ?? 0);
 $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
+$page       = (int)floor($offset / $paginate) + 1;
 ?>
 
-<div class="manager-layout" x-data="dashboardController()" x-init="init()">
+<div class="manager-layout" x-data="dashboardController()">
 
     <!-- Sidebar -->
     <nav class="manager-sidebar">
@@ -60,7 +61,7 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                             <i class="bi bi-download me-1" aria-hidden="true"></i> Exportar CSV
                         </button>
                     </form>
-                    <a href="<?php echo $GLOBALS['register_url']; ?>" class="btn btn-primary" style="white-space:nowrap;">
+                    <a href="<?php echo htmlspecialchars(set_url($form['pattern']['new'], ['done' => $form['done']]), ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary" style="white-space:nowrap;">
                         <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Novo Usuário
                     </a>
                 </div>
@@ -95,6 +96,34 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
             <?php endforeach; ?>
         </div>
 
+        <!-- Busca -->
+        <div class="content-panel">
+            <div class="content-panel-body" style="padding:1rem 1.25rem;">
+                <form method="GET" action="<?php echo htmlspecialchars($form['pattern']['search'], ENT_QUOTES, 'UTF-8'); ?>" class="d-flex flex-wrap gap-2">
+                    <input type="text" name="filter_name" class="form-control form-control-sm" style="max-width:16rem;"
+                           placeholder="Buscar por nome ou e-mail" aria-label="Buscar por nome ou e-mail" autocomplete="off"
+                           value="<?php echo htmlspecialchars($done['filter_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
+                    <select name="filter_enabled" class="form-select form-select-sm" style="max-width:10rem;" aria-label="Filtrar por situação">
+                        <option value="">Situação: Todos</option>
+                        <option value="yes"<?php echo ($done['filter_enabled'] ?? '') === 'yes' ? ' selected' : ''; ?>>Situação: Ativo</option>
+                        <option value="no"<?php echo ($done['filter_enabled'] ?? '') === 'no' ? ' selected' : ''; ?>>Situação: Inativo</option>
+                    </select>
+
+                    <select name="filter_profile" class="form-select form-select-sm" style="max-width:12rem;" aria-label="Filtrar por perfil">
+                        <option value="">Perfil: Todos</option>
+                        <?php foreach ($availableProfiles as $profileIdx => $profileName): ?>
+                            <option value="<?php echo (int)$profileIdx; ?>"<?php echo (int)($done['filter_profile'] ?? 0) === (int)$profileIdx ? ' selected' : ''; ?>>
+                                <?php echo htmlspecialchars($profileName ?? '—', ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Tabela de usuários -->
         <div class="content-panel">
             <div class="content-panel-header">
@@ -111,12 +140,33 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Nome</th>
-                                    <th>E-mail</th>
-                                    <th>Login</th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['ordenation' => $ordenation['name'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Nome <i class="<?php echo $ordenation['name'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['ordenation' => $ordenation['mail'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            E-mail <i class="<?php echo $ordenation['mail'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['ordenation' => $ordenation['login'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Login <i class="<?php echo $ordenation['login'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
+                                    <th>Perfis</th>
                                     <th>Status</th>
                                     <th>Verificado</th>
-                                    <th>Último login</th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['ordenation' => $ordenation['last_login'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Último login <i class="<?php echo $ordenation['last_login'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -129,13 +179,19 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                     $userIdx    = (int)$u['idx'];
                                     $isSelf     = $userIdx === $adminIdx;
                                     $jsName     = htmlspecialchars(json_encode($u['name'] ?? ''), ENT_QUOTES, 'UTF-8');
-                                    $jsMail     = htmlspecialchars(json_encode($u['mail'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                    $editUrl    = set_url(sprintf($form['pattern']['action'], rawurlencode((string)$u['slug'])), ['done' => $form['done']]);
+                                    $removeUrl  = sprintf($GLOBALS['removeuser_url'], rawurlencode((string)$u['slug']));
                                 ?>
                                     <tr<?php echo $isRemoved ? ' style="opacity:.4"' : ''; ?>>
                                         <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo $userIdx; ?></td>
                                         <td><?php echo htmlspecialchars($u['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($u['mail'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($u['login'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td>
+                                            <?php foreach (($u['profiles_attach'] ?? []) as $prof): ?>
+                                                <span class="user-badge badge-active"><?php echo htmlspecialchars($prof['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <?php endforeach; ?>
+                                        </td>
                                         <td>
                                             <?php if ($isRemoved): ?>
                                                 <span class="user-badge badge-removed">Removido</span>
@@ -158,11 +214,9 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                                 <div class="d-flex gap-1">
 
                                                     <!-- Editar -->
-                                                    <button type="button" class="btn btn-sm btn-action-edit"
-                                                        @click="openEdit(<?php echo $userIdx; ?>, <?php echo $jsName; ?>, <?php echo $jsMail; ?>)"
-                                                        title="Editar usuário">
+                                                    <a href="<?php echo htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-action-edit" title="Editar usuário">
                                                         <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                    </button>
+                                                    </a>
 
                                                     <!-- Ativar / Inativar -->
                                                     <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>"
@@ -176,12 +230,22 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                                         </button>
                                                     </form>
 
-                                                    <!-- Remover -->
+                                                    <!-- Reset de senha -->
                                                     <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>"
-                                                        @submit.prevent="confirmRemove($event.target, <?php echo $jsName; ?>)">
+                                                        @submit.prevent="confirmResetPassword($event.target, <?php echo $jsName; ?>)">
                                                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                                                         <input type="hidden" name="idx"         value="<?php echo $userIdx; ?>">
-                                                        <input type="hidden" name="action"      value="remover">
+                                                        <input type="hidden" name="action"      value="reset-senha">
+                                                        <button type="submit" class="btn btn-sm btn-action-reset" title="Enviar reset de senha">
+                                                            <i class="bi bi-envelope-arrow-up" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
+
+                                                    <!-- Remover -->
+                                                    <form method="POST" action="<?php echo htmlspecialchars($removeUrl, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        @submit.prevent="confirmRemove($event.target, <?php echo $jsName; ?>)">
+                                                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
+                                                        <input type="hidden" name="done" value="<?php echo htmlspecialchars($form['done'], ENT_QUOTES, 'UTF-8'); ?>">
                                                         <button type="submit" class="btn btn-sm btn-action-remove" title="Remover usuário">
                                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                                         </button>
@@ -206,71 +270,21 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                     <nav aria-label="Paginação de usuários">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => max(1, $page - 1)]), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
                             </li>
                             <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
-                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => $p]), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['page' => min($totalPages, $page + 1)]), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['users_url'], ['sr' => (min($totalPages, $page + 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
                             </li>
                         </ul>
                     </nav>
                 </div>
             <?php endif; ?>
         </div>
-
-        <!-- Modal de edição -->
-        <div id="editUserModal" class="modal fade" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;">
-                    <form method="POST" action="<?php echo $GLOBALS['users_url']; ?>">
-                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
-                        <input type="hidden" name="action" value="editar">
-                        <input type="hidden" name="idx" :value="editData.idx">
-
-                        <div class="modal-header" style="border-color:var(--border);padding:1rem 1.25rem 0.75rem;">
-                            <h5 class="modal-title" id="editUserModalLabel"
-                                style="font-size:0.9rem;font-weight:700;color:var(--text);">
-                                <i class="bi bi-pencil me-2" style="color:var(--accent)" aria-hidden="true"></i>Editar Usuário
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                        </div>
-
-                        <div class="modal-body" style="padding:1.25rem;">
-                            <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
-                                <input type="text" name="name" class="form-control" x-model="editData.name" required autocomplete="off">
-                            </div>
-                            <div class="mb-0">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">E-mail</label>
-                                <input type="email" name="mail" class="form-control" x-model="editData.mail" required autocomplete="off">
-                            </div>
-                        </div>
-
-                        <div class="modal-footer" style="border-color:var(--border);padding:0.75rem 1.25rem;justify-content:space-between;">
-                            <button type="button" class="btn btn-sm btn-action-reset"
-                                @click="confirmResetPassword(editData.idx, editData.name)">
-                                <i class="bi bi-envelope-arrow-up me-1" aria-hidden="true"></i>Enviar reset de senha
-                            </button>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form oculto para reset de senha -->
-        <form id="resetPasswordForm" method="POST" action="<?php echo $GLOBALS['users_url']; ?>" style="display:none;">
-            <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
-            <input type="hidden" name="action" value="reset-senha">
-            <input type="hidden" name="idx" id="resetPasswordIdx" value="">
-        </form>
 
     </main>
 </div>
