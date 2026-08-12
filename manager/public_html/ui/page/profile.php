@@ -3,7 +3,7 @@ $credential = $_SESSION[constant("cAppKey")]["credential"] ?? [];
 $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-8');
 $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
 $currentIdx = (int)($data['idx'] ?? 0);
-$cancelUrl  = ($form['done'] ?? '') !== '' ? rawurldecode($form['done']) : $GLOBALS['profiles_url'];
+$cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['profiles_url'];
 ?>
 
 <div class="manager-layout">
@@ -65,18 +65,18 @@ $cancelUrl  = ($form['done'] ?? '') !== '' ? rawurldecode($form['done']) : $GLOB
                     <input type="hidden" name="done" value="<?php echo htmlspecialchars($form['done'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
-                        <input type="text" name="name" class="form-control" value="<?php echo htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="off">
+                        <label for="profile-name" class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
+                        <input type="text" id="profile-name" name="name" class="form-control" value="<?php echo htmlspecialchars($data['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="off">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
-                        <input type="text" name="slug" class="form-control" value="<?php echo htmlspecialchars($data['slug'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="off">
+                        <label for="profile-slug" class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
+                        <input type="text" id="profile-slug" name="slug" class="form-control" value="<?php echo htmlspecialchars($data['slug'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="off">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
-                        <select name="parent" class="form-select">
+                        <label for="profile-parent" class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
+                        <select id="profile-parent" name="parent" class="form-select">
                             <option value="0">Nenhum (raiz)</option>
                             <?php foreach ($availableParents as $parentIdx => $parentName): ?>
                                 <option value="<?php echo (int)$parentIdx; ?>"

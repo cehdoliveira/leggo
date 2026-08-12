@@ -65,16 +65,16 @@ $page       = (int)floor($offset / $paginate) + 1;
             <div class="content-panel-body" style="padding:1rem 1.25rem;">
                 <form method="GET" action="<?php echo htmlspecialchars($form['pattern']['search'], ENT_QUOTES, 'UTF-8'); ?>" class="d-flex flex-wrap gap-2">
                     <input type="text" name="filter_name" class="form-control form-control-sm" style="max-width:16rem;"
-                           placeholder="Buscar por nome" autocomplete="off"
+                           placeholder="Buscar por nome" aria-label="Buscar por nome" autocomplete="off"
                            value="<?php echo htmlspecialchars($done['filter_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
-                    <select name="filter_adm" class="form-select form-select-sm" style="max-width:10rem;">
+                    <select name="filter_adm" class="form-select form-select-sm" style="max-width:10rem;" aria-label="Filtrar por admin">
                         <option value="">Admin: Todos</option>
                         <option value="yes"<?php echo ($done['filter_adm'] ?? '') === 'yes' ? ' selected' : ''; ?>>Admin: Sim</option>
                         <option value="no"<?php echo ($done['filter_adm'] ?? '') === 'no' ? ' selected' : ''; ?>>Admin: Não</option>
                     </select>
 
-                    <select name="filter_parent" class="form-select form-select-sm" style="max-width:12rem;">
+                    <select name="filter_parent" class="form-select form-select-sm" style="max-width:12rem;" aria-label="Filtrar por perfil pai">
                         <option value="">Perfil pai: Todos</option>
                         <?php foreach ($availableParents as $parentIdx => $parentName): ?>
                             <option value="<?php echo (int)$parentIdx; ?>"<?php echo (int)($done['filter_parent'] ?? 0) === (int)$parentIdx ? ' selected' : ''; ?>>
