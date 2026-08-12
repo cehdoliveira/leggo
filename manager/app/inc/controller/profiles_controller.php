@@ -19,7 +19,8 @@ class profiles_controller
     /** Piso de itens por página: pedidos abaixo disso são elevados. */
     private const PER_PAGE_MIN = 20;
 
-    private const SIDEBAR_COLOR = 'rgba(99, 102, 241, 0.92)';
+    /** Colunas do registro de perfil, usadas por display() e form(). */
+    private const PROFILE_FIELDS = [" idx ", " name ", " slug ", " adm ", " editabled ", " parent ", " created_at "];
 
     /**
      * Traduz os parâmetros de busca em três coleções que caminham juntas:
@@ -60,6 +61,18 @@ class profiles_controller
         return [$done, $filter, $params];
     }
 
+    /** Mapa idx=>nome de perfis ativos, para o <select> de "perfil pai". */
+    private function available_parents(): array
+    {
+        return (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
+    }
+
+    /** Resolve o formato de resposta a partir do path capturado pela rota. */
+    private function resolve_format(array $info): string
+    {
+        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
+    }
+
     public function display(array $info): void
     {
         global $profiles_url, $newprofile_url, $profile_url;
@@ -68,7 +81,7 @@ class profiles_controller
             $_SESSION['_csrf_token'] = random_token();
         }
 
-        $format   = ($info[1] ?? '') === '.json' ? '.json' : '.html';
+        $format   = $this->resolve_format($info);
         $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
         $offset   = (int)($info['sr'] ?? 0);
 
@@ -82,20 +95,19 @@ class profiles_controller
 
         try {
             $model = new profiles_model();
-            $model->set_field([" idx ", " name ", " slug ", " adm ", " editabled ", " parent ", " created_at "]);
+            $model->set_field(self::PROFILE_FIELDS);
             $model->set_filter($filter, $params);
             $model->set_order([" {$ordenationColumn} {$ordenationDirection} "]);
-
-            if ($format === '.html') {
-                $model->set_paginate([$offset, $paginate]);
-            }
+            // Paginação vale para .html e .json — nenhum dos dois devolve a
+            // tabela inteira de uma vez.
+            $model->set_paginate([$offset, $paginate]);
 
             // return_data() chama load_data(true) por baixo — recordset vira o
             // total SEM o LIMIT, a contagem da paginação. Não escreva um COUNT à mão.
             [$total, $profiles] = $model->return_data();
             $total = (int)$total;
 
-            $availableParents = (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
+            $availableParents = $this->available_parents();
         } catch (RuntimeException $e) {
             Logger::getInstance()->error("profiles display failed", ["error" => $e->getMessage()]);
             $profiles         = [];
@@ -106,9 +118,6 @@ class profiles_controller
         if ($format === '.json') {
             json_response(["total" => $total, "row" => $profiles]);
         }
-
-        $page          = 'Perfis';
-        $sidebar_color = self::SIDEBAR_COLOR;
 
         // URL de volta: o endereço atual já com os filtros aplicados, codificado
         // para viajar como parâmetro — salvar ou cancelar traz o usuário de volta
@@ -151,17 +160,28 @@ class profiles_controller
         $slug = $info[1] ?? null;
         $idx  = $slug !== null ? $this->idx_by_slug($slug) : 0;
 
+        // $slug !== null mas idx_by_slug() devolveu 0 = link para um slug que
+        // não existe (mais) — distinto de "sem slug" (cadastro). Sem este
+        // guard, o form cai silenciosamente no modo cadastro.
+        if ($slug !== null && $idx === 0) {
+            $_SESSION["messages_app"]["danger"] = ["Perfil não encontrado."];
+            basic_redir($profiles_url);
+        }
+
+        $done = (string)($info['get']['done'] ?? '');
+
         // Modo cadastro é o default; a presença do identificador vira edição.
         $data = [];
         $form = [
-            "title" => "Cadastrar Perfil",
-            "url"   => $newprofile_url,
-            "done"  => (string)($info['get']['done'] ?? ''),
+            "title"     => "Cadastrar Perfil",
+            "url"       => $newprofile_url,
+            "done"      => $done,
+            "cancelUrl" => $done !== '' ? $this->safe_internal_url(rawurldecode($done), $profiles_url) : $profiles_url,
         ];
 
         if ($idx > 0) {
             $model = new profiles_model();
-            $model->set_field([" idx ", " name ", " slug ", " adm ", " editabled ", " parent ", " created_at "]);
+            $model->set_field(self::PROFILE_FIELDS);
             $model->set_filter([" active = 'yes' ", " idx = ? "], [$idx]);
             $model->set_paginate([1]);
             $model->load_data(false);
@@ -176,10 +196,7 @@ class profiles_controller
             $form["url"]   = sprintf($profile_url, rawurlencode((string)$data['slug']));
         }
 
-        $availableParents = (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
-
-        $page          = 'Perfil';
-        $sidebar_color = self::SIDEBAR_COLOR;
+        $availableParents = $this->available_parents();
 
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
@@ -195,13 +212,23 @@ class profiles_controller
         $post = $info['post'] ?? [];
         validate_csrf($post['_csrf_token'] ?? null, $profiles_url);
 
-        $slug = $info[1] ?? null;
-        $idx  = $slug !== null ? $this->idx_by_slug($slug) : 0;
+        $slug    = $info[1] ?? null;
+        $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
+        $backUrl = $this->back_url($post, $profiles_url);
 
-        $name      = trim((string)($post['name'] ?? ''));
-        $postSlug  = trim((string)($post['slug'] ?? ''));
-        $parent    = (int)($post['parent'] ?? 0);
-        $backUrl   = $this->back_url($post, $profiles_url);
+        // $slug !== null mas idx_by_slug() devolveu 0 = link para um slug que
+        // não existe (mais). Sem este guard, o código abaixo cai no ramo de
+        // INSERT (idx <= 0) e cria um perfil novo — mas a mensagem de sucesso
+        // é decidida por "$slug !== null", então relataria "atualizado" para
+        // uma criação, mascarando a duplicata.
+        if ($slug !== null && $idx === 0) {
+            $_SESSION["messages_app"]["danger"] = ["Perfil não encontrado."];
+            basic_redir($backUrl);
+        }
+
+        $name     = trim((string)($post['name'] ?? ''));
+        $postSlug = trim((string)($post['slug'] ?? ''));
+        $parent   = (int)($post['parent'] ?? 0);
 
         if ($name === '' || $postSlug === '') {
             $_SESSION["messages_app"]["danger"] = ["Nome e slug são obrigatórios."];
@@ -276,11 +303,19 @@ class profiles_controller
         $backUrl = $this->back_url($post, $profiles_url);
 
         if ($idx > 0 && $this->is_editabled($idx)) {
-            $model = new profiles_model();
-            $model->set_filter([" idx = ? "], [$idx]);
-            // Remoção lógica: marca active = 'no'. O registro some das consultas
-            // (que sempre filtram por ativos) mas continua recuperável.
-            $model->remove();
+            try {
+                $model = new profiles_model();
+                $model->set_filter([" idx = ? "], [$idx]);
+                // Remoção lógica: marca active = 'no'. O registro some das consultas
+                // (que sempre filtram por ativos) mas continua recuperável.
+                $model->remove();
+            } catch (RuntimeException $e) {
+                Logger::getInstance()->error("profiles remove failed", [
+                    "error" => $e->getMessage(),
+                    "idx"   => $idx,
+                ]);
+                $_SESSION["messages_app"]["danger"] = ["Falha ao remover o perfil."];
+            }
         } elseif ($idx > 0) {
             $_SESSION["messages_app"]["danger"] = ["Este perfil é protegido e não pode ser removido."];
         }
@@ -320,9 +355,16 @@ class profiles_controller
             return $fallback;
         }
 
-        $decoded = rawurldecode($done);
+        return $this->safe_internal_url(rawurldecode($done), $fallback);
+    }
 
-        // Só aceita destino interno — impede open redirect via campo do form.
-        return str_starts_with($decoded, constant("cFrontend")) ? $decoded : $fallback;
+    /**
+     * Só aceita destino interno — impede open redirect e URI perigosa
+     * (ex. `javascript:`) via campo do formulário. Usado tanto no redirect de
+     * POST (back_url()) quanto no link "Cancelar" do form (GET).
+     */
+    private function safe_internal_url(string $url, string $fallback): string
+    {
+        return str_starts_with($url, constant("cFrontend")) ? $url : $fallback;
     }
 }
