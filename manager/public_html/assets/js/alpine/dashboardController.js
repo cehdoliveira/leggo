@@ -1,17 +1,5 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('dashboardController', () => ({
-        editData: { idx: 0, name: '', mail: '' },
-        _modal: null,
-
-        init() {
-            this._modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-        },
-
-        openEdit(idx, name, mail) {
-            this.editData = { idx: idx, name: name, mail: mail };
-            this._modal.show();
-        },
-
         async confirmToggle(form, userName, action) {
             const isInativar = action === 'inativar';
             const result = await Swal.fire({
@@ -41,7 +29,7 @@ document.addEventListener('alpine:init', () => {
             if (result.isConfirmed) form.submit();
         },
 
-        async confirmResetPassword(idx, userName) {
+        async confirmResetPassword(form, userName) {
             const result = await Swal.fire({
                 title: 'Enviar reset de senha?',
                 html: `Um link de redefinição será enviado para o e-mail de <strong>${userName}</strong>.`,
@@ -50,10 +38,7 @@ document.addEventListener('alpine:init', () => {
                 confirmButtonText: 'Enviar',
                 cancelButtonText: 'Cancelar',
             });
-            if (result.isConfirmed) {
-                document.getElementById('resetPasswordIdx').value = idx;
-                document.getElementById('resetPasswordForm').submit();
-            }
+            if (result.isConfirmed) form.submit();
         },
     }));
 });

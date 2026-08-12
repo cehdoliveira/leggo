@@ -76,13 +76,16 @@ $dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controll
 $dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
 $dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
 
-// Admin (requer autenticação)
-$dispatcher->add_route("GET",  "/?",     "site_controller:dashboard", $authGuard, $params);
-$dispatcher->add_route("GET",  "/admin", "site_controller:dashboard", $authGuard, $params);
-
-// Usuários (requer autenticação)
-$dispatcher->add_route("GET",  "/usuarios", "site_controller:dashboard",    $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios", "site_controller:users_action", $authGuard, $params);
+// Usuários — padrão display/form/save/remove (requer autenticação)
+$dispatcher->add_route("GET",  "/?",                              "users_controller:display", $authGuard, $params);
+$dispatcher->add_route("GET",  "/admin",                          "users_controller:display", $authGuard, $params);
+$dispatcher->add_route("GET",  "/usuarios(\.json|\.html)?",       "users_controller:display", $authGuard, $params);
+$dispatcher->add_route("POST", "/usuarios",                       "users_controller:action",  $authGuard, $params);
+$dispatcher->add_route("GET",  "/novo-usuario",                   "users_controller:form",    $authGuard, $params);
+$dispatcher->add_route("POST", "/novo-usuario",                   "users_controller:save",    $authGuard, $params);
+$dispatcher->add_route("GET",  "/usuario/([a-z0-9_-]+)",          "users_controller:form",    $authGuard, $params);
+$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)",          "users_controller:save",    $authGuard, $params);
+$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)/remover",  "users_controller:remove",  $authGuard, $params);
 
 // Outbox de e-mails — spike/leitura (requer autenticação)
 $dispatcher->add_route("GET",  "/emails", "emails_controller:index", $authGuard, $params);
