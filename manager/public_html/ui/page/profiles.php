@@ -2,9 +2,10 @@
 $credential = $_SESSION[constant("cAppKey")]["credential"] ?? [];
 $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-8');
 $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
+$page       = (int)floor($offset / $paginate) + 1;
 ?>
 
-<div class="manager-layout" x-data="profilesController()" x-init="init()">
+<div class="manager-layout" x-data="profilesController()">
 
     <!-- Sidebar -->
     <nav class="manager-sidebar">
@@ -52,10 +53,38 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                     <p>Olá, <?php echo $userName; ?>. Gerencie os perfis de acesso cadastrados no sistema.</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-primary" style="white-space:nowrap;" @click="openCreate()">
+                    <a href="<?php echo htmlspecialchars(set_url($form['pattern']['new'], ['done' => $form['done']]), ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary" style="white-space:nowrap;">
                         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Novo Perfil
-                    </button>
+                    </a>
                 </div>
+            </div>
+        </div>
+
+        <!-- Busca -->
+        <div class="content-panel">
+            <div class="content-panel-body" style="padding:1rem 1.25rem;">
+                <form method="GET" action="<?php echo htmlspecialchars($form['pattern']['search'], ENT_QUOTES, 'UTF-8'); ?>" class="d-flex flex-wrap gap-2">
+                    <input type="text" name="filter_name" class="form-control form-control-sm" style="max-width:16rem;"
+                           placeholder="Buscar por nome" aria-label="Buscar por nome" autocomplete="off"
+                           value="<?php echo htmlspecialchars($done['filter_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
+                    <select name="filter_adm" class="form-select form-select-sm" style="max-width:10rem;" aria-label="Filtrar por admin">
+                        <option value="">Admin: Todos</option>
+                        <option value="yes"<?php echo ($done['filter_adm'] ?? '') === 'yes' ? ' selected' : ''; ?>>Admin: Sim</option>
+                        <option value="no"<?php echo ($done['filter_adm'] ?? '') === 'no' ? ' selected' : ''; ?>>Admin: Não</option>
+                    </select>
+
+                    <select name="filter_parent" class="form-select form-select-sm" style="max-width:12rem;" aria-label="Filtrar por perfil pai">
+                        <option value="">Perfil pai: Todos</option>
+                        <?php foreach ($availableParents as $parentIdx => $parentName): ?>
+                            <option value="<?php echo (int)$parentIdx; ?>"<?php echo (int)($done['filter_parent'] ?? 0) === (int)$parentIdx ? ' selected' : ''; ?>>
+                                <?php echo htmlspecialchars($parentName ?? '—', ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+                </form>
             </div>
         </div>
 
@@ -75,11 +104,27 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Nome</th>
-                                    <th>Slug</th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['ordenation' => $ordenation['name'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Nome <i class="<?php echo $ordenation['name'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['ordenation' => $ordenation['slug'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Slug <i class="<?php echo $ordenation['slug'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
                                     <th>Admin</th>
                                     <th>Protegido</th>
                                     <th>Perfil pai</th>
+                                    <th>
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['ordenation' => $ordenation['created_at'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Criado em <i class="<?php echo $ordenation['created_at'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -89,16 +134,10 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                     $isAdm       = ($p['adm'] ?? 'no') === 'yes';
                                     $isEditabled = ($p['editabled'] ?? 'yes') === 'yes';
                                     $parentIdx   = (int)($p['parent'] ?? 0);
-                                    $parentName  = '—';
-                                    foreach ($availableParents as $ap) {
-                                        if ((int)$ap['idx'] === $parentIdx) {
-                                            $parentName = $ap['name'];
-                                            break;
-                                        }
-                                    }
-                                    $jsName   = htmlspecialchars(json_encode($p['name'] ?? ''), ENT_QUOTES, 'UTF-8');
-                                    $jsSlug   = htmlspecialchars(json_encode($p['slug'] ?? ''), ENT_QUOTES, 'UTF-8');
-                                    $jsParent = (int)($p['parent'] ?? 0);
+                                    $parentName  = $availableParents[$parentIdx] ?? '—';
+                                    $editUrl     = set_url(sprintf($form['pattern']['action'], rawurlencode((string)$p['slug'])), ['done' => $form['done']]);
+                                    $removeUrl   = sprintf($GLOBALS['removeprofile_url'], rawurlencode((string)$p['slug']));
+                                    $jsName      = htmlspecialchars(json_encode($p['name'] ?? ''), ENT_QUOTES, 'UTF-8');
                                 ?>
                                     <tr>
                                         <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo $profileIdx; ?></td>
@@ -119,23 +158,21 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                                             <?php endif; ?>
                                         </td>
                                         <td style="font-size:0.82rem;color:var(--text-muted);"><?php echo htmlspecialchars($parentName, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo htmlspecialchars((string)($p['created_at'] ?? '—'), ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td>
                                             <?php if ($isEditabled): ?>
                                                 <div class="d-flex gap-1">
 
                                                     <!-- Editar -->
-                                                    <button type="button" class="btn btn-sm btn-action-edit"
-                                                        @click="openEdit(<?php echo $profileIdx; ?>, <?php echo $jsName; ?>, <?php echo $jsSlug; ?>, <?php echo $jsParent; ?>)"
-                                                        title="Editar perfil">
+                                                    <a href="<?php echo htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-action-edit" title="Editar perfil">
                                                         <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                    </button>
+                                                    </a>
 
                                                     <!-- Remover -->
-                                                    <form method="POST" action="<?php echo $GLOBALS['profiles_url']; ?>"
+                                                    <form method="POST" action="<?php echo htmlspecialchars($removeUrl, ENT_QUOTES, 'UTF-8'); ?>"
                                                         @submit.prevent="confirmRemove($event.target, <?php echo $jsName; ?>)">
                                                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
-                                                        <input type="hidden" name="idx"         value="<?php echo $profileIdx; ?>">
-                                                        <input type="hidden" name="action"      value="remover">
+                                                        <input type="hidden" name="done" value="<?php echo htmlspecialchars($form['done'], ENT_QUOTES, 'UTF-8'); ?>">
                                                         <button type="submit" class="btn btn-sm btn-action-remove" title="Remover perfil">
                                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                                         </button>
@@ -158,111 +195,20 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
                     <nav aria-label="Paginação de perfis">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['page' => max(1, $page - 1)]), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
                             </li>
                             <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
-                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['page' => $p]), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['page' => min($totalPages, $page + 1)]), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['sr' => (min($totalPages, $page + 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
                             </li>
                         </ul>
                     </nav>
                 </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Modal de criação -->
-        <div id="createProfileModal" class="modal fade" tabindex="-1" aria-labelledby="createProfileModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;">
-                    <form method="POST" action="<?php echo $GLOBALS['profiles_url']; ?>">
-                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
-                        <input type="hidden" name="action" value="criar">
-
-                        <div class="modal-header" style="border-color:var(--border);padding:1rem 1.25rem 0.75rem;">
-                            <h5 class="modal-title" id="createProfileModalLabel"
-                                style="font-size:0.9rem;font-weight:700;color:var(--text);">
-                                <i class="bi bi-plus-lg me-2" style="color:var(--accent)" aria-hidden="true"></i>Novo Perfil
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                        </div>
-
-                        <div class="modal-body" style="padding:1.25rem;">
-                            <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
-                                <input type="text" name="name" class="form-control" required autocomplete="off">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
-                                <input type="text" name="slug" class="form-control" required autocomplete="off">
-                            </div>
-                            <div class="mb-0">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
-                                <select name="parent" class="form-select">
-                                    <option value="0">Nenhum (raiz)</option>
-                                    <?php foreach ($availableParents as $ap): ?>
-                                        <option value="<?php echo (int)$ap['idx']; ?>"><?php echo htmlspecialchars($ap['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer" style="border-color:var(--border);padding:0.75rem 1.25rem;justify-content:end;">
-                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-sm btn-primary">Criar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de edição -->
-        <div id="editProfileModal" class="modal fade" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:0.5rem;">
-                    <form method="POST" action="<?php echo $GLOBALS['profiles_url']; ?>">
-                        <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
-                        <input type="hidden" name="action" value="editar">
-                        <input type="hidden" name="idx" :value="editData.idx">
-
-                        <div class="modal-header" style="border-color:var(--border);padding:1rem 1.25rem 0.75rem;">
-                            <h5 class="modal-title" id="editProfileModalLabel"
-                                style="font-size:0.9rem;font-weight:700;color:var(--text);">
-                                <i class="bi bi-pencil me-2" style="color:var(--accent)" aria-hidden="true"></i>Editar Perfil
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                        </div>
-
-                        <div class="modal-body" style="padding:1.25rem;">
-                            <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Nome</label>
-                                <input type="text" name="name" class="form-control" x-model="editData.name" required autocomplete="off">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Slug</label>
-                                <input type="text" name="slug" class="form-control" x-model="editData.slug" required autocomplete="off">
-                            </div>
-                            <div class="mb-0">
-                                <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfil pai</label>
-                                <select name="parent" class="form-select" x-model="editData.parent">
-                                    <option value="0">Nenhum (raiz)</option>
-                                    <?php foreach ($availableParents as $ap): ?>
-                                        <option value="<?php echo (int)$ap['idx']; ?>" :disabled="editData.idx === <?php echo (int)$ap['idx']; ?>"><?php echo htmlspecialchars($ap['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer" style="border-color:var(--border);padding:0.75rem 1.25rem;justify-content:end;">
-                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </div>
 
     </main>

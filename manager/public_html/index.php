@@ -87,9 +87,13 @@ $dispatcher->add_route("POST", "/usuarios", "site_controller:users_action", $aut
 // Outbox de e-mails — spike/leitura (requer autenticação)
 $dispatcher->add_route("GET",  "/emails", "emails_controller:index", $authGuard, $params);
 
-// Perfis — spike/CRUD (requer autenticação)
-$dispatcher->add_route("GET",  "/perfis", "profiles_controller:index",  $authGuard, $params);
-$dispatcher->add_route("POST", "/perfis", "profiles_controller:action", $authGuard, $params);
+// Perfis — padrão display/form/save/remove (requer autenticação)
+$dispatcher->add_route("GET",  "/perfis(\.json|\.html)?",        "profiles_controller:display", $authGuard, $params);
+$dispatcher->add_route("GET",  "/novo-perfil",                   "profiles_controller:form",    $authGuard, $params);
+$dispatcher->add_route("POST", "/novo-perfil",                   "profiles_controller:save",    $authGuard, $params);
+$dispatcher->add_route("GET",  "/perfil/([a-z0-9_-]+)",          "profiles_controller:form",    $authGuard, $params);
+$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)",          "profiles_controller:save",    $authGuard, $params);
+$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)/remover",  "profiles_controller:remove",  $authGuard, $params);
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
