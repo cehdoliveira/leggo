@@ -83,8 +83,8 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['users_url'];
                         <input type="text" id="user-phone" name="phone" class="form-control" value="<?php echo htmlspecialchars($data['phone'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off">
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfis</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Perfis</legend>
                         <div class="d-flex flex-column gap-1">
                             <?php foreach ($availableProfiles as $profileIdx => $profileName): ?>
                                 <label class="form-check">
@@ -94,7 +94,7 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['users_url'];
                                 </label>
                             <?php endforeach; ?>
                         </div>
-                    </div>
+                    </fieldset>
 
                     <div class="d-flex gap-2 justify-content-end">
                         <a href="<?php echo htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-secondary">Cancelar</a>

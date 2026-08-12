@@ -106,7 +106,7 @@ class users_controller
 
     public function display(array $info): void
     {
-        global $users_url, $newuser_url, $user_url;
+        global $users_url, $newuser_url, $user_url, $removeuser_url;
 
         if (empty($_SESSION['_csrf_token'])) {
             $_SESSION['_csrf_token'] = random_token();
@@ -189,6 +189,7 @@ class users_controller
             "pattern" => [
                 "new"    => $newuser_url,
                 "action" => $user_url,
+                "remove" => $removeuser_url,
                 "search" => $users_url,
             ],
         ];
@@ -238,7 +239,7 @@ class users_controller
             "title"     => "Cadastrar Usuário",
             "url"       => $newuser_url,
             "done"      => $done,
-            "cancelUrl" => $done !== '' ? $this->safe_internal_url(rawurldecode($done), $users_url) : $users_url,
+            "cancelUrl" => $this->back_url($info['get'] ?? [], $users_url),
         ];
 
         if ($idx > 0) {
@@ -326,15 +327,35 @@ class users_controller
             $profileIds = array_map('intval', (array)($post['profiles_id'] ?? []));
             $profileIds = array_values(array_filter($profileIds, static fn(int $v): bool => $v > 0));
 
-            if ($profileIds !== []) {
+            $loggedInId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+
+            // Guard de autodemoção: login no manager exige perfil com adm='yes'
+            // (auth_controller::login()) — sem este guard, o próprio admin
+            // poderia se desvincular de todos os perfis admin por este
+            // formulário e ficar sem acesso ao painel, sem ninguém poder
+            // reverter pela UI. Mesmo espírito do guard de autorremoção em
+            // remove().
+            $keepOwnAdminAccess = false;
+            if ($idx === $loggedInId) {
+                $adminProfileIds = array_map('intval', array_keys(
+                    (new profiles_model())->data4select("idx", [" active = 'yes' ", " adm = 'yes' "], "idx")
+                ));
+                if (array_intersect($profileIds, $adminProfileIds) === []) {
+                    $_SESSION["messages_app"]["danger"] = ["Você não pode remover seu próprio acesso de administrador."];
+                    $keepOwnAdminAccess = true;
+                }
+            }
+
+            if ($keepOwnAdminAccess) {
+                // Vínculos do próprio admin permanecem como estavam.
+            } elseif ($profileIds !== []) {
                 $model->save_attach(['idx' => $idx, 'post' => ['profiles_id' => $profileIds]], ['profiles']);
             } else {
                 // save_attach() não age com lista vazia (DOLModel.php:498) — sem
                 // isto, desmarcar todos os perfis não desvincularia nada.
-                $userId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
                 $model->execute_raw_prepared(
                     "UPDATE users_profiles SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND users_id = ?",
-                    [$userId, $idx]
+                    [$loggedInId, $idx]
                 );
             }
 
@@ -370,7 +391,8 @@ class users_controller
         $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
         $backUrl = $this->back_url($post, $users_url);
 
-        $adminId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+        $adminId  = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+        $rollback = false;
 
         if ($idx > 0 && $idx !== $adminId) {
             try {
@@ -380,6 +402,7 @@ class users_controller
                 // (que sempre filtram por ativos) mas continua recuperável.
                 $model->remove();
             } catch (RuntimeException $e) {
+                $rollback = true;
                 Logger::getInstance()->error("users remove failed", [
                     "error" => $e->getMessage(),
                     "idx"   => $idx,
@@ -390,7 +413,7 @@ class users_controller
             $_SESSION["messages_app"]["danger"] = ["Você não pode remover a si mesmo."];
         }
 
-        basic_redir($backUrl);
+        basic_redir($backUrl, rollback: $rollback);
     }
 
     /**
@@ -489,7 +512,7 @@ class users_controller
             }
         } catch (RuntimeException $e) {
             $rollback = true;
-            Logger::getInstance()->error("users_action failed", [
+            Logger::getInstance()->error("users action failed", [
                 "error"   => $e->getMessage(),
                 "action"  => $action,
                 "user_id" => $idx,

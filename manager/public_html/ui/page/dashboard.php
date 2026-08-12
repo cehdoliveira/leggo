@@ -172,7 +172,6 @@ $page       = (int)floor($offset / $paginate) + 1;
                             </thead>
                             <tbody>
                                 <?php foreach ($users as $u):
-                                    $isRemoved  = ($u['active'] ?? 'yes') === 'no';
                                     $isEnabled  = ($u['enabled'] ?? 'yes') === 'yes';
                                     $isVerified = !empty($u['email_verified_at']);
                                     $lastLogin  = time_ago($u['last_login'] ?? null);
@@ -180,9 +179,9 @@ $page       = (int)floor($offset / $paginate) + 1;
                                     $isSelf     = $userIdx === $adminIdx;
                                     $jsName     = htmlspecialchars(json_encode($u['name'] ?? ''), ENT_QUOTES, 'UTF-8');
                                     $editUrl    = set_url(sprintf($form['pattern']['action'], rawurlencode((string)$u['slug'])), ['done' => $form['done']]);
-                                    $removeUrl  = sprintf($GLOBALS['removeuser_url'], rawurlencode((string)$u['slug']));
+                                    $removeUrl  = sprintf($form['pattern']['remove'], rawurlencode((string)$u['slug']));
                                 ?>
-                                    <tr<?php echo $isRemoved ? ' style="opacity:.4"' : ''; ?>>
+                                    <tr>
                                         <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo $userIdx; ?></td>
                                         <td><?php echo htmlspecialchars($u['name'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td style="font-size:0.82rem;"><?php echo htmlspecialchars($u['mail'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
@@ -193,9 +192,7 @@ $page       = (int)floor($offset / $paginate) + 1;
                                             <?php endforeach; ?>
                                         </td>
                                         <td>
-                                            <?php if ($isRemoved): ?>
-                                                <span class="user-badge badge-removed">Removido</span>
-                                            <?php elseif ($isEnabled): ?>
+                                            <?php if ($isEnabled): ?>
                                                 <span class="user-badge badge-active">Ativo</span>
                                             <?php else: ?>
                                                 <span class="user-badge badge-inactive">Inativo</span>
@@ -210,11 +207,11 @@ $page       = (int)floor($offset / $paginate) + 1;
                                         </td>
                                         <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo $lastLogin; ?></td>
                                         <td>
-                                            <?php if (!$isRemoved && !$isSelf): ?>
+                                            <?php if (!$isSelf): ?>
                                                 <div class="d-flex gap-1">
 
                                                     <!-- Editar -->
-                                                    <a href="<?php echo htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-action-edit" title="Editar usuário">
+                                                    <a href="<?php echo htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-action-edit" title="Editar usuário" aria-label="Editar usuário">
                                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                                     </a>
 
@@ -236,7 +233,7 @@ $page       = (int)floor($offset / $paginate) + 1;
                                                         <input type="hidden" name="_csrf_token" value="<?php echo $csrfToken; ?>">
                                                         <input type="hidden" name="idx"         value="<?php echo $userIdx; ?>">
                                                         <input type="hidden" name="action"      value="reset-senha">
-                                                        <button type="submit" class="btn btn-sm btn-action-reset" title="Enviar reset de senha">
+                                                        <button type="submit" class="btn btn-sm btn-action-reset" title="Enviar reset de senha" aria-label="Enviar reset de senha">
                                                             <i class="bi bi-envelope-arrow-up" aria-hidden="true"></i>
                                                         </button>
                                                     </form>
@@ -252,10 +249,8 @@ $page       = (int)floor($offset / $paginate) + 1;
                                                     </form>
 
                                                 </div>
-                                            <?php elseif ($isSelf && !$isRemoved): ?>
-                                                <span style="font-size:0.72rem;color:var(--text-muted);">Você</span>
                                             <?php else: ?>
-                                                <span style="font-size:0.72rem;color:var(--text-muted);">—</span>
+                                                <span style="font-size:0.72rem;color:var(--text-muted);">Você</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>

@@ -47,6 +47,16 @@ final class UsersControllerTest extends DBTestCase
         );
     }
 
+    /** Invoca um metodo privado de users_controller para testar em isolamento. */
+    private function callPrivate(string $method, array $args = []): mixed
+    {
+        $controller = new users_controller();
+        $ref        = new ReflectionMethod($controller, $method);
+        $ref->setAccessible(true);
+
+        return $ref->invokeArgs($controller, $args);
+    }
+
     public function testFilterByProfileReturnsOnlyUsersWithActiveLink(): void
     {
         $marker    = uniqid();
@@ -179,5 +189,83 @@ final class UsersControllerTest extends DBTestCase
         $after->attach(["profiles"]);
 
         $this->assertSame([], $after->data[0]['profiles_attach'] ?? null, 'Apos desmarcar todos os perfis, attach(["profiles"]) deve devolver array vazio');
+    }
+
+    public function testSafeInternalUrlAcceptsInternalDestination(): void
+    {
+        $internal = constant('cFrontend') . 'usuarios?filter_name=foo';
+
+        $this->assertSame($internal, $this->callPrivate('safe_internal_url', [$internal, 'fallback']));
+    }
+
+    public function testSafeInternalUrlRejectsExternalDestination(): void
+    {
+        $result = $this->callPrivate('safe_internal_url', ['https://evil.example/', 'fallback']);
+
+        $this->assertSame('fallback', $result, 'URL externa deve cair no fallback — impede open redirect');
+    }
+
+    public function testSafeInternalUrlRejectsJavascriptUri(): void
+    {
+        $result = $this->callPrivate('safe_internal_url', ['javascript:alert(1)', 'fallback']);
+
+        $this->assertSame('fallback', $result, 'URI javascript: deve cair no fallback — impede XSS via link Cancelar');
+    }
+
+    public function testResolveFormatReturnsJsonForJsonSuffix(): void
+    {
+        $this->assertSame('.json', $this->callPrivate('resolve_format', [[1 => '.json']]));
+    }
+
+    public function testResolveFormatDefaultsToHtml(): void
+    {
+        $this->assertSame('.html', $this->callPrivate('resolve_format', [[]]));
+        $this->assertSame('.html', $this->callPrivate('resolve_format', [[1 => '.html']]));
+    }
+
+    public function testBackUrlFallsBackWhenDoneIsEmpty(): void
+    {
+        $this->assertSame('fallback', $this->callPrivate('back_url', [[], 'fallback']));
+        $this->assertSame('fallback', $this->callPrivate('back_url', [['done' => '  '], 'fallback']));
+    }
+
+    public function testBackUrlDecodesAndValidatesDone(): void
+    {
+        $internal = constant('cFrontend') . 'usuarios?filter_name=foo';
+        $post     = ['done' => rawurlencode($internal)];
+
+        $this->assertSame($internal, $this->callPrivate('back_url', [$post, 'fallback']));
+    }
+
+    public function testBackUrlRejectsExternalDone(): void
+    {
+        $post = ['done' => rawurlencode('https://evil.example/')];
+
+        $this->assertSame('fallback', $this->callPrivate('back_url', [$post, 'fallback']), 'done externo tambem deve cair no fallback via back_url');
+    }
+
+    public function testJsonSafeReplacesRootLevelNullWithEmptyString(): void
+    {
+        $row = ['idx' => 1, 'last_login' => null, 'name' => 'Alice'];
+
+        $this->assertSame(['idx' => 1, 'last_login' => '', 'name' => 'Alice'], $this->callPrivate('json_safe', [$row]));
+    }
+
+    public function testJsonSafeReplacesNestedNullWithEmptyString(): void
+    {
+        // Simula o formato de profiles_attach (SELECT * de attach()), onde
+        // colunas como modified_at/removed_at sao nulas em operacao normal.
+        $row = [
+            'idx'              => 1,
+            'profiles_attach'  => [
+                ['idx' => 2, 'name' => 'Admin', 'modified_at' => null, 'removed_at' => null],
+            ],
+        ];
+
+        $result = $this->callPrivate('json_safe', [$row]);
+
+        $this->assertSame('', $result['profiles_attach'][0]['modified_at']);
+        $this->assertSame('', $result['profiles_attach'][0]['removed_at']);
+        $this->assertSame('Admin', $result['profiles_attach'][0]['name']);
     }
 }
