@@ -336,44 +336,104 @@ class DOLModel extends rootOBJ
 
 	public function attach(array $classes = array(), ?string $reverse_table = null, ?string $options = null, ?array $class_field = null): void
 	{
-		$new_data = array();
 		$_data = $this->data;
-		foreach ($_data as $key => $value) {
-			$new_data[$key] = $value;
-			foreach ($classes as $class) {
-				$junctionTable = sprintf(
-					"%s_%s",
-					$reverse_table ? $class : $this->table,
-					$reverse_table ? $this->table : $class
-				);
-				$parentCol = sprintf("%s_id", $this->table);
-				$childCol  = sprintf("%s_id", $class);
+		if (empty($_data) || empty($classes)) {
+			return;
+		}
 
-				$r = $this->con->executePrepared(
-					sprintf("SELECT %s as k FROM %s WHERE active = 'yes' AND %s = ?", $childCol, $junctionTable, $parentCol),
-					[(int)$value["idx"]]
-				);
-				$filter_key_vals = array();
-				foreach ($this->con->results($r) as $key_r => $data) {
-					$filter_key_vals[] = $data["k"];
+		$parentIds = array();
+		foreach ($_data as $value) {
+			if (isset($value["idx"])) {
+				$parentIds[] = (int)$value["idx"];
+			}
+		}
+		$parentIds = array_values(array_unique($parentIds));
+
+		$new_data = $_data;
+
+		foreach ($classes as $class) {
+			// Toda linha recebe a chave, mesmo sem vinculo.
+			foreach ($new_data as $key => $value) {
+				$new_data[$key][$class . "_attach"] = array();
+			}
+			if (empty($parentIds)) {
+				continue;
+			}
+
+			$junctionTable = sprintf(
+				"%s_%s",
+				$reverse_table ? $class : $this->table,
+				$reverse_table ? $this->table : $class
+			);
+			$parentCol = sprintf("%s_id", $this->table);
+			$childCol  = sprintf("%s_id", $class);
+
+			// Query 1: todos os vinculos ativos dos pais desta pagina, de uma vez.
+			$parentPlaceholders = implode(',', array_fill(0, count($parentIds), '?'));
+			$r = $this->con->executePrepared(
+				sprintf(
+					"SELECT %s as p, %s as k FROM %s WHERE active = 'yes' AND %s IN (%s)",
+					$parentCol,
+					$childCol,
+					$junctionTable,
+					$parentCol,
+					$parentPlaceholders
+				),
+				$parentIds
+			);
+
+			$childIdsByParent = array();
+			$allChildIds = array();
+			foreach ($this->con->results($r) as $link) {
+				$childIdsByParent[(int)$link["p"]][] = (int)$link["k"];
+				$allChildIds[] = (int)$link["k"];
+			}
+			$allChildIds = array_values(array_unique($allChildIds));
+			if (empty($allChildIds)) {
+				continue;
+			}
+
+			// Query 2: todas as linhas filhas ativas, de uma vez.
+			$childPlaceholders = implode(',', array_fill(0, count($allChildIds), '?'));
+			$fields = "*";
+			if (isset($class_field)) {
+				$normalized = array_map('trim', $class_field);
+				if (!in_array("idx", $normalized, true)) {
+					$class_field[] = " idx ";
 				}
-				if (empty($filter_key_vals)) {
-					$new_data[$key][$class . "_attach"] = array();
-					continue;
-				}
-				$placeholders = implode(',', array_fill(0, count($filter_key_vals), '?'));
-				$fields = isset($class_field) ? implode(", ", $class_field) : "*";
-				$sql = sprintf(
+				$fields = implode(", ", $class_field);
+			}
+			$r = $this->con->executePrepared(
+				sprintf(
 					"SELECT %s FROM %s WHERE active = 'yes' AND idx IN (%s) %s",
 					$fields,
 					$class,
-					$placeholders,
+					$childPlaceholders,
 					$options ?? ''
-				);
-				$r = $this->con->executePrepared($sql, $filter_key_vals);
-				$new_data[$key][$class . "_attach"] = $this->con->results($r);
+				),
+				$allChildIds
+			);
+
+			$childRowsById = array();
+			foreach ($this->con->results($r) as $row) {
+				$childRowsById[(int)$row["idx"]] = $row;
+			}
+
+			foreach ($new_data as $key => $value) {
+				$parentId = isset($value["idx"]) ? (int)$value["idx"] : null;
+				if ($parentId === null || !isset($childIdsByParent[$parentId])) {
+					continue;
+				}
+				$rows = array();
+				foreach ($childIdsByParent[$parentId] as $childId) {
+					if (isset($childRowsById[$childId])) {
+						$rows[] = $childRowsById[$childId];
+					}
+				}
+				$new_data[$key][$class . "_attach"] = $rows;
 			}
 		}
+
 		$this->set_data($new_data);
 	}
 
