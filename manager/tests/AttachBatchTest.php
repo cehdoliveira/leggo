@@ -156,4 +156,54 @@ final class AttachBatchTest extends DBTestCase
 
         $this->assertCount(1, $model->data[0]['profiles_attach'], 'Vinculo deve aparecer mesmo sem idx em class_field');
     }
+
+    /**
+     * O schema deste projeto so tem uma tabela de juncao real (users_profiles),
+     * entao nao ha uma segunda classe genuina para testar o array $classes com
+     * dois elementos distintos. Repetir 'profiles' ainda exercita de verdade o
+     * foreach ($classes as $class) rodando duas vezes: cada iteracao precisa
+     * resetar $childIdsByParent/$allChildIds do zero e o parametro $class_field
+     * e mutado (ganha ' idx ') apenas na primeira iteracao, sem duplicar nas
+     * seguintes. Se algum desses resets vazar entre iteracoes, este teste pega.
+     */
+    public function testAttachHandlesRepeatedClassAcrossLoopIterations(): void
+    {
+        $marker = uniqid();
+        $p = $this->makeProfile($marker, 'repetida');
+        $u = $this->makeUser($marker, 'repetida', [$p]);
+
+        $model = new users_model();
+        $model->set_field([' idx ']);
+        $model->set_filter([" idx = ? "], [$u]);
+        $model->load_data(false);
+        $model->attach(['profiles', 'profiles'], null, null, [' name ']);
+
+        $this->assertCount(1, $model->data[0]['profiles_attach'], 'Segunda iteracao nao pode duplicar nem perder o vinculo');
+        $attached = $model->data[0]['profiles_attach'][0];
+        $this->assertSame(['name', 'idx'], array_keys($attached), 'class_field nao pode acumular idx duplicado entre iteracoes');
+    }
+
+    public function testAttachIgnoresInactiveChildRow(): void
+    {
+        $marker = uniqid();
+        $p = $this->makeProfile($marker, 'filhoinativo');
+        $u = $this->makeUser($marker, 'filhoinativo', [$p]);
+
+        // Desativa a linha filha em si (profiles), com o vinculo continuando ativo
+        // na tabela de juncao — diferente de testAttachIgnoresInactiveLinks, que
+        // desativa o vinculo.
+        $profile = new profiles_model();
+        $profile->execute_raw_prepared(
+            "UPDATE profiles SET active = 'no' WHERE idx = ?",
+            [$p]
+        );
+
+        $model = new users_model();
+        $model->set_field([' idx ']);
+        $model->set_filter([" idx = ? "], [$u]);
+        $model->load_data(false);
+        $model->attach(['profiles']);
+
+        $this->assertSame([], $model->data[0]['profiles_attach'], 'Linha filha inativa nao deve aparecer mesmo com vinculo ativo');
+    }
 }
