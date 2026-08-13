@@ -222,6 +222,8 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
   ```
   This eliminates test ordering dependencies and enables future parallelism.
 
+- Respostas terminais (`basic_redir`/`json_response`/`array_to_csv`) lançam `TerminalResponse` sob a constante `TESTING` em vez de `exit()` — é assim que se testa `save()`/`remove()`/`action()`. Ver `plans/009-*.md`.
+
 ## Migrations
 
 - Files in `migrations/` named numerically: `006_description.sql`. One DB transaction per file.
