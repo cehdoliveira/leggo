@@ -41,11 +41,17 @@ class emails_controller
         return [$done, $filter, $params];
     }
 
+    /** Resolve o formato de resposta a partir do path capturado pela rota. */
+    private function resolve_format(array $info): string
+    {
+        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
+    }
+
     public function display(array $info): void
     {
         global $emails_url;
 
-        $format   = ($info[1] ?? '') === '.json' ? '.json' : '.html';
+        $format   = $this->resolve_format($info);
         $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
         $offset   = (int)($info['sr'] ?? 0);
 
@@ -63,10 +69,9 @@ class emails_controller
             $model->set_field([" idx ", " to_mail ", " subject ", " body ", " sent_at "]);
             $model->set_filter($filter, $params);
             $model->set_order([" {$ordenationColumn} {$ordenationDirection} "]);
-
-            if ($format === '.html') {
-                $model->set_paginate([$offset, $paginate]);
-            }
+            // Paginação vale para .html e .json — nenhum dos dois devolve a
+            // tabela inteira de uma vez.
+            $model->set_paginate([$offset, $paginate]);
 
             // return_data() chama load_data(true) por baixo — recordset vira o
             // total SEM o LIMIT. Não escreva um COUNT à mão.
@@ -81,9 +86,6 @@ class emails_controller
         if ($format === '.json') {
             json_response(["total" => $total, "row" => $emails]);
         }
-
-        $page          = 'E-mails';
-        $sidebar_color = 'rgba(56, 189, 248, 0.92)';
 
         $form = [
             "done"    => rawurlencode($done !== [] ? set_url($emails_url, $done) : $emails_url),
