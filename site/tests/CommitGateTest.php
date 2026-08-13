@@ -14,13 +14,6 @@ declare(strict_types=1);
  */
 final class CommitGateTest extends DBTestCase
 {
-    private function resetSingleton(): void
-    {
-        $prop = new ReflectionProperty(localPDO::class, 'instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
-    }
-
     protected function setUp(): void
     {
         parent::setUp();

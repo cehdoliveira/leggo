@@ -55,4 +55,18 @@ abstract class DBTestCase extends TestCase
         $model = new $class();
         return $model;
     }
+
+    /**
+     * Zera o singleton do localPDO. Necessario antes/depois de testes que
+     * chamam basic_redir()/json_response()/array_to_csv() (plano 009): esses
+     * helpers comitam ou revertem a transacao do singleton via
+     * close_request_transaction(), e sem o reset essa transacao vazaria para
+     * o proximo teste do mesmo processo.
+     */
+    protected function resetSingleton(): void
+    {
+        $prop = new ReflectionProperty(localPDO::class, 'instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
+    }
 }
