@@ -24,6 +24,9 @@ declare(strict_types=1);
  */
 final class PerPageCapTest extends DBTestCase
 {
+    /** Acima de PER_PAGE_MAX (200) — precisa exceder o teto de verdade para o assertSame(200, ...) provar o truncamento. */
+    private const FIXTURE_COUNT = 210;
+
     private const CONTROLLERS = [
         'profiles_controller',
         'users_controller',
@@ -42,25 +45,40 @@ final class PerPageCapTest extends DBTestCase
     public function testPaginateAcimaDoTetoEhLimitadoA200NaRespostaJsonDePerfis(): void
     {
         $marker = uniqid();
+        $slugPrefix = "cap-{$marker}-";
+
+        // FIXTURE_COUNT (210) sozinho ja excede PER_PAGE_MAX (200) — nao depende
+        // das 2 linhas seed (admin/user) para provar o truncamento. Insert em
+        // lote (1 unica query com bind) em vez de 210 saves() individuais.
+        // created_at precisa ir preenchido: DOLModel::save() sempre faz
+        // `created_at = now()` no INSERT (via model), e display() seleciona
+        // essa coluna — deixá-la NULL aqui dispara um bug pré-existente e
+        // fora de escopo em toUtf8()/a_walk() (não aceita null), mascarando
+        // o resultado deste teste.
+        $values = [];
+        $params = [];
+        for ($i = 0; $i < self::FIXTURE_COUNT; $i++) {
+            $values[] = "(?, ?, 'yes', now())";
+            $params[] = "cap_{$marker}_{$i}";
+            $params[] = "{$slugPrefix}{$i}";
+        }
+        $sql = "INSERT INTO profiles (name, slug, active, created_at) VALUES " . implode(', ', $values);
 
         $this->resetSingleton();
-        $id = null;
         try {
-            $insert = new profiles_model();
-            $insert->populate(['name' => "cap_{$marker}", 'slug' => "cap-{$marker}"]);
-            $id = (int) $insert->save();
-            $this->assertGreaterThan(0, $id, 'Insert de fixture deve retornar um ID valido');
+            (new localPDO())->executePrepared($sql, $params);
 
             (new profiles_controller())->display(['get' => ['paginate' => '99999999'], 1 => '.json']);
             $this->fail('display() deveria ter lancado TerminalResponse');
         } catch (TerminalResponse $e) {
             $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
-            $this->assertLessThanOrEqual(200, count($e->payload['data']['row']), 'paginate=99999999 nao pode devolver mais de 200 linhas');
+            // Total real (>=210+seeds) excede o teto — se PER_PAGE_MAX nao
+            // truncasse, count() aqui seria > 200, nao exatamente 200.
+            $this->assertSame(200, count($e->payload['data']['row']), 'paginate=99999999 deve ser truncado para exatamente 200 linhas');
         } finally {
             $this->resetSingleton();
-            if ($id) {
-                (new localPDO())->executePrepared("DELETE FROM profiles WHERE idx = ?", [$id]);
-            }
+            // Delete em lote por prefixo do slug — mais rapido que 210 deletes.
+            (new localPDO())->executePrepared("DELETE FROM profiles WHERE slug LIKE ?", ["{$slugPrefix}%"]);
         }
     }
 
