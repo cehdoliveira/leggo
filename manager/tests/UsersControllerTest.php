@@ -57,6 +57,217 @@ final class UsersControllerTest extends DBTestCase
         return $ref->invokeArgs($controller, $args);
     }
 
+    /**
+     * save()/remove()/action() terminam em basic_redir()/json_response()/
+     * array_to_csv() (plano 009), que comitam ou revertem o singleton de
+     * localPDO (CommonFunctions.php). Sem resetar o singleton antes, esses
+     * metodos comitariam a transacao nunca-fechada de OUTROS testes do mesmo
+     * processo — mesmo raciocinio do CommitGateTest.php. Os testes abaixo
+     * resetam o singleton no inicio e no fim, e limpam manualmente qualquer
+     * fixture que tenha sido comitada por essa chamada.
+     */
+    private function resetSingleton(): void
+    {
+        $prop = new ReflectionProperty(localPDO::class, 'instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
+    }
+
+    public function testSaveWithoutCsrfTokenRedirectsToUsersUrl(): void
+    {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
+        unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);
+
+        $this->resetSingleton();
+        try {
+            (new users_controller())->save(['post' => ['name' => 'Sem Token', 'mail' => 'sem-token-' . uniqid() . '@example.com']]);
+            $this->fail('save() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind, 'Sem _csrf_token, save() deve terminar em redirect (validate_csrf)');
+            $this->assertSame($GLOBALS['users_url'], $e->payload['url'], 'validate_csrf() redireciona para $users_url quando o token e invalido/ausente');
+        } finally {
+            $this->resetSingleton();
+        }
+    }
+
+    public function testRemoveSelfIsBlockedWithDangerMessage(): void
+    {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
+        $marker = uniqid();
+        $slug   = 'self-' . $marker;
+
+        $this->resetSingleton();
+        unset($_SESSION['messages_app']);
+        $selfId = null;
+        try {
+            $insert = new users_model();
+            $insert->populate([
+                'name'  => "self_{$marker}",
+                'mail'  => "self_{$marker}@example.com",
+                'login' => 'self_' . $marker,
+                'slug'  => $slug,
+            ]);
+            $selfId = (int) $insert->save();
+            $this->assertGreaterThan(0, $selfId, 'Insert de fixture deve retornar um ID valido');
+
+            $_SESSION[constant('cAppKey')]['credential']['idx'] = $selfId;
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+
+            try {
+                (new users_controller())->remove(['post' => ['_csrf_token' => $_SESSION['_csrf_token']], 1 => $slug]);
+                $this->fail('remove() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains(
+                    'Você não pode remover a si mesmo.',
+                    $_SESSION['messages_app']['danger'] ?? [],
+                    'Guard de autorremocao deve setar a mensagem de danger'
+                );
+            }
+        } finally {
+            unset($_SESSION[constant('cAppKey')], $_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            if ($selfId) {
+                (new localPDO())->executePrepared("DELETE FROM users WHERE idx = ?", [$selfId]);
+            }
+        }
+    }
+
+    public function testRemoveOtherUserSoftDeletesRow(): void
+    {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
+        $marker     = uniqid();
+        $adminSlug  = 'admin-' . $marker;
+        $targetSlug = 'target-' . $marker;
+
+        $this->resetSingleton();
+        $adminId = $targetId = null;
+        try {
+            $admin = new users_model();
+            $admin->populate([
+                'name'  => "admin_{$marker}",
+                'mail'  => "admin_{$marker}@example.com",
+                'login' => 'admin_' . $marker,
+                'slug'  => $adminSlug,
+            ]);
+            $adminId = (int) $admin->save();
+            $this->assertGreaterThan(0, $adminId, 'Insert de fixture deve retornar um ID valido');
+
+            $target = new users_model();
+            $target->populate([
+                'name'  => "target_{$marker}",
+                'mail'  => "target_{$marker}@example.com",
+                'login' => 'target_' . $marker,
+                'slug'  => $targetSlug,
+            ]);
+            $targetId = (int) $target->save();
+            $this->assertGreaterThan(0, $targetId, 'Insert de fixture deve retornar um ID valido');
+
+            $_SESSION[constant('cAppKey')]['credential']['idx'] = $adminId;
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+
+            try {
+                (new users_controller())->remove(['post' => ['_csrf_token' => $_SESSION['_csrf_token']], 1 => $targetSlug]);
+                $this->fail('remove() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+            }
+
+            $check = new localPDO();
+            $stmt  = $check->executePrepared("SELECT active FROM users WHERE idx = ?", [$targetId]);
+            $this->assertSame('no', $stmt->fetch(PDO::FETCH_ASSOC)['active'] ?? null, 'Usuario removido deve ficar com active = no');
+        } finally {
+            unset($_SESSION[constant('cAppKey')], $_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            $cleanup = new localPDO();
+            if ($targetId) {
+                $cleanup->executePrepared("DELETE FROM users WHERE idx = ?", [$targetId]);
+            }
+            if ($adminId) {
+                $cleanup->executePrepared("DELETE FROM users WHERE idx = ?", [$adminId]);
+            }
+        }
+    }
+
+    public function testActionExportCsvReturnsRowsFromDatabase(): void
+    {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
+        $marker = uniqid();
+        $slug   = 'export-' . $marker;
+
+        $this->resetSingleton();
+        $userId = null;
+        try {
+            $insert = new users_model();
+            $insert->populate([
+                'name'  => "export_{$marker}",
+                'mail'  => "export_{$marker}@example.com",
+                'login' => 'export_' . $marker,
+                'slug'  => $slug,
+            ]);
+            $userId = (int) $insert->save();
+            $this->assertGreaterThan(0, $userId, 'Insert de fixture deve retornar um ID valido');
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+
+            ob_start();
+            try {
+                (new users_controller())->action(['post' => ['_csrf_token' => $_SESSION['_csrf_token'], 'action' => 'export-csv']]);
+                $this->fail('action() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                ob_get_clean();
+                $this->assertSame(TerminalResponse::KIND_CSV, $e->kind);
+                $this->assertGreaterThan(0, $e->payload['rows'], 'action=export-csv deve exportar pelo menos a fixture criada neste teste');
+            }
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);
+            $this->resetSingleton();
+            if ($userId) {
+                (new localPDO())->executePrepared("DELETE FROM users WHERE idx = ?", [$userId]);
+            }
+        }
+    }
+
+    public function testActionInativarSetsEnabledNo(): void
+    {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
+        $marker = uniqid();
+        $slug   = 'inativar-' . $marker;
+
+        $this->resetSingleton();
+        $userId = null;
+        try {
+            $insert = new users_model();
+            $insert->populate([
+                'name'  => "inativar_{$marker}",
+                'mail'  => "inativar_{$marker}@example.com",
+                'login' => 'inativar_' . $marker,
+                'slug'  => $slug,
+            ]);
+            $userId = (int) $insert->save();
+            $this->assertGreaterThan(0, $userId, 'Insert de fixture deve retornar um ID valido');
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+
+            try {
+                (new users_controller())->action(['post' => ['_csrf_token' => $_SESSION['_csrf_token'], 'action' => 'inativar', 'idx' => $userId]]);
+                $this->fail('action() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+            }
+
+            $check = new localPDO();
+            $stmt  = $check->executePrepared("SELECT enabled FROM users WHERE idx = ?", [$userId]);
+            $this->assertSame('no', $stmt->fetch(PDO::FETCH_ASSOC)['enabled'] ?? null, 'action=inativar deve gravar enabled = no');
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);
+            $this->resetSingleton();
+            if ($userId) {
+                (new localPDO())->executePrepared("DELETE FROM users WHERE idx = ?", [$userId]);
+            }
+        }
+    }
+
     public function testFilterByProfileReturnsOnlyUsersWithActiveLink(): void
     {
         $marker    = uniqid();
