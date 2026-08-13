@@ -70,4 +70,24 @@ final class MessagesFilterTest extends DBTestCase
         $matched = array_column($model->data, 'to_mail');
         $this->assertNotContains($toMail, $matched, 'Um "%" literal escapado nao deve casar com um e-mail sem "%" no valor');
     }
+
+    public function testRecordsetMatchesFilteredTotalWithoutManualCount(): void
+    {
+        $marker = uniqid();
+        $this->makeMessage("carol_{$marker}_1@example.com");
+        $this->makeMessage("carol_{$marker}_2@example.com");
+        $this->makeMessage("carol_{$marker}_3@example.com");
+
+        $like = '%' . addcslashes("carol_{$marker}", '\\%_') . '%';
+
+        $model = new messages_model();
+        $model->set_field([' idx ', ' to_mail ']);
+        $model->set_filter([" active = 'yes' ", " to_mail LIKE ? "], [$like]);
+        $model->set_order([' idx ASC ']);
+        $model->set_paginate([0, 2]);
+        $model->load_data();
+
+        $this->assertCount(2, $model->data, 'A pagina traz 2 linhas por causa do LIMIT');
+        $this->assertSame(3, (int) $model->get_recordset(), 'recordset ignora o LIMIT e conta o total filtrado');
+    }
 }
