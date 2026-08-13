@@ -1,46 +1,106 @@
 <?php
+
+/**
+ * Lista somente leitura das mensagens registradas em `messages` (cadastro,
+ * forgot-password, reset, criação de usuário). Sem reenvio, sem edição, sem
+ * remoção — decisão de produto, ver plans/027-DESIGN.md.
+ *
+ * Segue o padrão display/filter do projeto; não tem form/save/remove porque a
+ * tela não escreve. Exemplar do padrão: profiles_controller.
+ */
 class emails_controller
 {
+    private const ORDER_ALLOWED = ['to_mail', 'subject', 'sent_at'];
+
+    private const PER_PAGE_MIN = 20;
+
     /**
-     * Spike (plano 027): lista somente leitura das mensagens registradas em
-     * `messages` (cadastro, forgot-password, reset, criação de usuário).
-     * Sem reenvio, sem edição, sem export — ver plans/027-DESIGN.md.
+     * @return array{0: array<string, string>, 1: array<string>, 2: array<mixed>}
      */
-    public function index(array $info): void
+    private function filter(array $info): array
     {
-        $perPage = 25;
-        $page    = (int)($info['get']['page'] ?? 1);
-        if ($page < 1) {
-            $page = 1;
+        $get    = $info['get'] ?? [];
+        $done   = [];
+        $filter = [" active = 'yes' "];
+        $params = [];
+
+        $mail = trim((string)($get['filter_mail'] ?? ''));
+        if ($mail !== '') {
+            $done['filter_mail'] = $mail;
+            $filter[]            = " to_mail LIKE ? ";
+            $params[]            = '%' . addcslashes($mail, '\\%_') . '%';
         }
-        $offset = ($page - 1) * $perPage;
-        $q      = trim($info['get']['q'] ?? '');
+
+        $subject = trim((string)($get['filter_subject'] ?? ''));
+        if ($subject !== '') {
+            $done['filter_subject'] = $subject;
+            $filter[]               = " subject LIKE ? ";
+            $params[]               = '%' . addcslashes($subject, '\\%_') . '%';
+        }
+
+        return [$done, $filter, $params];
+    }
+
+    /** Resolve o formato de resposta a partir do path capturado pela rota. */
+    private function resolve_format(array $info): string
+    {
+        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
+    }
+
+    public function display(array $info): void
+    {
+        global $emails_url;
+
+        $format   = $this->resolve_format($info);
+        $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
+        $offset   = (int)($info['sr'] ?? 0);
+
+        [$ordenationColumn, $ordenationDirection] = resolve_ordenation(
+            $info['get']['ordenation'] ?? null,
+            self::ORDER_ALLOWED,
+            'sent_at',
+            'desc'
+        );
+
+        [$done, $filter, $params] = $this->filter($info);
 
         try {
             $model = new messages_model();
-
-            if ($q !== '') {
-                $like         = '%' . addcslashes($q, '\\%_') . '%';
-                $countStmt    = $model->select([" COUNT(*) AS total "], "WHERE active = 'yes' AND to_mail LIKE ?", [$like]);
-                $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
-
-                $model->set_filter([" active = 'yes' ", " to_mail LIKE ? "], [$like]);
-            } else {
-                $countStmt    = $model->select([" COUNT(*) AS total "], "WHERE active = 'yes'");
-                $total_emails = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
-            }
-
             $model->set_field([" idx ", " to_mail ", " subject ", " body ", " sent_at "]);
-            $model->set_order([" sent_at DESC "]);
-            $model->set_paginate([$offset, $perPage]);
-            $model->load_data(false);
-            $emails = $model->data;
+            $model->set_filter($filter, $params);
+            $model->set_order([" {$ordenationColumn} {$ordenationDirection} "]);
+            // Paginação vale para .html e .json — nenhum dos dois devolve a
+            // tabela inteira de uma vez.
+            $model->set_paginate([$offset, $paginate]);
+
+            // return_data() chama load_data(true) por baixo — recordset vira o
+            // total SEM o LIMIT. Não escreva um COUNT à mão.
+            [$total, $emails] = $model->return_data();
+            $total = (int)$total;
         } catch (RuntimeException $e) {
-            $emails       = [];
-            $total_emails = 0;
+            Logger::getInstance()->error("emails display failed", ["error" => $e->getMessage()]);
+            $emails = [];
+            $total  = 0;
         }
 
-        $totalPages = (int)ceil($total_emails / $perPage);
+        if ($format === '.json') {
+            json_response(["total" => $total, "row" => $emails]);
+        }
+
+        $form = [
+            "done"    => rawurlencode($done !== [] ? set_url($emails_url, $done) : $emails_url),
+            "pattern" => [
+                "search" => $emails_url,
+            ],
+        ];
+
+        $ordenation = [];
+        foreach (self::ORDER_ALLOWED as $column) {
+            $ordenation[$column] = ordenation_header($column, $ordenationColumn, $ordenationDirection);
+        }
+
+        // $paginate tem piso de PER_PAGE_MIN, então nunca é 0 aqui.
+        $totalPages = (int)ceil($total / $paginate);
 
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");

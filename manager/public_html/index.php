@@ -87,8 +87,8 @@ $dispatcher->add_route("GET",  "/usuario/([a-z0-9_-]+)",          "users_control
 $dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)",          "users_controller:save",    $authGuard, $params);
 $dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)/remover",  "users_controller:remove",  $authGuard, $params);
 
-// Outbox de e-mails — spike/leitura (requer autenticação)
-$dispatcher->add_route("GET",  "/emails", "emails_controller:index", $authGuard, $params);
+// Outbox de e-mails — somente leitura (requer autenticação)
+$dispatcher->add_route("GET", "/emails(\.json|\.html)?", "emails_controller:display", $authGuard, $params);
 
 // Perfis — padrão display/form/save/remove (requer autenticação)
 $dispatcher->add_route("GET",  "/perfis(\.json|\.html)?",        "profiles_controller:display", $authGuard, $params);

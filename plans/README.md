@@ -24,11 +24,11 @@ respeite as STOP conditions, e atualize a linha correspondente ao terminar.
 |---|---|---|---|---|---|
 | 001 | `DOLModel::data4select()` com params bindados | P1 | S | — | DONE |
 | 002 | Commit gate em respostas terminais sem redirect | P1 | S | — | DONE |
-| 003 | Helpers de ordenação com allowlist | P1 | S | — | TODO |
-| 004 | `attach()` em lote (fim do N+2) | P2 | M | — | TODO |
-| 005 | Padrão `display/form/save/remove` — exemplar em `profiles` | P1 | L | 001, 002, 003 | TODO |
-| 006 | Padrão em usuários (`users_controller`) + slug + vínculos | P2 | L | 005 | TODO |
-| 007 | Padrão em e-mails (somente leitura) | P3 | S | 005 | TODO |
+| 003 | Helpers de ordenação com allowlist | P1 | S | — | DONE |
+| 004 | `attach()` em lote (fim do N+2) | P2 | M | — | DONE |
+| 005 | Padrão `display/form/save/remove` — exemplar em `profiles` | P1 | L | 001, 002, 003 | DONE |
+| 006 | Padrão em usuários (`users_controller`) + slug + vínculos | P2 | L | 005 | DONE |
+| 007 | Padrão em e-mails (somente leitura) | P3 | S | 005 | DONE (QA manual do Step 5 pendente) |
 
 Valores de status: TODO | IN PROGRESS | DONE | BLOCKED (com motivo em uma linha) |
 REJECTED (com justificativa em uma linha).

@@ -1,6 +1,12 @@
 <?php
 $credential = $_SESSION[constant("cAppKey")]["credential"] ?? [];
 $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-8');
+$page       = (int)floor($offset / $paginate) + 1;
+$ariaSort   = static fn(string $col): string => match ($ordenation[$col][1]) {
+    'bi bi-caret-up-fill'   => 'ascending',
+    'bi bi-caret-down-fill' => 'descending',
+    default                 => 'none',
+};
 ?>
 
 <div class="manager-layout">
@@ -49,11 +55,23 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                 <h1><i class="bi bi-envelope me-2" aria-hidden="true"></i>E-mails Enviados</h1>
                 <p>Olá, <?php echo $userName; ?>. Histórico de e-mails registrados pelo sistema (cadastro, redefinição de senha).</p>
             </div>
-            <form method="GET" action="<?php echo $GLOBALS['emails_url']; ?>" class="d-flex gap-2">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Filtrar por destinatário"
-                       value="<?php echo htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off">
-                <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
-            </form>
+        </div>
+
+        <!-- Busca -->
+        <div class="content-panel">
+            <div class="content-panel-body" style="padding:1rem 1.25rem;">
+                <form method="GET" action="<?php echo htmlspecialchars($form['pattern']['search'], ENT_QUOTES, 'UTF-8'); ?>" class="d-flex flex-wrap gap-2">
+                    <input type="text" name="filter_mail" class="form-control form-control-sm" style="max-width:16rem;"
+                           placeholder="Buscar por destinatário" aria-label="Buscar por destinatário" autocomplete="off"
+                           value="<?php echo htmlspecialchars($done['filter_mail'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
+                    <input type="text" name="filter_subject" class="form-control form-control-sm" style="max-width:16rem;"
+                           placeholder="Buscar por assunto" aria-label="Buscar por assunto" autocomplete="off"
+                           value="<?php echo htmlspecialchars($done['filter_subject'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
+                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+                </form>
+            </div>
         </div>
 
         <!-- Tabela de e-mails -->
@@ -72,10 +90,25 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Destinatário</th>
-                                    <th>Assunto</th>
+                                    <th aria-sort="<?php echo $ariaSort('to_mail'); ?>">
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['to_mail'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Destinatário <i class="<?php echo $ordenation['to_mail'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
+                                    <th aria-sort="<?php echo $ariaSort('subject'); ?>">
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['subject'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Assunto <i class="<?php echo $ordenation['subject'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
                                     <th>Corpo</th>
-                                    <th>Enviado</th>
+                                    <th aria-sort="<?php echo $ariaSort('sent_at'); ?>">
+                                        <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['sent_at'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
+                                           class="text-decoration-none">
+                                            Enviado <i class="<?php echo $ordenation['sent_at'][1]; ?>" aria-hidden="true"></i>
+                                        </a>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -98,15 +131,15 @@ $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-
                     <nav aria-label="Paginação de e-mails">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => max(1, $page - 1)] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $page <= 1 ? ' aria-disabled="true" tabindex="-1"' : ''; ?>>Anterior</a>
                             </li>
                             <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
-                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => $p] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $p === $page ? ' aria-current="page"' : ''; ?>><?php echo $p; ?></a>
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['page' => min($totalPages, $page + 1)] + (($q ?? '') !== '' ? ['q' => $q] : [])), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (min($totalPages, $page + 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $page >= $totalPages ? ' aria-disabled="true" tabindex="-1"' : ''; ?>>Próximo</a>
                             </li>
                         </ul>
                     </nav>
