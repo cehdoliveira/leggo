@@ -24,6 +24,9 @@ class users_controller
     /** Piso de itens por página: pedidos abaixo disso são elevados. */
     private const PER_PAGE_MIN = 20;
 
+    /** Teto de itens por página: pedidos acima disso são rebaixados (evita dump da tabela via ?paginate=). */
+    private const PER_PAGE_MAX = 200;
+
     /** Colunas da listagem — nunca password. */
     private const LIST_FIELDS = [" idx ", " name ", " mail ", " login ", " slug ", " active ", " enabled ", " created_at ", " last_login ", " email_verified_at "];
 
@@ -113,7 +116,7 @@ class users_controller
         }
 
         $format   = $this->resolve_format($info);
-        $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
+        $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
         [$ordenationColumn, $ordenationDirection] = resolve_ordenation(
