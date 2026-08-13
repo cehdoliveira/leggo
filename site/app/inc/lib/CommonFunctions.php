@@ -134,6 +134,21 @@ function set_url(string $url = "", array $params = []): string
 }
 
 /**
+ * Encerra a requisicao. Em producao chama exit(); sob PHPUnit (constante
+ * TESTING) lanca TerminalResponse para que o teste possa inspecionar a resposta
+ * sem matar o runner. Ver plans/009-*.md.
+ *
+ * @param array<string, mixed> $payload
+ */
+function terminate_request(string $kind, array $payload = []): never
+{
+  if (defined('TESTING') && constant('TESTING')) {
+    throw new TerminalResponse($kind, $payload);
+  }
+  exit();
+}
+
+/**
  * Redireciona para outra URL
  * Realiza redirecionamento com código HTTP (302 temporário por padrão).
  *
@@ -185,7 +200,7 @@ function basic_redir(string|array $url, int $code = 302, bool $use_html = false,
   } else {
     header("Location: " . $url, true, $code);
   }
-  exit();
+  terminate_request(TerminalResponse::KIND_REDIRECT, ['url' => $url, 'code' => $code, 'rollback' => $rollback]);
 }
 
 /**
@@ -803,7 +818,7 @@ function array_to_csv(array $data, string $filename = 'export.csv', ?array $head
 
   if (empty($data)) {
     fclose($output);
-    exit();
+    terminate_request(TerminalResponse::KIND_CSV, ['filename' => $filename, 'rows' => 0]);
   }
 
   if ($headers === null) {
@@ -821,7 +836,7 @@ function array_to_csv(array $data, string $filename = 'export.csv', ?array $head
   }
 
   fclose($output);
-  exit();
+  terminate_request(TerminalResponse::KIND_CSV, ['filename' => $filename, 'rows' => count($data)]);
 }
 
 function json_response(mixed $data, int $code = 200): never
@@ -842,11 +857,11 @@ function json_response(mixed $data, int $code = 200): never
   if ($json === false) {
     http_response_code(500);
     echo json_encode(['error' => 'JSON encoding failed']);
-    exit();
+    terminate_request(TerminalResponse::KIND_JSON, ['code' => 500, 'data' => null]);
   }
 
   echo $json;
-  exit();
+  terminate_request(TerminalResponse::KIND_JSON, ['code' => $code, 'data' => $data]);
 }
 
 function random_token(int $bytes = 32): string

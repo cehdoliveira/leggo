@@ -11,10 +11,10 @@ declare(strict_types=1);
  * Tambem cobre, via reflection (metodos privados), o guard anti open-redirect
  * de safe_internal_url()/back_url() e a resolucao de formato .json/.html de
  * display() — achados do /phpship nesta branch. O caminho save(...,
- * no-redirect) NAO tem teste: ele termina em json_response(), que tem tipo de
- * retorno `never` (exit real) e o projeto nao tem infraestrutura de teste de
- * processo/HTTP para isso hoje (mesma limitacao ja documentada em
- * DispatcherTest.php) — registrado como pendencia no PR.
+ * no-redirect) e o guard de perfil `editabled = 'no'` (protegido) agora tem
+ * teste direto do metodo save() — plano 009 tornou basic_redir()/
+ * json_response()/array_to_csv() testaveis (lancam TerminalResponse sob
+ * TESTING em vez de exit()), fechando a pendencia registrada aqui.
  */
 final class ProfilesFilterTest extends DBTestCase
 {
@@ -39,6 +39,94 @@ final class ProfilesFilterTest extends DBTestCase
         $ref->setAccessible(true);
 
         return $ref->invokeArgs($controller, $args);
+    }
+
+    // save() termina em json_response()/basic_redir() (plano 009); os testes
+    // abaixo usam resetSingleton() (DBTestCase) antes/depois pelo mesmo
+    // motivo do CommitGateTest.php, e limpam manualmente qualquer fixture
+    // que tenha sido comitada.
+
+    public function testSaveWithNoRedirectReturnsJsonOk(): void
+    {
+        $GLOBALS['profiles_url'] = constant('cFrontend') . 'perfis';
+        $marker = uniqid();
+        $slug   = 'no-redirect-' . $marker;
+
+        $this->resetSingleton();
+        $createdId = null;
+        try {
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            $post = [
+                '_csrf_token' => $_SESSION['_csrf_token'],
+                'name'        => "Perfil {$marker}",
+                'slug'        => $slug,
+                'no-redirect' => '1',
+            ];
+
+            ob_start();
+            try {
+                (new profiles_controller())->save(['post' => $post]);
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+                $this->fail('save() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                ob_get_clean();
+                $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
+                // a_walk()/toUtf8() converte todo valor escalar do payload de
+                // json_response() para string antes do json_encode —
+                // comportamento pre-existente, nao introduzido por este plano
+                // (mesmo achado documentado em TerminalResponseTest.php).
+                $this->assertSame('1', $e->payload['data']['ok'], 'save(..., no-redirect) deve responder ok');
+                $createdId = (int) $e->payload['data']['idx'];
+                $this->assertGreaterThan(0, $createdId);
+            }
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);
+            $this->resetSingleton();
+            if ($createdId) {
+                (new localPDO())->executePrepared("DELETE FROM profiles WHERE idx = ?", [$createdId]);
+            }
+        }
+    }
+
+    public function testSaveOfEditabledNoProfileIsBlockedWithProtectedMessage(): void
+    {
+        $GLOBALS['profiles_url'] = constant('cFrontend') . 'perfis';
+        $marker = uniqid();
+        $slug   = 'protegido-' . $marker;
+
+        $this->resetSingleton();
+        unset($_SESSION['messages_app']);
+        $protectedId = null;
+        try {
+            $insert = new profiles_model();
+            $insert->populate(['name' => "Protegido {$marker}", 'slug' => $slug, 'editabled' => 'no']);
+            $protectedId = (int) $insert->save();
+            $this->assertGreaterThan(0, $protectedId, 'Insert de fixture deve retornar um ID valido');
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            $post = [
+                '_csrf_token' => $_SESSION['_csrf_token'],
+                'name'        => "Tentativa {$marker}",
+                'slug'        => $slug,
+            ];
+
+            try {
+                (new profiles_controller())->save(['post' => $post, 1 => $slug]);
+                $this->fail('save() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $messages = implode(' ', $_SESSION['messages_app']['danger'] ?? []);
+                $this->assertStringContainsString('protegido', $messages, 'Guard de perfil nao-editavel deve setar mensagem de danger');
+            }
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            if ($protectedId) {
+                (new localPDO())->executePrepared("DELETE FROM profiles WHERE idx = ?", [$protectedId]);
+            }
+        }
     }
 
     public function testFilterByNameReturnsOnlyMatchingRows(): void
