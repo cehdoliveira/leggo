@@ -8,12 +8,18 @@ declare(strict_types=1);
  * para que ?paginate=<numero grande> nao devolva a tabela inteira (achado:
  * /emails seleciona a coluna body, LONGTEXT, e messages so cresce).
  *
- * O caso 1 exercita o caminho real — .json de profiles_controller::display() —
- * capturando a TerminalResponse lancada por json_response() sob TESTING
- * (mecanismo do plano 009, ver TerminalResponseTest.php). Como json_response()
- * chama close_request_transaction(), que comita o singleton do localPDO, a
- * fixture criada antes da chamada precisa ser limpa manualmente e o singleton
+ * O caso 1 exercita o caminho real — .json de display() — nos tres
+ * controllers (profiles, users, emails), capturando a TerminalResponse
+ * lancada por json_response() sob TESTING (mecanismo do plano 009, ver
+ * TerminalResponseTest.php). Como json_response() chama
+ * close_request_transaction(), que comita o singleton do localPDO, a fixture
+ * criada antes da chamada precisa ser limpa manualmente e o singleton
  * resetado — mesmo padrao de ProfilesFilterTest::testSaveWithNoRedirectReturnsJsonOk.
+ * Testar os tres, e nao so profiles, importa porque os casos 2/3 abaixo so
+ * conferem as constantes via Reflection — nao provam que o controller de
+ * fato aplica o clamp. Achado do review da etapa 6 do phpship (Cobertura de
+ * Testes): sem isso, um revert acidental da formula em users_controller ou
+ * emails_controller passaria despercebido pela suite.
  *
  * Os casos 2 e 3 testam o calculo diretamente com as constantes lidas via
  * Reflection (o proprio plano 010 permite essa forma para o caso 2: "se
@@ -79,6 +85,63 @@ final class PerPageCapTest extends DBTestCase
             $this->resetSingleton();
             // Delete em lote por prefixo do slug — mais rapido que 210 deletes.
             (new localPDO())->executePrepared("DELETE FROM profiles WHERE slug LIKE ?", ["{$slugPrefix}%"]);
+        }
+    }
+
+    public function testPaginateAcimaDoTetoEhLimitadoA200NaRespostaJsonDeUsuarios(): void
+    {
+        $marker = uniqid();
+        $mailPrefix = "cap-{$marker}-";
+
+        $values = [];
+        $params = [];
+        for ($i = 0; $i < self::FIXTURE_COUNT; $i++) {
+            $values[] = "(now(), 0, ?)";
+            $params[] = "{$mailPrefix}{$i}@example.test";
+        }
+        $sql = "INSERT INTO users (created_at, created_by, mail) VALUES " . implode(', ', $values);
+
+        $this->resetSingleton();
+        try {
+            (new localPDO())->executePrepared($sql, $params);
+
+            (new users_controller())->display(['get' => ['paginate' => '99999999'], 1 => '.json']);
+            $this->fail('display() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
+            $this->assertSame(200, count($e->payload['data']['row']), 'paginate=99999999 deve ser truncado para exatamente 200 linhas em usuarios');
+        } finally {
+            $this->resetSingleton();
+            (new localPDO())->executePrepared("DELETE FROM users WHERE mail LIKE ?", ["{$mailPrefix}%"]);
+        }
+    }
+
+    public function testPaginateAcimaDoTetoEhLimitadoA200NaRespostaJsonDeEmails(): void
+    {
+        $marker = uniqid();
+        $subject = "cap-{$marker}";
+
+        $values = [];
+        $params = [];
+        for ($i = 0; $i < self::FIXTURE_COUNT; $i++) {
+            $values[] = "(now(), 0, ?, ?, 'corpo de teste')";
+            $params[] = "cap-{$marker}-{$i}@example.test";
+            $params[] = $subject;
+        }
+        $sql = "INSERT INTO messages (created_at, created_by, to_mail, subject, body) VALUES " . implode(', ', $values);
+
+        $this->resetSingleton();
+        try {
+            (new localPDO())->executePrepared($sql, $params);
+
+            (new emails_controller())->display(['get' => ['paginate' => '99999999'], 1 => '.json']);
+            $this->fail('display() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
+            $this->assertSame(200, count($e->payload['data']['row']), 'paginate=99999999 deve ser truncado para exatamente 200 linhas em emails');
+        } finally {
+            $this->resetSingleton();
+            (new localPDO())->executePrepared("DELETE FROM messages WHERE subject = ?", [$subject]);
         }
     }
 
