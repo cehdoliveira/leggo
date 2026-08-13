@@ -14,6 +14,9 @@ class emails_controller
 
     private const PER_PAGE_MIN = 20;
 
+    /** Teto de itens por página: pedidos acima disso são rebaixados (evita dump da tabela via ?paginate=). */
+    private const PER_PAGE_MAX = 200;
+
     /**
      * @return array{0: array<string, string>, 1: array<string>, 2: array<mixed>}
      */
@@ -52,7 +55,7 @@ class emails_controller
         global $emails_url;
 
         $format   = $this->resolve_format($info);
-        $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
+        $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
         [$ordenationColumn, $ordenationDirection] = resolve_ordenation(

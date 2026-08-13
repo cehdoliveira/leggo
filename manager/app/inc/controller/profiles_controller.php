@@ -19,6 +19,9 @@ class profiles_controller
     /** Piso de itens por página: pedidos abaixo disso são elevados. */
     private const PER_PAGE_MIN = 20;
 
+    /** Teto de itens por página: pedidos acima disso são rebaixados (evita dump da tabela via ?paginate=). */
+    private const PER_PAGE_MAX = 200;
+
     /** Colunas do registro de perfil, usadas por display() e form(). */
     private const PROFILE_FIELDS = [" idx ", " name ", " slug ", " adm ", " editabled ", " parent ", " created_at "];
 
@@ -82,7 +85,7 @@ class profiles_controller
         }
 
         $format   = $this->resolve_format($info);
-        $paginate = max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0));
+        $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
         [$ordenationColumn, $ordenationDirection] = resolve_ordenation(
