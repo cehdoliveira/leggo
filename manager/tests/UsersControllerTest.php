@@ -57,21 +57,11 @@ final class UsersControllerTest extends DBTestCase
         return $ref->invokeArgs($controller, $args);
     }
 
-    /**
-     * save()/remove()/action() terminam em basic_redir()/json_response()/
-     * array_to_csv() (plano 009), que comitam ou revertem o singleton de
-     * localPDO (CommonFunctions.php). Sem resetar o singleton antes, esses
-     * metodos comitariam a transacao nunca-fechada de OUTROS testes do mesmo
-     * processo — mesmo raciocinio do CommitGateTest.php. Os testes abaixo
-     * resetam o singleton no inicio e no fim, e limpam manualmente qualquer
-     * fixture que tenha sido comitada por essa chamada.
-     */
-    private function resetSingleton(): void
-    {
-        $prop = new ReflectionProperty(localPDO::class, 'instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
-    }
+    // save()/remove()/action() terminam em basic_redir()/json_response()/
+    // array_to_csv() (plano 009); os testes abaixo usam resetSingleton()
+    // (DBTestCase) antes/depois pelo mesmo motivo do CommitGateTest.php, e
+    // limpam manualmente qualquer fixture que tenha sido comitada por essa
+    // chamada.
 
     public function testSaveWithoutCsrfTokenRedirectsToUsersUrl(): void
     {
@@ -213,11 +203,21 @@ final class UsersControllerTest extends DBTestCase
             ob_start();
             try {
                 (new users_controller())->action(['post' => ['_csrf_token' => $_SESSION['_csrf_token'], 'action' => 'export-csv']]);
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
                 $this->fail('action() deveria ter lancado TerminalResponse');
             } catch (TerminalResponse $e) {
-                ob_get_clean();
+                $body = ob_get_clean();
                 $this->assertSame(TerminalResponse::KIND_CSV, $e->kind);
                 $this->assertGreaterThan(0, $e->payload['rows'], 'action=export-csv deve exportar pelo menos a fixture criada neste teste');
+                // set_filter([" idx > 0 "]) nao filtra pela fixture — rows > 0
+                // seria verdade mesmo se ESTA linha nunca tivesse entrado no
+                // CSV. Confirma que o corpo realmente contem a fixture criada
+                // neste teste (achado do especialista de Cobertura de Testes).
+                // "login" e uma das colunas exportadas (users_controller.php,
+                // action() export-csv); "slug" nao e.
+                $this->assertStringContainsString('export_' . $marker, $body, 'CSV deve conter a linha da fixture criada neste teste');
             }
         } finally {
             unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);

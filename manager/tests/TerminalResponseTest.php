@@ -14,13 +14,6 @@ declare(strict_types=1);
  */
 final class TerminalResponseTest extends DBTestCase
 {
-    private function resetSingleton(): void
-    {
-        $prop = new ReflectionProperty(localPDO::class, 'instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,6 +52,9 @@ final class TerminalResponseTest extends DBTestCase
         ob_start();
         try {
             json_response(['a' => 1]);
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             $this->fail('json_response() deveria ter lancado TerminalResponse');
         } catch (TerminalResponse $e) {
             $body = ob_get_clean();
@@ -77,6 +73,9 @@ final class TerminalResponseTest extends DBTestCase
         ob_start();
         try {
             json_response(['e' => 1], 500);
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             $this->fail('json_response() deveria ter lancado TerminalResponse');
         } catch (TerminalResponse $e) {
             ob_get_clean();
@@ -84,11 +83,40 @@ final class TerminalResponseTest extends DBTestCase
         }
     }
 
+    public function testJsonResponseComFalhaDeEncodingRetorna500(): void
+    {
+        // "é" valido (2 bytes) seguido de um byte de continuacao solto e
+        // invalido. a_walk()/toUtf8() so rejeita a string se o regex de UTF-8
+        // multibyte nao casar em NENHUM trecho — aqui casa no "é" do inicio,
+        // entao a string passa inalterada e json_encode() falha de verdade
+        // (achado do especialista de Cobertura de Testes: o ramo de erro de
+        // json_response() nunca era exercitado por um encode que falha
+        // de fato).
+        $ob_level_antes = ob_get_level();
+        ob_start();
+        try {
+            json_response(['nome' => "\xC3\xA9\x81"]);
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            $this->fail('json_response() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            ob_get_clean();
+            $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
+            $this->assertSame(500, $e->payload['code']);
+            $this->assertNull($e->payload['data']);
+        }
+        $this->assertSame($ob_level_antes, ob_get_level(), 'Nivel de output buffering nao pode vazar entre testes');
+    }
+
     public function testArrayToCsvComDadosVaziosLancaTerminalResponseDeCsv(): void
     {
         ob_start();
         try {
             array_to_csv([]);
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             $this->fail('array_to_csv() deveria ter lancado TerminalResponse');
         } catch (TerminalResponse $e) {
             ob_get_clean();
@@ -102,6 +130,9 @@ final class TerminalResponseTest extends DBTestCase
         ob_start();
         try {
             array_to_csv([['a' => 1], ['a' => 2]], 'x.csv', ['a']);
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             $this->fail('array_to_csv() deveria ter lancado TerminalResponse');
         } catch (TerminalResponse $e) {
             $body = ob_get_clean();

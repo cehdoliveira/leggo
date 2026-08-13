@@ -41,20 +41,10 @@ final class ProfilesFilterTest extends DBTestCase
         return $ref->invokeArgs($controller, $args);
     }
 
-    /**
-     * save() termina em json_response()/basic_redir() (plano 009), que
-     * comitam ou revertem o singleton de localPDO (CommonFunctions.php). Sem
-     * resetar o singleton antes, essas chamadas comitariam a transacao
-     * nunca-fechada de OUTROS testes do mesmo processo — mesmo raciocinio do
-     * CommitGateTest.php. Os testes abaixo resetam o singleton no inicio e no
-     * fim, e limpam manualmente qualquer fixture que tenha sido comitada.
-     */
-    private function resetSingleton(): void
-    {
-        $prop = new ReflectionProperty(localPDO::class, 'instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
-    }
+    // save() termina em json_response()/basic_redir() (plano 009); os testes
+    // abaixo usam resetSingleton() (DBTestCase) antes/depois pelo mesmo
+    // motivo do CommitGateTest.php, e limpam manualmente qualquer fixture
+    // que tenha sido comitada.
 
     public function testSaveWithNoRedirectReturnsJsonOk(): void
     {
@@ -76,6 +66,9 @@ final class ProfilesFilterTest extends DBTestCase
             ob_start();
             try {
                 (new profiles_controller())->save(['post' => $post]);
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
                 $this->fail('save() deveria ter lancado TerminalResponse');
             } catch (TerminalResponse $e) {
                 ob_get_clean();
