@@ -2,6 +2,11 @@
 $credential = $_SESSION[constant("cAppKey")]["credential"] ?? [];
 $userName   = htmlspecialchars($credential["name"] ?? "Admin", ENT_QUOTES, 'UTF-8');
 $page       = (int)floor($offset / $paginate) + 1;
+$ariaSort   = static fn(string $col): string => match ($ordenation[$col][1]) {
+    'bi bi-caret-up-fill'   => 'ascending',
+    'bi bi-caret-down-fill' => 'descending',
+    default                 => 'none',
+};
 ?>
 
 <div class="manager-layout">
@@ -85,20 +90,20 @@ $page       = (int)floor($offset / $paginate) + 1;
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>
+                                    <th aria-sort="<?php echo $ariaSort('to_mail'); ?>">
                                         <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['to_mail'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="text-decoration-none">
                                             Destinatário <i class="<?php echo $ordenation['to_mail'][1]; ?>" aria-hidden="true"></i>
                                         </a>
                                     </th>
-                                    <th>
+                                    <th aria-sort="<?php echo $ariaSort('subject'); ?>">
                                         <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['subject'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="text-decoration-none">
                                             Assunto <i class="<?php echo $ordenation['subject'][1]; ?>" aria-hidden="true"></i>
                                         </a>
                                     </th>
                                     <th>Corpo</th>
-                                    <th>
+                                    <th aria-sort="<?php echo $ariaSort('sent_at'); ?>">
                                         <a href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['ordenation' => $ordenation['sent_at'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="text-decoration-none">
                                             Enviado <i class="<?php echo $ordenation['sent_at'][1]; ?>" aria-hidden="true"></i>
@@ -126,15 +131,15 @@ $page       = (int)floor($offset / $paginate) + 1;
                     <nav aria-label="Paginação de e-mails">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Anterior</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $page <= 1 ? ' aria-disabled="true" tabindex="-1"' : ''; ?>>Anterior</a>
                             </li>
                             <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
-                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $p; ?></a>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $p === $page ? ' aria-current="page"' : ''; ?>><?php echo $p; ?></a>
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item<?php echo $page >= $totalPages ? ' disabled' : ''; ?>">
-                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (min($totalPages, $page + 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>">Próximo</a>
+                                <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (min($totalPages, $page + 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $page >= $totalPages ? ' aria-disabled="true" tabindex="-1"' : ''; ?>>Próximo</a>
                             </li>
                         </ul>
                     </nav>
