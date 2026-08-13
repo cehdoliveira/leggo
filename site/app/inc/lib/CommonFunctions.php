@@ -134,14 +134,6 @@ function set_url(string $url = "", array $params = []): string
 }
 
 /**
- * Redireciona para outra URL
- * Realiza redirecionamento com código HTTP (302 temporário por padrão).
- *
- * IMPORTANTE: usa header("Location: ...") em vez de JavaScript para garantir
- * que o cookie de sessão seja enviado corretamente e que não haja race condition
- * entre a escrita da sessão no Redis e o próximo request do browser.
- */
-/**
  * Encerra a requisicao. Em producao chama exit(); sob PHPUnit (constante
  * TESTING) lanca TerminalResponse para que o teste possa inspecionar a resposta
  * sem matar o runner. Ver plans/009-*.md.
@@ -156,6 +148,14 @@ function terminate_request(string $kind, array $payload = []): never
   exit();
 }
 
+/**
+ * Redireciona para outra URL
+ * Realiza redirecionamento com código HTTP (302 temporário por padrão).
+ *
+ * IMPORTANTE: usa header("Location: ...") em vez de JavaScript para garantir
+ * que o cookie de sessão seja enviado corretamente e que não haja race condition
+ * entre a escrita da sessão no Redis e o próximo request do browser.
+ */
 function basic_redir(string|array $url, int $code = 302, bool $use_html = false, bool $rollback = false): never
 {
   if (is_array($url)) {
