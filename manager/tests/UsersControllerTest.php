@@ -465,38 +465,38 @@ final class UsersControllerTest extends DBTestCase
     {
         $internal = constant('cFrontend') . 'usuarios?filter_name=foo';
 
-        $this->assertSame($internal, $this->callPrivate('safe_internal_url', [$internal, 'fallback']));
+        $this->assertSame($internal, safe_internal_url($internal, 'fallback'));
     }
 
     public function testSafeInternalUrlRejectsExternalDestination(): void
     {
-        $result = $this->callPrivate('safe_internal_url', ['https://evil.example/', 'fallback']);
+        $result = safe_internal_url('https://evil.example/', 'fallback');
 
         $this->assertSame('fallback', $result, 'URL externa deve cair no fallback — impede open redirect');
     }
 
     public function testSafeInternalUrlRejectsJavascriptUri(): void
     {
-        $result = $this->callPrivate('safe_internal_url', ['javascript:alert(1)', 'fallback']);
+        $result = safe_internal_url('javascript:alert(1)', 'fallback');
 
         $this->assertSame('fallback', $result, 'URI javascript: deve cair no fallback — impede XSS via link Cancelar');
     }
 
     public function testResolveFormatReturnsJsonForJsonSuffix(): void
     {
-        $this->assertSame('.json', $this->callPrivate('resolve_format', [[1 => '.json']]));
+        $this->assertSame('.json', resolve_format([1 => '.json']));
     }
 
     public function testResolveFormatDefaultsToHtml(): void
     {
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[]]));
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[1 => '.html']]));
+        $this->assertSame('.html', resolve_format([]));
+        $this->assertSame('.html', resolve_format([1 => '.html']));
     }
 
     public function testBackUrlFallsBackWhenDoneIsEmpty(): void
     {
-        $this->assertSame('fallback', $this->callPrivate('back_url', [[], 'fallback']));
-        $this->assertSame('fallback', $this->callPrivate('back_url', [['done' => '  '], 'fallback']));
+        $this->assertSame('fallback', back_url([], 'fallback'));
+        $this->assertSame('fallback', back_url(['done' => '  '], 'fallback'));
     }
 
     public function testBackUrlDecodesAndValidatesDone(): void
@@ -504,14 +504,14 @@ final class UsersControllerTest extends DBTestCase
         $internal = constant('cFrontend') . 'usuarios?filter_name=foo';
         $post     = ['done' => rawurlencode($internal)];
 
-        $this->assertSame($internal, $this->callPrivate('back_url', [$post, 'fallback']));
+        $this->assertSame($internal, back_url($post, 'fallback'));
     }
 
     public function testBackUrlRejectsExternalDone(): void
     {
         $post = ['done' => rawurlencode('https://evil.example/')];
 
-        $this->assertSame('fallback', $this->callPrivate('back_url', [$post, 'fallback']), 'done externo tambem deve cair no fallback via back_url');
+        $this->assertSame('fallback', back_url($post, 'fallback'), 'done externo tambem deve cair no fallback via back_url');
     }
 
     public function testJsonSafeReplacesRootLevelNullWithEmptyString(): void

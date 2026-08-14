@@ -7,10 +7,6 @@ declare(strict_types=1);
  * (plano 042/007) — mesma forma de set_filter/execute_raw_prepared que o
  * controller usa, para garantir que o binding com `to_mail LIKE ?` funciona
  * como esperado.
- *
- * Tambem cobre, via reflection (metodo privado), a resolucao de formato
- * .json/.html de display() — mesmo padrao usado em ProfilesFilterTest e
- * UsersControllerTest.
  */
 final class MessagesFilterTest extends DBTestCase
 {
@@ -26,16 +22,6 @@ final class MessagesFilterTest extends DBTestCase
         $this->assertGreaterThan(0, $id, 'Insert de fixture deve retornar um ID valido');
 
         return $id;
-    }
-
-    /** Invoca um metodo privado de emails_controller para testar em isolamento. */
-    private function callPrivate(string $method, array $args = []): mixed
-    {
-        $controller = new emails_controller();
-        $ref        = new ReflectionMethod($controller, $method);
-        $ref->setAccessible(true);
-
-        return $ref->invokeArgs($controller, $args);
     }
 
     public function testFilterByToMailReturnsOnlyMatchingRows(): void
@@ -125,12 +111,12 @@ final class MessagesFilterTest extends DBTestCase
 
     public function testResolveFormatReturnsJsonForJsonSuffix(): void
     {
-        $this->assertSame('.json', $this->callPrivate('resolve_format', [[1 => '.json']]));
+        $this->assertSame('.json', resolve_format([1 => '.json']));
     }
 
     public function testResolveFormatDefaultsToHtml(): void
     {
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[]]));
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[1 => '.html']]));
+        $this->assertSame('.html', resolve_format([]));
+        $this->assertSame('.html', resolve_format([1 => '.html']));
     }
 }
