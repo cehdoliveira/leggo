@@ -46,3 +46,7 @@ VALUES (
         'Leggo Admin',
         'no'
     );
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   DROP TABLE `users`;
+-- DESTRUTIVO: apaga todos os usuarios cadastrados, sem volta.

@@ -7,3 +7,8 @@ UPDATE profiles
    SET editabled = 'no', modified_at = NOW()
  WHERE slug IN ('admin', 'user')
    AND editabled <> 'no';
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   UPDATE profiles SET editabled = 'yes' WHERE slug IN ('admin', 'user');
+-- Risco: reabre a possibilidade de soft-deletar o perfil Administrador pela
+-- tela /perfis.

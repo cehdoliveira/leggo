@@ -90,3 +90,12 @@ SET @ddl5 := IF(
 PREPARE stmt5 FROM @ddl5;
 EXECUTE stmt5;
 DEALLOCATE PREPARE stmt5;
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   ALTER TABLE `users`  DROP INDEX `idx_users_active`;
+--   ALTER TABLE `users`  DROP INDEX `idx_users_name`;
+--   ALTER TABLE `users`  DROP INDEX `idx_users_login`;
+--   ALTER TABLE `users`  DROP INDEX `idx_users_created_at`;
+--   ALTER TABLE `users`  DROP INDEX `idx_users_last_login`;
+-- Reverter e seguro: nenhum dado e afetado, so o plano de execucao das
+-- consultas.
