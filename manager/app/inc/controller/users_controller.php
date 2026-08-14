@@ -101,12 +101,6 @@ class users_controller
         return $row;
     }
 
-    /** Resolve o formato de resposta a partir do path capturado pela rota. */
-    private function resolve_format(array $info): string
-    {
-        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
-    }
-
     public function display(array $info): void
     {
         global $users_url, $newuser_url, $user_url, $removeuser_url;
@@ -115,7 +109,7 @@ class users_controller
             $_SESSION['_csrf_token'] = random_token();
         }
 
-        $format   = $this->resolve_format($info);
+        $format   = resolve_format($info);
         $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
@@ -242,7 +236,7 @@ class users_controller
             "title"     => "Cadastrar Usuário",
             "url"       => $newuser_url,
             "done"      => $done,
-            "cancelUrl" => $this->back_url($info['get'] ?? [], $users_url),
+            "cancelUrl" => back_url($info['get'] ?? [], $users_url),
         ];
 
         if ($idx > 0) {
@@ -282,7 +276,7 @@ class users_controller
 
         $slug    = $info[1] ?? null;
         $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
-        $backUrl = $this->back_url($post, $users_url);
+        $backUrl = back_url($post, $users_url);
 
         // $slug !== null mas idx_by_slug() devolveu 0 = link para um slug que
         // não existe (mais). Sem este guard, o código abaixo cai no ramo de
@@ -387,7 +381,7 @@ class users_controller
 
         $slug    = $info[1] ?? null;
         $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
-        $backUrl = $this->back_url($post, $users_url);
+        $backUrl = back_url($post, $users_url);
 
         $adminId  = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
         $rollback = false;
@@ -533,24 +527,4 @@ class users_controller
         return (int)current($found);
     }
 
-    /** URL de volta que o formulário carregou, ou a listagem padrão. */
-    private function back_url(array $post, string $fallback): string
-    {
-        $done = trim((string)($post['done'] ?? ''));
-        if ($done === '') {
-            return $fallback;
-        }
-
-        return $this->safe_internal_url(rawurldecode($done), $fallback);
-    }
-
-    /**
-     * Só aceita destino interno — impede open redirect e URI perigosa
-     * (ex. `javascript:`) via campo do formulário. Usado tanto no redirect de
-     * POST (back_url()) quanto no link "Cancelar" do form (GET).
-     */
-    private function safe_internal_url(string $url, string $fallback): string
-    {
-        return str_starts_with($url, constant("cFrontend")) ? $url : $fallback;
-    }
 }
