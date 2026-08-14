@@ -121,7 +121,7 @@ $ordenation[$column] = ordenation_header($column, ...);               → idênt
 | Método | Aparece em | Classificação | O que difere (se "quase") |
 |---|---|---|---|
 | `filter` | profiles, users, emails | quase | Forma idêntica (`[$done, $filter, $params]`, escape com `addcslashes`); as colunas e condições WHERE são da entidade (ex.: subquery M2M só em `users`) |
-| `available_parents` / `available_profiles` | profiles, users | quase | Só o model (`profiles_model` nos dois — é sempre o mesmo model de perfis, só muda o nome do método e o comentário) |
+| `available_parents` / `available_profiles` | profiles, users | **idêntico** | Corpo 100% byte-a-byte igual nos dois (confirmado em `profiles_controller.php:68-71` e `users_controller.php:80-83`): ambos chamam `(new profiles_model())->data4select(...)` — só o nome do método muda, não o model |
 | `json_safe` | users | específico irredutível | Só existe em `users` porque só ali há `attach()` trazendo colunas nulas para o JSON |
 | `resolve_format` | profiles, users, emails | **idêntico** | — |
 | `display` | profiles, users, emails | quase | Esqueleto igual (format, paginate clamp, `resolve_ordenation`, try/`set_field`/`set_filter`/`set_order`/`set_paginate`/`return_data`, `json_response`, loop de `$ordenation`, `$totalPages`); diferem CSRF-init (só profiles/users), contadores agregados (só users), `attach()` (só users), `json_safe` no JSON (só users), chaves de `$form['pattern']`, `$alpineControllers`, nomes de template incluído |
@@ -153,6 +153,10 @@ só o "de qual tabela" muda.
 - `back_url()` — 2 cópias byte-a-byte (falta em emails porque emails não tem
   formulário).
 - `safe_internal_url()` — 2 cópias byte-a-byte.
+- `available_parents()`/`available_profiles()` — corpo 100% byte-a-byte
+  idêntico (mesma chamada a `profiles_model()`, só o nome do método muda). Não
+  entra na lista de extração do Step 4: o corpo já é uma única linha, extrair
+  para `lib/` trocaria uma chamada de 1 linha por outra sem reduzir código.
 - Dentro de `display()`: a linha de clamp de `$paginate`, a linha de
   `$totalPages`, o loop de `$ordenation`, o comentário sobre `return_data()`.
   Não têm nome de método próprio hoje — vivem soltos dentro do corpo.
@@ -201,20 +205,27 @@ só o "de qual tabela" muda.
 ### 1. Onde fica a autorização?
 
 **Resposta: (a) — authz continua 100% no controller, fora de qualquer
-scaffold.** Os guards medidos acima (`is_editabled`, auto-remoção,
-auto-demoção de admin) são de três formas diferentes — um bloqueia
-completamente, outro nega uma ação específica, o terceiro nega parcialmente
-(mantém vínculos como estavam, mas segue salvando o resto). Um motor de
-authz por config precisaria de pelo menos três primitivas diferentes para
-cobrir os três casos já existentes, com apenas duas entidades de exemplo — é
-generalizar cedo demais. O custo de manter (a): cada entidade nova reexplicita
-seu guard, mas ele fica **legível na primeira leitura do arquivo**, que é
-justamente o que os planos 005/006 valorizam ("os guards de hoje são
-explícitos e legíveis"). A opção (b) (config resolve authz) esconderia
-precisamente o que security review precisa achar rápido; a opção (c) (hook
-`guard()`) foi considerada, mas com 3 guards de formato diferente ela só empurra
-a mesma lógica para dentro de um método com nome padronizado, sem eliminar
-código — não paga o custo de mais uma camada de indireção.
+scaffold.**
+
+Os guards medidos acima (`is_editabled`, auto-remoção, auto-demoção de admin)
+são de três formas diferentes — um bloqueia completamente, outro nega uma ação
+específica, o terceiro nega parcialmente (mantém vínculos como estavam, mas
+segue salvando o resto).
+
+- **(a) authz 100% no controller (escolhida)** — cada entidade nova
+  reexplicita seu guard, mas ele fica **legível na primeira leitura do
+  arquivo**, que é justamente o que os planos 005/006 valorizam ("os guards de
+  hoje são explícitos e legíveis"). Custo: nenhuma reutilização do guard em si.
+- **(b) authz declarada em config, motor aplica** — esconderia precisamente o
+  que security review precisa achar rápido; descartada.
+- **(c) motor com hook `guard()` que a entidade implementa** — considerada,
+  mas com 3 guards de formato diferente ela só empurra a mesma lógica para
+  dentro de um método com nome padronizado, sem eliminar código — não paga o
+  custo de mais uma camada de indireção.
+
+Um motor de authz por config precisaria de pelo menos três primitivas
+diferentes para cobrir os três casos já existentes, com apenas duas entidades
+de exemplo — é generalizar cedo demais.
 
 ### 2. Motor em runtime ou gerador de código?
 
@@ -250,16 +261,16 @@ seria design especulativo.
 
 ## Step 4: Recomendação
 
-**Não fazer o scaffold (motor nem gerador) agora — extrair só os 4 helpers que
+**Não fazer o scaffold (motor nem gerador) agora — extrair só os 3 helpers que
 já são boilerplate puro, e parar aí.**
 
 ### Por que "não fazer" — sustentado pelos números do Step 1/2, não por gosto
 
 - Boilerplate **puro** (o único que se extrai sem risco de esconder algo
-  específico) é pequeno: 4 métodos (`resolve_format`, `back_url`,
-  `safe_internal_url`, mais `idx_by_slug` parametrizado por classe do model) e
-  4 linhas soltas dentro de `display()`. Isso é uma extração de dezenas de
-  linhas, não centenas.
+  específico) é pequeno: 3 métodos (`resolve_format`, `back_url`,
+  `safe_internal_url`) e 4 linhas soltas dentro de `display()`. `idx_by_slug`
+  foi avaliado como 4º candidato mas fica de fora da extração — ver justificativa
+  abaixo. Isso é uma extração de dezenas de linhas, não centenas.
 - O boilerplate **parametrizável** (o esqueleto de `display/form/save/remove`)
   é real e mede ~260 linhas idênticas entre profiles e users — mas ele está
   **entrelaçado** com o específico irredutível linha a linha dentro do mesmo
