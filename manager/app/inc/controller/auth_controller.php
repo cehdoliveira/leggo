@@ -10,6 +10,66 @@ class auth_controller
         }
     }
 
+    /**
+     * O usuario logado tem a capacidade pedida?
+     *
+     * FATIA 2 (modo log): para quem JA esta logado, esta funcao nunca nega —
+     * ela registra o que negaria e devolve true. Serve para descobrir seed
+     * incompleto ou rota mapeada no slug errado antes de bloquear alguem.
+     * O plano 022 troca o `return true` final por `return false`.
+     *
+     * A checagem de sessao (check_login) e separada e NUNCA e afrouxada:
+     * requisicao sem login e negada em qualquer fatia.
+     *
+     * Regra de compatibilidade permanente: um perfil ativo com adm = 'yes'
+     * vale por todas as capacidades, sem consultar profiles_capabilities.
+     */
+    public static function can(string $capability): bool
+    {
+        if (!self::check_login()) {
+            return false;
+        }
+
+        $userId = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+
+        foreach (self::access_rows($userId) as $row) {
+            if (($row["adm"] ?? 'no') === 'yes') {
+                return true;
+            }
+            if (($row["slug"] ?? null) === $capability) {
+                return true;
+            }
+        }
+
+        Logger::getInstance()->warning("capacidade negada (modo log, nao bloqueou)", [
+            "capability" => $capability,
+            "user"       => $userId,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Perfis ativos do usuario e as capacidades ativas de cada um, numa query.
+     * LEFT JOIN: um perfil sem nenhuma capacidade ainda devolve uma linha, com
+     * slug nulo — e por ela que o bypass de adm = 'yes' funciona.
+     */
+    private static function access_rows(int $userId): array
+    {
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $sql = "SELECT p.adm AS adm, c.slug AS slug
+                  FROM users_profiles up
+                  JOIN profiles p ON p.idx = up.profiles_id AND p.active = 'yes'
+                  LEFT JOIN profiles_capabilities pc ON pc.profiles_id = p.idx AND pc.active = 'yes'
+                  LEFT JOIN capabilities c ON c.idx = pc.capabilities_id AND c.active = 'yes'
+                 WHERE up.active = 'yes' AND up.users_id = ?";
+
+        return (new profiles_model())->execute_raw_prepared($sql, [$userId])->fetchAll();
+    }
+
 	public function logout(array $info): never
 	{
 		validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["home_url"]);
