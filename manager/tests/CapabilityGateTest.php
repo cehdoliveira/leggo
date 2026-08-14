@@ -59,6 +59,20 @@ final class CapabilityGateTest extends DBTestCase
         );
     }
 
+    /**
+     * Chama auth_controller::access_rows() (private static) via reflection.
+     * No modo log, can() sempre devolve true para quem tem sessao — entao os
+     * testes de bypass/match precisam inspecionar as linhas de verdade, nao
+     * so o retorno agregado de can().
+     */
+    private function accessRows(int $userId): array
+    {
+        $method = new ReflectionMethod(auth_controller::class, 'access_rows');
+        $method->setAccessible(true);
+
+        return $method->invoke(null, $userId);
+    }
+
     protected function tearDown(): void
     {
         unset($_SESSION[constant('cAppKey')]);
@@ -78,6 +92,12 @@ final class CapabilityGateTest extends DBTestCase
         $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
 
         $this->assertTrue(auth_controller::can('usuarios.ler'));
+
+        // No modo log, can() devolveria true de qualquer jeito — confirma que
+        // e de fato o bypass adm='yes' (e nao so o fallback) quem responde.
+        $rows = $this->accessRows($userId);
+        $this->assertNotEmpty($rows, 'access_rows() deveria trazer o perfil recem-criado');
+        $this->assertSame('yes', $rows[0]['adm'] ?? null);
     }
 
     public function testAceitaPerfilNaoAdmComCapacidade(): void
@@ -88,6 +108,13 @@ final class CapabilityGateTest extends DBTestCase
         $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
 
         $this->assertTrue(auth_controller::can('emails.ler'));
+
+        // No modo log, can() devolveria true de qualquer jeito — confirma que
+        // o grant() de fato criou a linha com o slug esperado (e nao o bypass
+        // de adm, que aqui e 'no').
+        $rows = $this->accessRows($userId);
+        $this->assertSame('no', $rows[0]['adm'] ?? null);
+        $this->assertContains('emails.ler', array_column($rows, 'slug'));
     }
 
     public function testModoLogAceitaPerfilNaoAdmSemCapacidade(): void
