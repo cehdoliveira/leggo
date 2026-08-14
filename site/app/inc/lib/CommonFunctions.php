@@ -942,4 +942,72 @@ function ordenation_header(string $column, string $currentColumn, string $curren
   return [$column . '-asc', 'bi bi-caret-down-fill'];
 }
 
+/**
+ * Valida CPF pelo digito verificador. Aceita com ou sem mascara.
+ * Rejeita comprimento diferente de 11 e sequencias de digito repetido
+ * (00000000000, 11111111111, ...), que passam no calculo mas nao sao validas.
+ */
+function validate_cpf(?string $value): bool
+{
+  $cpf = preg_replace('/\D/', '', (string) $value);
+
+  if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf) === 1) {
+    return false;
+  }
+
+  $soma = 0;
+  for ($i = 0; $i < 9; $i++) {
+    $soma += (int) $cpf[$i] * (10 - $i);
+  }
+  $resto = $soma % 11;
+  $dv1   = $resto < 2 ? 0 : 11 - $resto;
+  if ($dv1 !== (int) $cpf[9]) {
+    return false;
+  }
+
+  $soma = 0;
+  for ($i = 0; $i < 10; $i++) {
+    $soma += (int) $cpf[$i] * (11 - $i);
+  }
+  $resto = $soma % 11;
+  $dv2   = $resto < 2 ? 0 : 11 - $resto;
+
+  return $dv2 === (int) $cpf[10];
+}
+
+/**
+ * Valida CNPJ pelo digito verificador. Aceita com ou sem mascara.
+ * Rejeita comprimento diferente de 14 e sequencias de digito repetido,
+ * que passam no calculo mas nao sao validas.
+ */
+function validate_cnpj(?string $value): bool
+{
+  $cnpj = preg_replace('/\D/', '', (string) $value);
+
+  if (strlen($cnpj) !== 14 || preg_match('/^(\d)\1{13}$/', $cnpj) === 1) {
+    return false;
+  }
+
+  $pesosDv1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  $soma     = 0;
+  foreach ($pesosDv1 as $i => $peso) {
+    $soma += (int) $cnpj[$i] * $peso;
+  }
+  $resto = $soma % 11;
+  $dv1   = $resto < 2 ? 0 : 11 - $resto;
+  if ($dv1 !== (int) $cnpj[12]) {
+    return false;
+  }
+
+  $pesosDv2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  $soma     = 0;
+  foreach ($pesosDv2 as $i => $peso) {
+    $soma += (int) $cnpj[$i] * $peso;
+  }
+  $resto = $soma % 11;
+  $dv2   = $resto < 2 ? 0 : 11 - $resto;
+
+  return $dv2 === (int) $cnpj[13];
+}
+
 
