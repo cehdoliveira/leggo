@@ -49,6 +49,33 @@ final class DolModelWriteTest extends DBTestCase
     }
 
     /**
+     * load_data() consome o filtro como leitura, nao como intencao de escrita:
+     * uma leitura anterior na mesma instancia nao pode fazer save() decidir
+     * UPDATE por engano. Protege contra o efeito colateral de set_filter()
+     * chamado internamente por metodos como data4select()/_current_data()/
+     * _list_data() (achado do review em DOLModel.php:114, plano 013).
+     */
+    public function testSaveAfterLoadDataOnSameInstanceStillInsertsWithoutNewSetFilter(): void
+    {
+        $probe = new users_model();
+        $probe->set_field([" idx "]);
+        $probe->set_filter(["active = 'yes'"]);
+        $probe->set_paginate([1]);
+        $probe->load_data();
+
+        $probe->populate([
+            'name'     => 'Write Test User',
+            'mail'     => 'dolmodel_write_' . uniqid() . '@example.com',
+            'login'    => 'dolmodel_write_' . uniqid(),
+            'password' => password_hash('secret', PASSWORD_BCRYPT),
+        ]);
+        $result = $probe->save();
+
+        $this->assertIsInt($result, 'save() apos load_data() sem novo set_filter() deve inserir, nao fazer UPDATE em massa');
+        $this->assertGreaterThan(0, $result);
+    }
+
+    /**
      * Protege a decisao INSERT/UPDATE de save(): chamar set_filter() e o que
      * marca "estou mirando linhas existentes" (filterWasSet), nao o texto do
      * filtro. Um filtro estreito ("idx=?", sem espaco) tem que virar UPDATE

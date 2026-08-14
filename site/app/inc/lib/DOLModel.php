@@ -330,6 +330,15 @@ class DOLModel extends rootOBJ
 		} else {
 			$this->set_recordset(count($this->data));
 		}
+
+		// load_data() consome o filtro atual como leitura, nao como intencao
+		// de escrita. Sem isto, _list_data()/data4select()/_current_data()
+		// (que chamam set_filter() internamente para montar a propria query)
+		// deixariam filterWasSet=true como efeito colateral, e um save()
+		// seguinte na mesma instancia faria UPDATE com o filtro que sobrou da
+		// leitura em vez de INSERT (ver plano 013, achado do review em
+		// DOLModel.php:114).
+		$this->filterWasSet = false;
 	}
 
 	/**
