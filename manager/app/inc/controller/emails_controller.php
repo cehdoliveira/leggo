@@ -44,17 +44,11 @@ class emails_controller
         return [$done, $filter, $params];
     }
 
-    /** Resolve o formato de resposta a partir do path capturado pela rota. */
-    private function resolve_format(array $info): string
-    {
-        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
-    }
-
     public function display(array $info): void
     {
         global $emails_url;
 
-        $format   = $this->resolve_format($info);
+        $format   = resolve_format($info);
         $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
