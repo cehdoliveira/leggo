@@ -51,52 +51,62 @@ final class DolModelWriteTest extends DBTestCase
     /**
      * Protege a decisao INSERT/UPDATE de save(): chamar set_filter() e o que
      * marca "estou mirando linhas existentes" (filterWasSet), nao o texto do
-     * filtro. Sem espaco em volta do "=" nao pode fazer save() decidir
-     * diferente de com espaco — ver plano 013.
+     * filtro. Um filtro estreito ("idx=?", sem espaco) tem que virar UPDATE
+     * na linha certa, do mesmo jeito que a versao com espacos — ver plano 013.
      */
-    public function testSaveWithFilterEqualsDefaultActiveNoSpacesDoesNotMassUpdate(): void
+    public function testSaveWithNarrowIdxFilterNoSpacesUpdatesOnlyTargetRow(): void
     {
         $idA = $this->newTestUser();
         $idB = $this->newTestUser();
 
         $model = new users_model();
-        $model->set_filter(["active='yes'"]);
-        $model->populate(['name' => 'ALTERADO']);
-        $model->save();
+        $model->set_filter(["idx=?"], [$idA]);
+        $model->populate(['name' => 'Renomeado A']);
+        $result = $model->save();
 
-        $reload = new users_model();
-        $reload->set_field([" idx ", " name "]);
-        $reload->set_filter(["idx in (?, ?)"], [$idA, $idB]);
-        $reload->load_data();
+        $this->assertIsNotInt($result, 'set_filter() chamado deve fazer save() tomar o ramo UPDATE, nao INSERT');
 
-        foreach ($reload->data as $row) {
-            $this->assertNotSame('ALTERADO', $row['name'], 'save() nao pode fazer UPDATE em massa quando o filtro so imita o default');
-        }
+        $reloadA = new users_model();
+        $reloadA->set_field([" idx ", " name "]);
+        $reloadA->set_filter(["idx = ?"], [$idA]);
+        $reloadA->load_data();
+        $this->assertSame('Renomeado A', $reloadA->data[0]['name'], 'save() deve atualizar a linha alvo do filtro');
+
+        $reloadB = new users_model();
+        $reloadB->set_field([" idx ", " name "]);
+        $reloadB->set_filter(["idx = ?"], [$idB]);
+        $reloadB->load_data();
+        $this->assertSame('Write Test User', $reloadB->data[0]['name'], 'save() nao pode afetar linha fora do filtro');
     }
 
     /**
-     * Par do teste acima com a string exata da heuristica antiga (com espacos
-     * em volta do "="). Prova que a decisao de save() nao depende mais de
-     * formatacao do filtro — ver plano 013.
+     * Par do teste acima com espacos em volta de "=" e "?". Prova que a
+     * decisao de save() (UPDATE na linha certa) nao depende de formatacao do
+     * filtro — ver plano 013.
      */
-    public function testSaveWithFilterEqualsDefaultActiveWithSpacesDoesNotMassUpdate(): void
+    public function testSaveWithNarrowIdxFilterWithSpacesUpdatesOnlyTargetRow(): void
     {
         $idA = $this->newTestUser();
         $idB = $this->newTestUser();
 
         $model = new users_model();
-        $model->set_filter([" active = 'yes' "]);
-        $model->populate(['name' => 'ALTERADO']);
-        $model->save();
+        $model->set_filter([" idx = ? "], [$idA]);
+        $model->populate(['name' => 'Renomeado A']);
+        $result = $model->save();
 
-        $reload = new users_model();
-        $reload->set_field([" idx ", " name "]);
-        $reload->set_filter(["idx in (?, ?)"], [$idA, $idB]);
-        $reload->load_data();
+        $this->assertIsNotInt($result, 'set_filter() chamado deve fazer save() tomar o ramo UPDATE, nao INSERT');
 
-        foreach ($reload->data as $row) {
-            $this->assertNotSame('ALTERADO', $row['name'], 'save() nao pode fazer UPDATE em massa quando o filtro so imita o default');
-        }
+        $reloadA = new users_model();
+        $reloadA->set_field([" idx ", " name "]);
+        $reloadA->set_filter(["idx = ?"], [$idA]);
+        $reloadA->load_data();
+        $this->assertSame('Renomeado A', $reloadA->data[0]['name'], 'save() deve atualizar a linha alvo do filtro');
+
+        $reloadB = new users_model();
+        $reloadB->set_field([" idx ", " name "]);
+        $reloadB->set_filter(["idx = ?"], [$idB]);
+        $reloadB->load_data();
+        $this->assertSame('Write Test User', $reloadB->data[0]['name'], 'save() nao pode afetar linha fora do filtro');
     }
 
     public function testSaveUpdatesExistingRowAndTouchesModifiedAt(): void
