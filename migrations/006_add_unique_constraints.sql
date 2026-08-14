@@ -46,3 +46,9 @@ SET @ddl2 := IF(
 PREPARE stmt2 FROM @ddl2;
 EXECUTE stmt2;
 DEALLOCATE PREPARE stmt2;
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   ALTER TABLE `profiles`  DROP INDEX `slug`;
+--   ALTER TABLE `users_profiles`  DROP INDEX `uq_users_profiles`;
+-- Risco: reabre a porta para duplicatas; os seeds voltam a poder duplicar
+-- em uma reexecucao.

@@ -230,6 +230,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 - Auto-run via cron (`docker/interface/crontab`) every 5 minutes against the site environment, guarded by `flock -n` (skip overlapping tick) plus a `GET_LOCK` inside `MigrationRunner` (defense in depth).
 - Idempotent — already-executed migrations are tracked in the `migrations_log` table and skipped.
 - Manual run: `docker exec leggo php /var/www/leggo/site/cgi-bin/run_migrations.php`
+- Every migration ends with a `-- ROLLBACK MANUAL:` comment block listing the exact commands to undo it, plus one line on what reverting costs. The runner has no `down` support — the block is the runbook. `UPDATE`/`DELETE` inside it always carry a `WHERE`.
 
 ## Releases
 

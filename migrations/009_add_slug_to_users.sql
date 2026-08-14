@@ -45,3 +45,9 @@ SET @ddl2 := IF(
 PREPARE stmt2 FROM @ddl2;
 EXECUTE stmt2;
 DEALLOCATE PREPARE stmt2;
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   ALTER TABLE `users`  DROP INDEX `slug_UNIQUE`;
+--   ALTER TABLE `users`  DROP COLUMN `slug`;
+-- Risco: as URLs /usuario/<slug> param de funcionar; os slugs gerados sao
+-- perdidos (regeneraveis, mas com valores diferentes).
