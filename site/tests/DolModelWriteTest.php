@@ -34,6 +34,71 @@ final class DolModelWriteTest extends DBTestCase
         return $id;
     }
 
+    public function testSaveInsertsNewRowWithoutSetFilter(): void
+    {
+        $id = $this->newTestUser();
+
+        $reload = new users_model();
+        $reload->set_field([" idx ", " created_at "]);
+        $reload->set_filter(["idx = ?"], [$id]);
+        $reload->set_paginate([1]);
+        $reload->load_data();
+
+        $this->assertCount(1, $reload->data, 'save() sem set_filter() deve inserir a linha');
+        $this->assertNotNull($reload->data[0]['created_at'], 'save() no ramo INSERT deve preencher created_at');
+    }
+
+    /**
+     * Protege a decisao INSERT/UPDATE de save(): chamar set_filter() e o que
+     * marca "estou mirando linhas existentes" (filterWasSet), nao o texto do
+     * filtro. Sem espaco em volta do "=" nao pode fazer save() decidir
+     * diferente de com espaco — ver plano 013.
+     */
+    public function testSaveWithFilterEqualsDefaultActiveNoSpacesDoesNotMassUpdate(): void
+    {
+        $idA = $this->newTestUser();
+        $idB = $this->newTestUser();
+
+        $model = new users_model();
+        $model->set_filter(["active='yes'"]);
+        $model->populate(['name' => 'ALTERADO']);
+        $model->save();
+
+        $reload = new users_model();
+        $reload->set_field([" idx ", " name "]);
+        $reload->set_filter(["idx in (?, ?)"], [$idA, $idB]);
+        $reload->load_data();
+
+        foreach ($reload->data as $row) {
+            $this->assertNotSame('ALTERADO', $row['name'], 'save() nao pode fazer UPDATE em massa quando o filtro so imita o default');
+        }
+    }
+
+    /**
+     * Par do teste acima com a string exata da heuristica antiga (com espacos
+     * em volta do "="). Prova que a decisao de save() nao depende mais de
+     * formatacao do filtro — ver plano 013.
+     */
+    public function testSaveWithFilterEqualsDefaultActiveWithSpacesDoesNotMassUpdate(): void
+    {
+        $idA = $this->newTestUser();
+        $idB = $this->newTestUser();
+
+        $model = new users_model();
+        $model->set_filter([" active = 'yes' "]);
+        $model->populate(['name' => 'ALTERADO']);
+        $model->save();
+
+        $reload = new users_model();
+        $reload->set_field([" idx ", " name "]);
+        $reload->set_filter(["idx in (?, ?)"], [$idA, $idB]);
+        $reload->load_data();
+
+        foreach ($reload->data as $row) {
+            $this->assertNotSame('ALTERADO', $row['name'], 'save() nao pode fazer UPDATE em massa quando o filtro so imita o default');
+        }
+    }
+
     public function testSaveUpdatesExistingRowAndTouchesModifiedAt(): void
     {
         $id = $this->newTestUser();
