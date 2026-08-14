@@ -34,6 +34,8 @@ if (!class_exists('rootOBJ')) {
 		protected ?string $direct_query = null;
 		protected array $values = [];
 		protected array $filterParams = [];
+		/** True quando set_filter() foi chamado — e o que faz save() virar UPDATE. */
+		protected bool $filterWasSet = false;
 
 		public function __call(string $method, array $paramters): mixed
 		{

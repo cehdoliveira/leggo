@@ -107,9 +107,11 @@ class DOLModel extends rootOBJ
 			$params[] = $val;
 		}
 
-		// Se o filtro for APENAS o default "active = 'yes'" (definido na classe do model),
-		// trata como INSERT, nao UPDATE — mesma logica do codigo original.
-		$isUpdateFilter = !(count($this->filter) === 1 && ltrim(rtrim($this->filter[0])) === "active = 'yes'");
+		// UPDATE somente quando o caller mirou linhas existentes via set_filter().
+		// Sem set_filter(), o filtro em uso e o default declarado na classe do
+		// model ("active = 'yes'"), que nao identifica linha nenhuma — logo e
+		// INSERT.
+		$isUpdateFilter = $this->filterWasSet;
 
 		if ($isUpdateFilter) {
 			$fi = " where " . implode(" and ", $this->filter) . " ";
@@ -182,6 +184,11 @@ class DOLModel extends rootOBJ
 	{
 		$this->filter = $conditions;
 		$this->filterParams = $params;
+		// Chamar set_filter() e o que declara "estou mirando linhas existentes".
+		// save() usa isso para escolher UPDATE em vez de INSERT — antes essa
+		// decisao era tomada comparando o texto do filtro com uma string
+		// literal, e um espaco a mais virava UPDATE em massa (ver plano 013).
+		$this->filterWasSet = true;
 	}
 
 	public function populate(array $data, bool $encode = false)
@@ -323,6 +330,15 @@ class DOLModel extends rootOBJ
 		} else {
 			$this->set_recordset(count($this->data));
 		}
+
+		// load_data() consome o filtro atual como leitura, nao como intencao
+		// de escrita. Sem isto, _list_data()/data4select()/_current_data()
+		// (que chamam set_filter() internamente para montar a propria query)
+		// deixariam filterWasSet=true como efeito colateral, e um save()
+		// seguinte na mesma instancia faria UPDATE com o filtro que sobrou da
+		// leitura em vez de INSERT (ver plano 013, achado do review em
+		// DOLModel.php:114).
+		$this->filterWasSet = false;
 	}
 
 	/**
