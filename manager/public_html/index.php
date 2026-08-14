@@ -57,7 +57,12 @@ $params = [
 ];
 
 $dispatcher = new Dispatcher(true);
-$authGuard  = fn() => auth_controller::check_login();
+// Guard por capacidade. O Dispatcher avalia qualquer callable no 4o argumento
+// de add_route() (Dispatcher::evaluateCheck), entao o guard e so um valor —
+// nenhuma mudanca no roteador. O slug e literal aqui no codigo; o banco so e
+// consultado dentro de can(), para saber se o perfil do usuario tem aquela
+// capacidade.
+$can = fn(string $capability): callable => fn(): bool => auth_controller::can($capability);
 
 $dispatcher->add_route("GET", "/(index(\.json|\.xml|\.html)).*?", "function:basic_redir", null, $home_url);
 
@@ -69,34 +74,34 @@ $dispatcher->add_route("POST", "/login(\.json|\.xml|\.html)?", "auth_controller:
 $dispatcher->add_route("POST", "/sair", "auth_controller:logout", null, $params);
 
 // Cadastro de novo usuário admin (requer autenticação)
-$dispatcher->add_route("GET",  "/cadastro(\.json|\.xml|\.html)?", "auth_controller:display_register", $authGuard, $params);
-$dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controller:register",         $authGuard, $params);
+$dispatcher->add_route("GET",  "/cadastro(\.json|\.xml|\.html)?", "auth_controller:display_register", $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controller:register",         $can('usuarios.escrever'), $params);
 
 // Definição de senha para novos usuários (público — usuário ainda não autenticado)
 $dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
 $dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
 
 // Usuários — padrão display/form/save/remove (requer autenticação)
-$dispatcher->add_route("GET",  "/?",                              "users_controller:display", $authGuard, $params);
-$dispatcher->add_route("GET",  "/admin",                          "users_controller:display", $authGuard, $params);
-$dispatcher->add_route("GET",  "/usuarios(\.json|\.html)?",       "users_controller:display", $authGuard, $params);
-$dispatcher->add_route("POST", "/usuarios",                       "users_controller:action",  $authGuard, $params);
-$dispatcher->add_route("GET",  "/novo-usuario",                   "users_controller:form",    $authGuard, $params);
-$dispatcher->add_route("POST", "/novo-usuario",                   "users_controller:save",    $authGuard, $params);
-$dispatcher->add_route("GET",  "/usuario/([a-z0-9_-]+)",          "users_controller:form",    $authGuard, $params);
-$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)",          "users_controller:save",    $authGuard, $params);
-$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)/remover",  "users_controller:remove",  $authGuard, $params);
+$dispatcher->add_route("GET",  "/?",                              "users_controller:display", $can('usuarios.ler'), $params);
+$dispatcher->add_route("GET",  "/admin",                          "users_controller:display", $can('usuarios.ler'), $params);
+$dispatcher->add_route("GET",  "/usuarios(\.json|\.html)?",       "users_controller:display", $can('usuarios.ler'), $params);
+$dispatcher->add_route("POST", "/usuarios",                       "users_controller:action",  $can('usuarios.escrever'), $params);
+$dispatcher->add_route("GET",  "/novo-usuario",                   "users_controller:form",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/novo-usuario",                   "users_controller:save",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("GET",  "/usuario/([a-z0-9_-]+)",          "users_controller:form",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)",          "users_controller:save",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)/remover",  "users_controller:remove",  $can('usuarios.escrever'), $params);
 
 // Outbox de e-mails — somente leitura (requer autenticação)
-$dispatcher->add_route("GET", "/emails(\.json|\.html)?", "emails_controller:display", $authGuard, $params);
+$dispatcher->add_route("GET", "/emails(\.json|\.html)?", "emails_controller:display", $can('emails.ler'), $params);
 
 // Perfis — padrão display/form/save/remove (requer autenticação)
-$dispatcher->add_route("GET",  "/perfis(\.json|\.html)?",        "profiles_controller:display", $authGuard, $params);
-$dispatcher->add_route("GET",  "/novo-perfil",                   "profiles_controller:form",    $authGuard, $params);
-$dispatcher->add_route("POST", "/novo-perfil",                   "profiles_controller:save",    $authGuard, $params);
-$dispatcher->add_route("GET",  "/perfil/([a-z0-9_-]+)",          "profiles_controller:form",    $authGuard, $params);
-$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)",          "profiles_controller:save",    $authGuard, $params);
-$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)/remover",  "profiles_controller:remove",  $authGuard, $params);
+$dispatcher->add_route("GET",  "/perfis(\.json|\.html)?",        "profiles_controller:display", $can('perfis.ler'), $params);
+$dispatcher->add_route("GET",  "/novo-perfil",                   "profiles_controller:form",    $can('perfis.escrever'), $params);
+$dispatcher->add_route("POST", "/novo-perfil",                   "profiles_controller:save",    $can('perfis.escrever'), $params);
+$dispatcher->add_route("GET",  "/perfil/([a-z0-9_-]+)",          "profiles_controller:form",    $can('perfis.escrever'), $params);
+$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)",          "profiles_controller:save",    $can('perfis.escrever'), $params);
+$dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)/remover",  "profiles_controller:remove",  $can('perfis.escrever'), $params);
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
