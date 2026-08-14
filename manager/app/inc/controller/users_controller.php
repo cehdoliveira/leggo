@@ -351,15 +351,10 @@ class users_controller
 
             if ($keepOwnAdminAccess) {
                 // Vínculos do próprio admin permanecem como estavam.
-            } elseif ($profileIds !== []) {
-                $model->save_attach(['idx' => $idx, 'post' => ['profiles_id' => $profileIds]], ['profiles']);
             } else {
-                // save_attach() não age com lista vazia (DOLModel.php:498) — sem
-                // isto, desmarcar todos os perfis não desvincularia nada.
-                $model->execute_raw_prepared(
-                    "UPDATE users_profiles SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND users_id = ?",
-                    [$loggedInId, $idx]
-                );
+                // Lista vazia desvincula tudo — save_attach() trata isso desde o
+                // plano 012.
+                $model->save_attach(['idx' => $idx, 'post' => ['profiles_id' => $profileIds]], ['profiles']);
             }
 
             $_SESSION["messages_app"]["success"] = [$slug !== null ? "Usuário atualizado com sucesso." : "Usuário criado com sucesso."];

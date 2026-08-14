@@ -589,19 +589,24 @@ class DOLModel extends rootOBJ
 					$varexecute[] = $execute;
 				}
 
+				$junctionTable = sprintf(
+					" %s_%s ",
+					$reverse_table ? $class : $this->table,
+					$reverse_table ? $this->table : $class
+				);
+				$tableIdCol = sprintf(" %s_id ", $this->table);
+
+				// Desativa os vinculos atuais SEMPRE que a chave foi enviada,
+				// inclusive com lista vazia — "desmarquei todos" e uma operacao
+				// valida e tem que desvincular. O guard `isset()` acima e o que
+				// distingue "nao enviou o campo" (nao mexe) de "enviou vazio"
+				// (desvincula tudo).
+				$this->con->executePrepared(
+					"UPDATE {$junctionTable} SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND {$tableIdCol} = ?",
+					[$userId, $info["idx"]]
+				);
+
 				if (count($varexecute)) {
-					$junctionTable = sprintf(
-						" %s_%s ",
-						$reverse_table ? $class : $this->table,
-						$reverse_table ? $this->table : $class
-					);
-					$tableIdCol = sprintf(" %s_id ", $this->table);
-
-					$this->con->executePrepared(
-						"UPDATE {$junctionTable} SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND {$tableIdCol} = ?",
-						[$userId, $info["idx"]]
-					);
-
 					$classIdCol = sprintf(" %s_id ", $class);
 					foreach ($varexecute as $var) {
 						$this->con->executePrepared(

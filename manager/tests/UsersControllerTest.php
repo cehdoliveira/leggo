@@ -368,38 +368,97 @@ final class UsersControllerTest extends DBTestCase
 
     public function testUnlinkingAllProfilesRemovesAttach(): void
     {
+        $GLOBALS['users_url'] = constant('cFrontend') . 'usuarios';
         $marker     = uniqid();
-        $userId     = $this->makeUser("user_{$marker}", "user_{$marker}@example.com");
-        $profileOne = $this->makeProfile("profile_one_{$marker}", "profile-one-{$marker}");
-        $profileTwo = $this->makeProfile("profile_two_{$marker}", "profile-two-{$marker}");
+        $slug       = 'unlink-' . $marker;
+        $userId     = null;
+        $profileOne = null;
+        $profileTwo = null;
 
-        $this->linkProfile($userId, $profileOne);
-        $this->linkProfile($userId, $profileTwo);
+        // resetSingleton() ANTES das fixtures: save() termina em
+        // json_response() (plano 009), que comita a transacao do singleton
+        // via close_request_transaction(). Se a fixture entrasse numa geracao
+        // anterior do singleton, o reset no meio do teste reverteria a
+        // fixture antes do save() do controller ve-la.
+        $this->resetSingleton();
+        try {
+            $profileOne = $this->makeProfile("profile_one_{$marker}", "profile-one-{$marker}");
+            $profileTwo = $this->makeProfile("profile_two_{$marker}", "profile-two-{$marker}");
 
-        $before = new users_model();
-        $before->set_field([' idx ']);
-        $before->set_filter([" active = 'yes' ", " idx = ? "], [$userId]);
-        $before->set_paginate([1]);
-        $before->load_data(false);
-        $before->attach(["profiles"]);
-        $this->assertCount(2, $before->data[0]['profiles_attach'] ?? [], 'Usuario deve comecar com os 2 vinculos ativos');
+            $insert = new users_model();
+            $insert->populate([
+                'name'  => "user_{$marker}",
+                'mail'  => "user_{$marker}@example.com",
+                'login' => 'user_' . $marker,
+                'slug'  => $slug,
+            ]);
+            $userId = (int) $insert->save();
+            $this->assertGreaterThan(0, $userId, 'Insert de fixture deve retornar um ID valido');
 
-        // Contorno do Step 5b: save_attach() nao age com lista vazia
-        // (DOLModel.php:498), entao desmarcar todos os perfis no formulario
-        // exige este UPDATE direto para desativar os vinculos remanescentes.
-        (new users_model())->execute_raw_prepared(
-            "UPDATE users_profiles SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND users_id = ?",
-            [0, $userId]
-        );
+            $this->linkProfile($userId, $profileOne);
+            $this->linkProfile($userId, $profileTwo);
 
-        $after = new users_model();
-        $after->set_field([' idx ']);
-        $after->set_filter([" active = 'yes' ", " idx = ? "], [$userId]);
-        $after->set_paginate([1]);
-        $after->load_data(false);
-        $after->attach(["profiles"]);
+            $before = new users_model();
+            $before->set_field([' idx ']);
+            $before->set_filter([" active = 'yes' ", " idx = ? "], [$userId]);
+            $before->set_paginate([1]);
+            $before->load_data(false);
+            $before->attach(["profiles"]);
+            $this->assertCount(2, $before->data[0]['profiles_attach'] ?? [], 'Usuario deve comecar com os 2 vinculos ativos');
 
-        $this->assertSame([], $after->data[0]['profiles_attach'] ?? null, 'Apos desmarcar todos os perfis, attach(["profiles"]) deve devolver array vazio');
+            // Exercita o caminho real do controller (nao um UPDATE cru
+            // simulando o resultado) — prova que save() -> save_attach() com
+            // profiles_id vazio desvincula tudo (plano 012), e que a
+            // extracao/filtro de profiles_id do POST ate save_attach() nao
+            // quebrou no meio do caminho.
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+            $post = [
+                '_csrf_token'  => $_SESSION['_csrf_token'],
+                'name'         => "user_{$marker}",
+                'mail'         => "user_{$marker}@example.com",
+                'profiles_id'  => [],
+                'no-redirect'  => '1',
+            ];
+
+            ob_start();
+            try {
+                (new users_controller())->save(['post' => $post, 1 => $slug]);
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+                $this->fail('save() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                ob_get_clean();
+                $this->assertSame(TerminalResponse::KIND_JSON, $e->kind);
+                $this->assertSame('1', $e->payload['data']['ok'], 'save(..., no-redirect) deve responder ok');
+            }
+
+            $after = new users_model();
+            $after->set_field([' idx ']);
+            $after->set_filter([" active = 'yes' ", " idx = ? "], [$userId]);
+            $after->set_paginate([1]);
+            $after->load_data(false);
+            $after->attach(["profiles"]);
+
+            $this->assertSame([], $after->data[0]['profiles_attach'] ?? null, 'Apos desmarcar todos os perfis via save(), attach(["profiles"]) deve devolver array vazio');
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used']);
+            $this->resetSingleton();
+            // save() comita de verdade (json_response) — limpa a fixture como
+            // ProfilesFilterTest::testSaveWithNoRedirectReturnsJsonOk faz.
+            $cleanup = new localPDO();
+            if ($userId) {
+                $cleanup->executePrepared("DELETE FROM users_profiles WHERE users_id = ?", [$userId]);
+                $cleanup->executePrepared("DELETE FROM users WHERE idx = ?", [$userId]);
+            }
+            if ($profileOne) {
+                $cleanup->executePrepared("DELETE FROM profiles WHERE idx = ?", [$profileOne]);
+            }
+            if ($profileTwo) {
+                $cleanup->executePrepared("DELETE FROM profiles WHERE idx = ?", [$profileTwo]);
+            }
+        }
     }
 
     public function testSafeInternalUrlAcceptsInternalDestination(): void

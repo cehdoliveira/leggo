@@ -123,6 +123,109 @@ final class DolModelWriteTest extends DBTestCase
         $this->assertContains($profileId, $attachedIds, 'attach() deve trazer o profile vinculado por save_attach()');
     }
 
+    public function testSaveAttachWithEmptyListUnlinksExistingRows(): void
+    {
+        $userId = $this->newTestUser();
+
+        $profiles = new profiles_model();
+        $profiles->set_field([" idx "]);
+        $profiles->set_filter(["slug = ?"], ['user']);
+        $profiles->set_paginate([1]);
+        $profiles->load_data();
+        $this->assertNotEmpty($profiles->data, 'fixture da migration 003 deve conter profiles.slug = user');
+        $profileId = (int) $profiles->data[0]['idx'];
+
+        $model = new users_model();
+        $model->save_attach(
+            ["idx" => $userId, "post" => ["profiles_id" => [$profileId]]],
+            ["profiles"]
+        );
+
+        $pdo = localPDO::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT active FROM users_profiles WHERE users_id = ? AND profiles_id = ?");
+        $stmt->execute([$userId, $profileId]);
+        $this->assertSame('yes', $stmt->fetchColumn(), 'vinculo inicial deve estar ativo antes do teste');
+
+        // Lista vazia e uma operacao valida: "desmarquei todos os perfis" tem
+        // que desvincular, nao ser ignorado (bug do plano 012).
+        $model->save_attach(
+            ["idx" => $userId, "post" => ["profiles_id" => []]],
+            ["profiles"]
+        );
+
+        $stmt->execute([$userId, $profileId]);
+        $this->assertSame('no', $stmt->fetchColumn(), 'save_attach() com lista vazia deve desvincular o vinculo existente');
+    }
+
+    public function testSaveAttachWithoutKeyDoesNotTouchExistingLinks(): void
+    {
+        $userId = $this->newTestUser();
+
+        $profiles = new profiles_model();
+        $profiles->set_field([" idx "]);
+        $profiles->set_filter(["slug = ?"], ['user']);
+        $profiles->set_paginate([1]);
+        $profiles->load_data();
+        $this->assertNotEmpty($profiles->data, 'fixture da migration 003 deve conter profiles.slug = user');
+        $profileId = (int) $profiles->data[0]['idx'];
+
+        $model = new users_model();
+        $model->save_attach(
+            ["idx" => $userId, "post" => ["profiles_id" => [$profileId]]],
+            ["profiles"]
+        );
+
+        // Chave ausente = formulario parcial que nao mexeu nos perfis; o
+        // vinculo tem que continuar intacto (metade do contrato do isset()).
+        $model->save_attach(
+            ["idx" => $userId, "post" => []],
+            ["profiles"]
+        );
+
+        $pdo = localPDO::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT active FROM users_profiles WHERE users_id = ? AND profiles_id = ?");
+        $stmt->execute([$userId, $profileId]);
+        $this->assertSame('yes', $stmt->fetchColumn(), 'save_attach() sem a chave profiles_id no post nao deve desvincular nada');
+    }
+
+    public function testSaveAttachReplacesSetKeepingOnlySentIds(): void
+    {
+        $userId = $this->newTestUser();
+
+        $profiles = new profiles_model();
+        $profiles->set_field([" idx ", " slug "]);
+        $profiles->set_filter(["slug IN ('user', 'admin')"]);
+        $profiles->load_data();
+        $bySlug = array_column($profiles->data, 'idx', 'slug');
+        $this->assertArrayHasKey('user', $bySlug, 'fixture da migration 003 deve conter profiles.slug = user');
+        $this->assertArrayHasKey('admin', $bySlug, 'fixture da migration 003 deve conter profiles.slug = admin');
+        $profileA = (int) $bySlug['user'];
+        $profileB = (int) $bySlug['admin'];
+
+        $model = new users_model();
+        $model->save_attach(
+            ["idx" => $userId, "post" => ["profiles_id" => [$profileA, $profileB]]],
+            ["profiles"]
+        );
+
+        // So envia A de volta: B tem que sair, A tem que continuar ativo —
+        // garante que a correcao nao regrediu o caminho normal (substituir o
+        // conjunto), so a lista vazia.
+        $model->save_attach(
+            ["idx" => $userId, "post" => ["profiles_id" => [$profileA]]],
+            ["profiles"]
+        );
+
+        $pdo = localPDO::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT active FROM users_profiles WHERE users_id = ? AND profiles_id = ?");
+
+        $stmt->execute([$userId, $profileA]);
+        $this->assertSame('yes', $stmt->fetchColumn(), 'profile enviado de novo deve continuar ativo');
+
+        $stmt->execute([$userId, $profileB]);
+        $this->assertSame('no', $stmt->fetchColumn(), 'profile nao reenviado deve ser desvinculado');
+    }
+
     public function testJoinBatchAttachesAcrossMultipleParents(): void
     {
         $profiles = new profiles_model();
