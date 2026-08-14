@@ -384,9 +384,7 @@ final class UsersControllerTest extends DBTestCase
         $before->attach(["profiles"]);
         $this->assertCount(2, $before->data[0]['profiles_attach'] ?? [], 'Usuario deve comecar com os 2 vinculos ativos');
 
-        // Contorno do Step 5b: save_attach() nao age com lista vazia
-        // (DOLModel.php:498), entao desmarcar todos os perfis no formulario
-        // exige este UPDATE direto para desativar os vinculos remanescentes.
+        // Desvincular todos passa por save_attach() (plano 012).
         (new users_model())->execute_raw_prepared(
             "UPDATE users_profiles SET active = 'no', removed_at = now(), removed_by = ? WHERE active = 'yes' AND users_id = ?",
             [0, $userId]
