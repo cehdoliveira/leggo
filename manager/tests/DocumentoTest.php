@@ -38,6 +38,10 @@ final class DocumentoTest extends TestCase
     {
         return [
             ['123.456.789-00'],
+            // 52998224735: mesmos 9 digitos base de 529982247-25, so o 1o digito
+            // verificador trocado (2 -> 3); isolado do 2o DV, que so eh calculado
+            // se o 1o bater.
+            ['52998224735'],
             ['111.111.111-11'],
             ['00000000000'],
             ['1234567890'],
@@ -76,6 +80,9 @@ final class DocumentoTest extends TestCase
     {
         return [
             ['11.222.333/0001-82'],
+            // 11222333000191: mesmos 12 digitos base de 11222333/0001-81, so o 1o
+            // digito verificador trocado (8 -> 9); isolado do 2o DV.
+            ['11222333000191'],
             ['11111111111111'],
             ['1122233300018'],
             [''],
