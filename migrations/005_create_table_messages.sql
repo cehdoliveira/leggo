@@ -13,3 +13,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
     `sent_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`idx`)
 );
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   DROP TABLE `messages`;
+-- Risco: perde o log de e-mails enviados (auditoria).

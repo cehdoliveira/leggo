@@ -51,3 +51,8 @@ VALUES (
         'no',
         0
     );
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   DROP TABLE `profiles`;
+-- DESTRUTIVO: apaga todos os perfis; derruba o gate adm de todo mundo que
+-- depende de um perfil existente.

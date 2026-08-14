@@ -28,3 +28,8 @@ INSERT IGNORE INTO
         `profiles_id`
     )
 VALUES (NOW(), '0', 'yes', 1, 1);
+
+-- ROLLBACK MANUAL (o runner nao tem suporte a down; execute a mao se preciso):
+--   DROP TABLE `users_profiles`;
+-- DESTRUTIVO: apaga todo vinculo usuario-perfil; ninguem passa no gate adm
+-- depois disso.
