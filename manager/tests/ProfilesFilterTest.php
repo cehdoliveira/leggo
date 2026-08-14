@@ -8,9 +8,7 @@ declare(strict_types=1);
  * DOLModel::data4select() invertido), alem da allowlist de ordenacao usada
  * por profiles_controller::display() — plano 005.
  *
- * Tambem cobre, via reflection (metodos privados), o guard anti open-redirect
- * de safe_internal_url()/back_url() e a resolucao de formato .json/.html de
- * display() — achados do /phpship nesta branch. O caminho save(...,
+ * O caminho save(...,
  * no-redirect) e o guard de perfil `editabled = 'no'` (protegido) agora tem
  * teste direto do metodo save() — plano 009 tornou basic_redir()/
  * json_response()/array_to_csv() testaveis (lancam TerminalResponse sob
@@ -29,16 +27,6 @@ final class ProfilesFilterTest extends DBTestCase
         $this->assertGreaterThan(0, $id, 'Insert de fixture deve retornar um ID valido');
 
         return $id;
-    }
-
-    /** Invoca um metodo privado de profiles_controller para testar em isolamento. */
-    private function callPrivate(string $method, array $args = []): mixed
-    {
-        $controller = new profiles_controller();
-        $ref        = new ReflectionMethod($controller, $method);
-        $ref->setAccessible(true);
-
-        return $ref->invokeArgs($controller, $args);
     }
 
     // save() termina em json_response()/basic_redir() (plano 009); os testes
@@ -251,31 +239,31 @@ final class ProfilesFilterTest extends DBTestCase
     {
         $internal = constant('cFrontend') . 'perfis?filter_name=foo';
 
-        $this->assertSame($internal, $this->callPrivate('safe_internal_url', [$internal, 'fallback']));
+        $this->assertSame($internal, safe_internal_url($internal, 'fallback'));
     }
 
     public function testSafeInternalUrlRejectsExternalDestination(): void
     {
-        $result = $this->callPrivate('safe_internal_url', ['https://evil.example/', 'fallback']);
+        $result = safe_internal_url('https://evil.example/', 'fallback');
 
         $this->assertSame('fallback', $result, 'URL externa deve cair no fallback — impede open redirect');
     }
 
     public function testSafeInternalUrlRejectsJavascriptUri(): void
     {
-        $result = $this->callPrivate('safe_internal_url', ['javascript:alert(1)', 'fallback']);
+        $result = safe_internal_url('javascript:alert(1)', 'fallback');
 
         $this->assertSame('fallback', $result, 'URI javascript: deve cair no fallback — impede XSS via link Cancelar');
     }
 
     public function testResolveFormatReturnsJsonForJsonSuffix(): void
     {
-        $this->assertSame('.json', $this->callPrivate('resolve_format', [[1 => '.json']]));
+        $this->assertSame('.json', resolve_format([1 => '.json']));
     }
 
     public function testResolveFormatDefaultsToHtml(): void
     {
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[]]));
-        $this->assertSame('.html', $this->callPrivate('resolve_format', [[1 => '.html']]));
+        $this->assertSame('.html', resolve_format([]));
+        $this->assertSame('.html', resolve_format([1 => '.html']));
     }
 }

@@ -70,12 +70,6 @@ class profiles_controller
         return (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
     }
 
-    /** Resolve o formato de resposta a partir do path capturado pela rota. */
-    private function resolve_format(array $info): string
-    {
-        return ($info[1] ?? '') === '.json' ? '.json' : '.html';
-    }
-
     public function display(array $info): void
     {
         global $profiles_url, $newprofile_url, $profile_url;
@@ -84,7 +78,7 @@ class profiles_controller
             $_SESSION['_csrf_token'] = random_token();
         }
 
-        $format   = $this->resolve_format($info);
+        $format   = resolve_format($info);
         $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
         $offset   = (int)($info['sr'] ?? 0);
 
@@ -179,7 +173,7 @@ class profiles_controller
             "title"     => "Cadastrar Perfil",
             "url"       => $newprofile_url,
             "done"      => $done,
-            "cancelUrl" => $done !== '' ? $this->safe_internal_url(rawurldecode($done), $profiles_url) : $profiles_url,
+            "cancelUrl" => $done !== '' ? safe_internal_url(rawurldecode($done), $profiles_url) : $profiles_url,
         ];
 
         if ($idx > 0) {
@@ -217,7 +211,7 @@ class profiles_controller
 
         $slug    = $info[1] ?? null;
         $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
-        $backUrl = $this->back_url($post, $profiles_url);
+        $backUrl = back_url($post, $profiles_url);
 
         // $slug !== null mas idx_by_slug() devolveu 0 = link para um slug que
         // não existe (mais). Sem este guard, o código abaixo cai no ramo de
@@ -303,7 +297,7 @@ class profiles_controller
 
         $slug    = $info[1] ?? null;
         $idx     = $slug !== null ? $this->idx_by_slug($slug) : 0;
-        $backUrl = $this->back_url($post, $profiles_url);
+        $backUrl = back_url($post, $profiles_url);
 
         if ($idx > 0 && $this->is_editabled($idx)) {
             try {
@@ -350,24 +344,4 @@ class profiles_controller
         return (($model->data[0]['editabled'] ?? 'yes') === 'yes');
     }
 
-    /** URL de volta que o formulário carregou, ou a listagem padrão. */
-    private function back_url(array $post, string $fallback): string
-    {
-        $done = trim((string)($post['done'] ?? ''));
-        if ($done === '') {
-            return $fallback;
-        }
-
-        return $this->safe_internal_url(rawurldecode($done), $fallback);
-    }
-
-    /**
-     * Só aceita destino interno — impede open redirect e URI perigosa
-     * (ex. `javascript:`) via campo do formulário. Usado tanto no redirect de
-     * POST (back_url()) quanto no link "Cancelar" do form (GET).
-     */
-    private function safe_internal_url(string $url, string $fallback): string
-    {
-        return str_starts_with($url, constant("cFrontend")) ? $url : $fallback;
-    }
 }

@@ -175,4 +175,48 @@ final class CommonFunctionsTest extends TestCase
             ['a-'],
         ];
     }
+
+    public function test_resolve_format_returns_json_for_json_extension(): void
+    {
+        $this->assertSame('.json', resolve_format([0 => '/perfis', 1 => '.json']));
+    }
+
+    public function test_resolve_format_returns_html_for_html_extension(): void
+    {
+        $this->assertSame('.html', resolve_format([0 => '/perfis', 1 => '.html']));
+    }
+
+    public function test_resolve_format_defaults_to_html_when_missing(): void
+    {
+        $this->assertSame('.html', resolve_format([0 => '/perfis']));
+    }
+
+    public function test_safe_internal_url_returns_url_when_internal(): void
+    {
+        $internal = constant('cFrontend') . 'perfis';
+        $this->assertSame($internal, safe_internal_url($internal, '/fallback'));
+    }
+
+    public function test_safe_internal_url_returns_fallback_when_external(): void
+    {
+        $this->assertSame('/fallback', safe_internal_url('javascript:alert(1)', '/fallback'));
+    }
+
+    public function test_back_url_returns_fallback_when_done_empty(): void
+    {
+        $this->assertSame('/fallback', back_url([], '/fallback'));
+    }
+
+    public function test_back_url_returns_decoded_internal_url(): void
+    {
+        $internal = constant('cFrontend') . 'perfis';
+        $post     = ['done' => rawurlencode($internal)];
+        $this->assertSame($internal, back_url($post, '/fallback'));
+    }
+
+    public function test_back_url_returns_fallback_when_done_is_external(): void
+    {
+        $post = ['done' => rawurlencode('https://evil.tld/phish')];
+        $this->assertSame('/fallback', back_url($post, '/fallback'));
+    }
 }

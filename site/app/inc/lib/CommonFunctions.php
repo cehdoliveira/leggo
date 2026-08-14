@@ -1010,4 +1010,33 @@ function validate_cnpj(?string $value): bool
   return $dv2 === (int) $cnpj[13];
 }
 
+/**
+ * '.json' se a extensao do segmento de rota pedir JSON, '.html' caso contrario.
+ */
+function resolve_format(array $info): string
+{
+  return ($info[1] ?? '') === '.json' ? '.json' : '.html';
+}
+
+/**
+ * Só aceita destino interno — impede open redirect e URI perigosa
+ * (ex. `javascript:`) via campo do formulário. Usado tanto no redirect de
+ * POST (back_url()) quanto no link "Cancelar" do form (GET).
+ */
+function safe_internal_url(string $url, string $fallback): string
+{
+  return str_starts_with($url, constant("cFrontend")) ? $url : $fallback;
+}
+
+/** URL de volta que o formulário carregou, ou a listagem padrão. */
+function back_url(array $post, string $fallback): string
+{
+  $done = trim((string)($post['done'] ?? ''));
+  if ($done === '') {
+    return $fallback;
+  }
+
+  return safe_internal_url(rawurldecode($done), $fallback);
+}
+
 
