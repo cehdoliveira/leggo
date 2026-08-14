@@ -134,10 +134,15 @@ outra via. Se doer na prática, é a fatia 3 do Step 6, não a v1.
    inalterado, é leitura.
 5. **Confirmação** (`POST /importar-usuarios`, `action=confirmar`, `idx=N`) —
    reprocessa o JSON de `dados` (não confia em nada vindo do `$_POST` além do
-   `idx`), aplica linha a linha dentro da transação única do request
+   `idx`), aplica **em duas passadas** dentro da transação única do request
    (`users_controller`-style: um `try/catch` com `basic_redir(..., rollback:
-   true)` no erro), marca `imported_at`/`imported_by` no registro de estágio.
-   Estado final: usuários criados/atualizados, rascunho marcado como aplicado.
+   true)` no erro): (1) todas as escritas em `users`/`users_profiles`, linha a
+   linha; só depois, se a passada 1 inteira terminou sem erro, (2) dispara os
+   e-mails de convite. Isso não é opcional — ver justificativa no Step 4 (achado
+   de review: e-mail interleado com a escrita sobrevive a um rollback e o link
+   já entregue fica morto). Ao final, marca `imported_at`/`imported_by` no
+   registro de estágio. Estado final: usuários criados/atualizados, e-mails
+   disparados, rascunho marcado como aplicado.
 
 **Tempo de vida do rascunho**: enquanto `imported_at IS NULL`. Não há limpeza
 automática desenhada aqui — registrar como decisão pendente (ver Step 6, não é
@@ -147,10 +152,17 @@ numa rotina de manutenção já existente, fora do escopo deste spike).
 **Duplo submit (F5 no POST de confirmação)**: o CSRF do projeto tem 10s de
 graça exatamente para sobreviver a F5, então o token *não* impede reprocessar.
 A proteção é a marca `imported_at`: `action=confirmar` primeiro faz
-`SELECT ... WHERE idx = ? AND imported_at IS NULL` (sem lock explícito, já que
-o projeto não usa `FOR UPDATE` em lugar nenhum hoje) — se `imported_at` já não é
-nulo, a confirmação é no-op e redireciona com mensagem "este import já foi
-aplicado em `<data>`", igual ao padrão do legado.
+`SELECT ... WHERE idx = ? AND imported_at IS NULL FOR UPDATE` — **com** lock
+explícito, diferente do resto do projeto (que não usa `FOR UPDATE` em lugar
+nenhum hoje), porque aqui é o ponto de aplicação de um import inteiro, não uma
+leitura qualquer: sem o lock, duas confirmações concorrentes do mesmo `idx`
+(F5 duplo, dois operadores) podem ambas ler `imported_at IS NULL` antes que a
+primeira transação commite, e ambas seguirem para a passada de escrita —
+combinado com o envio de e-mail (Step 4), isso duplicaria convites com tokens
+diferentes para o mesmo lote antes da segunda transação falhar na
+`UNIQUE KEY mail_UNIQUE`. Se `imported_at` já não é nulo, a confirmação é
+no-op e redireciona com mensagem "este import já foi aplicado em `<data>`",
+igual ao padrão do legado.
 
 **Verify**: sequência de 5 passos acima nomeia o estado do sistema em cada
 etapa (arquivo validado → linhas classificadas em memória → rascunho persistido
@@ -207,18 +219,33 @@ já existente com senha já definida):
   `enabled` a partir do arquivo. Regra explícita: reimportar um usuário existente
   é uma correção de cadastro, não um convite de novo.
 
-**Envio em massa**: 200 linhas "criar" no pior caso = até 200 e-mails. Com
-`rdkafka` disponível, `EmailProducer` enfileira as 200 mensagens de forma
-assíncrona — o tempo de request não é afetado, igual ao `reset-senha` de hoje
-enfileirando um e-mail por vez. **Sem `rdkafka`** (fail-open, cai para envio
-síncrono): 200 chamadas SMTP sequenciais dentro do mesmo request antes do
-`basic_redir()` — a ~200-500ms por envio síncrono típico, isso é 40-100s,
-**estoura qualquer `max_execution_time` razoável**. Este é um limite real que
-este spike não resolve: registro como risco explícito (não invento fila/worker
-aqui, é o STOP condition do plano). Mitigação possível sem worker novo — a
-avaliar num plano de implementação, não decidida aqui: reduzir o teto de linhas
-quando `rdkafka` não está disponível, ou aceitar que o ambiente de produção
-sempre tem `rdkafka` (verificar, não assumir).
+**Ordem de disparo — achado de review, corrige o desenho original**: os e-mails
+**não** podem ser enviados intercalados com as escritas em `users` dentro do
+mesmo laço. A transação é tudo-ou-nada (Step 3): se a linha 150 de 200 falhar,
+o `catch` dispara `basic_redir(..., rollback: true)`, que desfaz **todas** as
+inserções anteriores — mas um SMTP já disparado para as ~149 linhas
+anteriores não tem como ser "desfeito". O usuário recebe um link
+`/definir-senha/<token>` cujo `token` nunca vai existir em `users` (o insert
+foi revertido), e uma nova tentativa de confirmação gera um `email_token`
+diferente — o e-mail já entregue fica morto, sem qualquer sinal pro operador.
+Por isso a Etapa 5 do Step 2 exige duas passadas: **primeiro** todas as
+escritas de banco da linha "criar"/"atualizar", **só depois** — se a passada
+inteira terminou sem erro, ainda dentro da mesma transação, antes do
+`basic_redir()` — o disparo dos e-mails. Isso não resolve o teto de tempo
+abaixo, só evita gerar convites órfãos.
+
+**Envio em massa**: 200 linhas "criar" no pior caso = até 200 e-mails, disparados
+na segunda passada acima. Com `rdkafka` disponível, `EmailProducer` enfileira
+as 200 mensagens de forma assíncrona — o tempo de request não é afetado, igual
+ao `reset-senha` de hoje enfileirando um e-mail por vez. **Sem `rdkafka`**
+(fail-open, cai para envio síncrono): 200 chamadas SMTP sequenciais dentro do
+mesmo request antes do `basic_redir()` — a ~200-500ms por envio síncrono
+típico, isso é 40-100s, **estoura qualquer `max_execution_time` razoável**.
+Este é um limite real que este spike não resolve: registro como risco explícito
+(não invento fila/worker aqui, é o STOP condition do plano). Mitigação possível
+sem worker novo — a avaliar num plano de implementação, não decidida aqui:
+reduzir o teto de linhas quando `rdkafka` não está disponível, ou aceitar que o
+ambiente de produção sempre tem `rdkafka` (verificar, não assumir).
 
 **`messages`**: cada e-mail enviado grava uma linha via `redact_email_body()`,
 igual ao `register()`/`reset-senha`. Um import de 200 linhas "criar" gera até
@@ -304,8 +331,10 @@ se só um lado ganhasse o arquivo.
 
 **Arquivos que a implementação criaria/tocaria**:
 
-- `manager/migrations/012_create_table_users_imports.sql` (nova — checar próximo
-  número livre no momento da implementação)
+- `migrations/012_create_table_users_imports.sql` (nova — checar próximo
+  número livre no momento da implementação; sem prefixo `manager/`, mesmo
+  diretório único na raiz usado por `migrations/002_create_table_users.sql` e
+  `migrations/011_add_messages_profiles_indexes.sql` citados acima)
 - `manager/app/inc/controller/usersimports_controller.php` (novo)
 - `manager/app/inc/model/users_imports_model.php` **e**
   `site/app/inc/model/users_imports_model.php` (novo, byte-idêntico nas duas cópias)
@@ -316,11 +345,16 @@ se só um lado ganhasse o arquivo.
   views de `users_controller` moram hoje (não inspecionado neste spike; a
   implementação confirma antes de criar)
 - `manager/tests/UsersImportsControllerTest.php` (novo) — cobrir: parse de linha
-  válida/inválida, mapeamento de cabeçalho fora de ordem, BOM/Latin-1, round-trip
-  do CSV exportado, teto de 200 linhas, confirmação dupla (idempotência via
-  `imported_at`), rollback em erro no meio do lote, `handle_upload` rejeitando
-  MIME que não é CSV real (é o primeiro teste que esse helper receberia — nota
-  de manutenção do plano)
+  válida/inválida, mapeamento de cabeçalho fora de ordem, linha com número de
+  colunas diferente do cabeçalho (rejeitada/marcada como erro antes do
+  mapeamento por nome, não só reordenação), BOM/Latin-1, round-trip do CSV
+  exportado, `mail`/`name` iniciado por `=`/`+`/`-`/`@` tratado como texto puro
+  no parser (não é sanitização de escrita reaplicada na leitura — CSV
+  injection), duas linhas com o mesmo `mail` no mesmo arquivo marcadas como
+  erro no preview antes da confirmação, teto de 200 linhas, confirmação dupla
+  (idempotência via `imported_at`), rollback em erro no meio do lote,
+  `handle_upload` rejeitando MIME que não é CSV real (é o primeiro teste que
+  esse helper receberia — nota de manutenção do plano)
 
 **Verify**: lista de arquivos com caminho completo acima; justificativa
 (controller próprio + `action()` reaproveitado, sem quinto método genérico)
@@ -389,12 +423,18 @@ teto 200).
 ```
 git status --short
 ```
-Saída (nesta sessão): vazia — `plans/` inteiro está no `.gitignore`
-(`.gitignore:44`, "rascunho de trabalho local — não sincroniza"), então mesmo um
-arquivo novo dentro de `plans/` não aparece em `git status`. Confirmado com
-`git check-ignore -v plans/018-DESIGN.md`. Nenhum arquivo de produção foi
-tocado — o próprio `plans/018-DESIGN.md` nem chega a aparecer por ser ignorado,
-o que é mais forte que "só ele aparece".
+Saída (no momento da checagem, antes do commit deste documento): vazia —
+`plans/` inteiro está no `.gitignore` (`.gitignore:44`, "rascunho de trabalho
+local — não sincroniza"), então um arquivo novo e ainda não adicionado ao
+índice dentro de `plans/` não aparece em `git status`. Confirmado com
+`git check-ignore -v plans/018-DESIGN.md` naquele instante. Isso não significa
+que arquivos em `plans/` sejam imunes a `git add`/commit — um arquivo já
+adicionado ao índice deixa de ser filtrado pelo `.gitignore`, e é exatamente o
+que aconteceu aqui: este documento foi versionado com `git add -f` (mesmo
+precedente de `plans/015-DESIGN.md` e `plans/016-DESIGN.md`, já rastreados do
+mesmo jeito) e faz parte do commit `788d180` desta branch. Nenhum arquivo de
+produção foi tocado — só este documento, e ele está rastreado por decisão
+explícita, não por engano do `.gitignore`.
 
 ```
 bash bin/test.sh
