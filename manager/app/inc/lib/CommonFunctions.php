@@ -805,6 +805,35 @@ function close_request_transaction(int $code = 200): void
   }
 }
 
+/**
+ * Renderiza uma pagina de erro com o status HTTP correto e encerra a resposta.
+ *
+ * Fecha a transacao global com o codigo (>= 400 reverte, ver
+ * close_request_transaction) e usa o mesmo layout das demais telas — o view
+ * ui/page/error.php e por ambiente.
+ */
+function render_error_page(int $code, string $title, string $message): never
+{
+  close_request_transaction($code);
+
+  if (!headers_sent()) {
+    http_response_code($code);
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+  }
+
+  $errorCode    = $code;
+  $errorTitle   = $title;
+  $errorMessage = $message;
+
+  include(constant("cRootServer") . "ui/common/head.php");
+  include(constant("cRootServer") . "ui/common/header.php");
+  include(constant("cRootServer") . "ui/page/error.php");
+  include(constant("cRootServer") . "ui/common/footer.php");
+  include(constant("cRootServer") . "ui/common/foot.php");
+
+  terminate_request(TerminalResponse::KIND_ERROR, ['code' => $code, 'title' => $title]);
+}
+
 function array_to_csv(array $data, string $filename = 'export.csv', ?array $headers = null): never
 {
   close_request_transaction();
