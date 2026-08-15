@@ -446,7 +446,9 @@ function ratelimit_fallback_dir(): string
 function check_and_increment_rate_limit(?object $redis, string $key, int $max, int $window): bool
 {
   if ($redis) {
-    $count = $redis->incr($key);
+    // RedisCache (nao um client Redis cru) so expoe increment()/delete() —
+    // incr()/del() nao existem na classe e lancam Error fatal se chamados.
+    $count = $redis->increment($key);
     if ($count === 1) {
       $redis->expire($key, $window);
     }
@@ -511,7 +513,7 @@ function check_and_increment_rate_limit(?object $redis, string $key, int $max, i
 function reset_rate_limit(?object $redis, string $key): void
 {
   if ($redis) {
-    $redis->del($key);
+    $redis->delete($key);
     return;
   }
 
