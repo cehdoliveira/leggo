@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initTheme();
     initSmoothScroll();
     initFadeInObserver();
-    initWelcomeDismiss();
-    initTableScrollMasks();
 });
 
 // Theme toggle — syncs icon on all [data-theme-toggle] buttons
@@ -66,36 +64,4 @@ function initFadeInObserver() {
         });
     }, { threshold: 0.12 });
     targets.forEach(function (el) { observer.observe(el); });
-}
-
-// Welcome banner dismiss (T5)
-function initWelcomeDismiss() {
-    var banner = document.getElementById('welcome-banner');
-    var dismissBtn = document.getElementById('welcome-dismiss');
-    if (!banner || !dismissBtn) return;
-    dismissBtn.addEventListener('click', function () {
-        banner.style.transition = 'opacity 0.3s ease, max-height 0.4s ease';
-        banner.style.opacity = '0';
-        banner.style.maxHeight = '0';
-        banner.style.overflow = 'hidden';
-        setTimeout(function () { banner.remove(); }, 420);
-    });
-}
-
-// Table scroll mask — remove mask when no overflow or scroll reached end
-function initTableScrollMasks() {
-    document.querySelectorAll('.ranking-table-wrap:not(.ranking-table-preview)').forEach(function (wrap) {
-        function update() {
-            var overflows = wrap.scrollWidth > wrap.clientWidth + 2;
-            var atEnd     = wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 4;
-            if (!overflows || atEnd) {
-                wrap.classList.add('scrolled-end');
-            } else {
-                wrap.classList.remove('scrolled-end');
-            }
-        }
-        update();
-        wrap.addEventListener('scroll', update, { passive: true });
-        window.addEventListener('resize', update, { passive: true });
-    });
 }
