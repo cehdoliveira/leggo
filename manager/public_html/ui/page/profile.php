@@ -68,6 +68,67 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['profiles_url'];
                         </div>
                     </div>
 
+                    <?php
+                    $isAdmProfile = ($data['adm'] ?? 'no') === 'yes';
+                    $isProtected  = ($data['editabled'] ?? 'yes') === 'no';
+
+                    // Agrupa por recurso (prefixo do slug antes do primeiro '.') so
+                    // que a lista continue legivel quando o vocabulario crescer.
+                    $capabilityGroups = [];
+                    foreach ($availableCapabilities as $capIdx => $capLabel) {
+                        $capSlug   = explode(' — ', $capLabel, 2)[0];
+                        $capDomain = explode('.', $capSlug, 2)[0];
+                        $capabilityGroups[$capDomain][$capIdx] = $capLabel;
+                    }
+                    ?>
+                    <div class="mb-3" x-data="{ q: '' }">
+                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
+                            Capacidades
+                        </label>
+
+                        <?php if ($isAdmProfile): ?>
+                            <p class="form-text mb-0">
+                                Este é um perfil administrador: ele já tem todas as capacidades, marcadas ou não.
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if ($isProtected): ?>
+                            <p class="form-text mb-0">
+                                Perfil protegido. As capacidades não podem ser alteradas por aqui.
+                            </p>
+                        <?php else: ?>
+                            <input type="text" class="form-control form-control-sm mb-2" placeholder="Filtrar capacidades"
+                                   aria-label="Filtrar capacidades" x-model="q" autocomplete="off">
+
+                            <div class="capabilities-box">
+                                <?php foreach ($capabilityGroups as $capDomain => $capItems): ?>
+                                    <?php $groupSearchText = htmlspecialchars(strtolower(implode(' ', $capItems)), ENT_QUOTES, 'UTF-8'); ?>
+                                    <div x-show="q === '' || '<?php echo $groupSearchText; ?>'.includes(q.toLowerCase())">
+                                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-top:0.5rem;">
+                                            <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $capDomain)), ENT_QUOTES, 'UTF-8'); ?>
+                                        </div>
+                                        <?php foreach ($capItems as $capIdx => $capLabel): ?>
+                                            <?php $checked = in_array((int)$capIdx, $selectedCapabilities, true); ?>
+                                            <div class="form-check" x-show="q === '' || '<?php echo htmlspecialchars(strtolower($capLabel), ENT_QUOTES, 'UTF-8'); ?>'.includes(q.toLowerCase())">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="capabilities_id[]" value="<?php echo (int)$capIdx; ?>"
+                                                       id="cap-<?php echo (int)$capIdx; ?>"<?php echo $checked ? ' checked' : ''; ?>>
+                                                <label class="form-check-label" for="cap-<?php echo (int)$capIdx; ?>">
+                                                    <?php echo htmlspecialchars($capLabel, ENT_QUOTES, 'UTF-8'); ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <input type="hidden" name="capabilities_sent" value="1">
+                            <p class="form-text">
+                                Desmarcar tudo remove todas as capacidades deste perfil.
+                            </p>
+                        <?php endif; ?>
+                    </div>
+
                     <div class="d-flex gap-2 justify-content-end">
                         <a href="<?php echo htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-secondary">Cancelar</a>
                         <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
