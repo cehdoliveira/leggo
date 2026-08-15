@@ -886,6 +886,37 @@ function redact_email_body(string $html): string
 }
 
 /**
+ * Monta e envia o e-mail de convite (template ui/mail/new_admin_credentials.php)
+ * para um usuário recém-criado sem senha externa, e loga o envio em `messages`.
+ * Extraído de auth_controller::register() — usersimports_controller::action()
+ * usa o mesmo fluxo para a linha "criar" de um import em lote. Propaga exceção;
+ * quem chama decide se um envio falho derruba o lote inteiro ou só é logado.
+ */
+function send_admin_credentials_mail(string $name, string $login, string $mail, string $token): void
+{
+  $canonicalBase   = canonical_url('MANAGER_CANONICAL_URL');
+  $loginLink       = $canonicalBase . '/login';
+  $setPasswordLink = $canonicalBase . '/definir-senha/' . $token;
+  $subject         = "Seus dados de acesso — " . constant('cTitle');
+  ob_start();
+  include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
+  $body = ob_get_clean();
+
+  if (class_exists("EmailProducer")) {
+    EmailProducer::getInstance()->send($mail, $subject, $body);
+  }
+
+  $msgModel = new messages_model();
+  $msgModel->populate([
+    "to_mail" => $mail,
+    "subject" => $subject,
+    "body"    => redact_email_body($body),
+    "sent_at" => date("Y-m-d H:i:s"),
+  ]);
+  $msgModel->save();
+}
+
+/**
  * Valida formato de slug: minúsculas/dígitos, separados por '-' ou '_',
  * sem separador nas pontas nem duplicado. Ex.: 'admin', 'meu-perfil', 'a_b1'.
  */

@@ -10,6 +10,7 @@ $users_url         = sprintf("%s%s", constant("cFrontend"), "usuarios");
 $newuser_url       = sprintf("%s%s", constant("cFrontend"), "novo-usuario");
 $user_url          = sprintf("%s%s/%s", constant("cFrontend"), "usuario", "%s");
 $removeuser_url    = sprintf("%s%s/%s/%s", constant("cFrontend"), "usuario", "%s", "remover");
+$usersimports_url  = sprintf("%s%s", constant("cFrontend"), "importar-usuarios");
 $emails_url        = sprintf("%s%s", constant("cFrontend"), "emails");
 $profiles_url      = sprintf("%s%s", constant("cFrontend"), "perfis");
 $newprofile_url    = sprintf("%s%s", constant("cFrontend"), "novo-perfil");
