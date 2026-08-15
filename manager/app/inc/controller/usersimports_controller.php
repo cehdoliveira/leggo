@@ -22,6 +22,10 @@ class usersimports_controller
     /** Subdiretório de upload dentro de UPLOAD_DIR. */
     private const UPLOAD_SUBDIR = 'users_imports';
 
+    /** Mesmo piso/teto de paginação de users_controller. */
+    private const PER_PAGE_MIN = 20;
+    private const PER_PAGE_MAX = 200;
+
     public function display(array $info): void
     {
         global $usersimports_url;
@@ -36,12 +40,20 @@ class usersimports_controller
             array_to_csv([['name' => '', 'mail' => '']], 'modelo_import_usuarios.csv', ['name', 'mail']);
         }
 
+        $paginate = min(self::PER_PAGE_MAX, max(self::PER_PAGE_MIN, (int)($info['get']['paginate'] ?? 0)));
+        $offset   = (int)($info['sr'] ?? 0);
+
         $model = new users_imports_model();
         $model->set_field([" idx ", " name ", " created_at ", " imported_at "]);
         $model->set_filter([" active = 'yes' "]);
         $model->set_order([" created_at DESC "]);
-        $model->load_data(false);
-        $imports = $model->data;
+        $model->set_paginate([$offset, $paginate]);
+        // return_data() chama load_data(true) por baixo — recordset vira o total
+        // SEM o LIMIT, a contagem da paginação (mesmo padrão de users_controller).
+        [$total, $imports] = $model->return_data();
+        $total      = (int)$total;
+        $page       = (int)floor($offset / $paginate) + 1;
+        $totalPages = (int)ceil($total / $paginate);
 
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
@@ -229,7 +241,15 @@ class usersimports_controller
                     $update = new users_model();
                     $update->set_filter([" active = 'yes' ", " mail = ? "], [$row['mail']]);
                     $update->populate(['name' => $row['name']]);
-                    $update->save();
+                    $updateStmt = $update->save();
+
+                    // Entre o preview e a confirmação o usuário pode ter sido
+                    // desativado ou o mail trocado — sem essa checagem o UPDATE
+                    // afeta 0 linhas em silêncio e o import "aplica com sucesso"
+                    // sem ter feito nada nesta linha.
+                    if (!($updateStmt instanceof PDOStatement) || $updateStmt->rowCount() === 0) {
+                        throw new RuntimeException("Linha 'atualizar' nao encontrou usuario ativo para mail={$row['mail']}");
+                    }
                 }
             }
 
@@ -237,34 +257,7 @@ class usersimports_controller
             // dispara se a passada 1 inteira terminou sem erro. Mesmo padrão
             // de auth_controller::register(): falha de e-mail não desfaz o
             // usuário já criado.
-            foreach ($created as $row) {
-                try {
-                    $name            = $row['name'];
-                    $login           = $row['mail']; // sem coluna login nesta fatia — o rótulo do template aceita e-mail
-                    $canonicalBase   = canonical_url('MANAGER_CANONICAL_URL');
-                    $loginLink       = $canonicalBase . '/login';
-                    $setPasswordLink = $canonicalBase . '/definir-senha/' . $row['token'];
-                    $subject         = "Seus dados de acesso — " . constant('cTitle');
-                    ob_start();
-                    include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
-                    $body = ob_get_clean();
-
-                    if (class_exists("EmailProducer")) {
-                        EmailProducer::getInstance()->send($row['mail'], $subject, $body);
-                    }
-
-                    $msgModel = new messages_model();
-                    $msgModel->populate([
-                        'to_mail' => $row['mail'],
-                        'subject' => $subject,
-                        'body'    => redact_email_body($body),
-                        'sent_at' => date('Y-m-d H:i:s'),
-                    ]);
-                    $msgModel->save();
-                } catch (Exception $e) {
-                    error_log("Erro ao enviar email de import: " . $e->getMessage());
-                }
-            }
+            $this->sendInviteEmails($created);
 
             $finish = new users_imports_model();
             $finish->set_filter([" idx = ? "], [$idx]);
@@ -299,19 +292,27 @@ class usersimports_controller
         $rollback = false;
 
         try {
-            $model     = new users_imports_model();
-            $checkStmt = $model->execute_raw_prepared(
-                "SELECT imported_at FROM users_imports WHERE idx = ? AND active = 'yes'",
+            $model = new users_imports_model();
+
+            // Mesmo lock explicito de action(): sem FOR UPDATE, uma confirmacao
+            // concorrente pode aplicar e commitar o import entre este SELECT e o
+            // soft-delete abaixo, e o remove() apagaria o registro de um import
+            // ja aplicado (perde auditoria de usuarios ja criados de verdade).
+            $lockStmt = $model->execute_raw_prepared(
+                "SELECT imported_at FROM users_imports WHERE idx = ? AND active = 'yes' FOR UPDATE",
                 [$idx]
             );
-            $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            $row = $lockStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$row) {
                 $_SESSION["messages_app"]["danger"] = ["Rascunho de import não encontrado."];
             } elseif ($row['imported_at'] !== null) {
                 $_SESSION["messages_app"]["danger"] = ["Este import já foi aplicado e não pode ser removido."];
             } else {
-                $model->set_filter([" idx = ? "], [$idx]);
+                // imported_at IS NULL de novo aqui, nao so no SELECT acima: a
+                // mesma trava que o SELECT ... FOR UPDATE segura durante esta
+                // transacao.
+                $model->set_filter([" idx = ? ", " imported_at IS NULL "], [$idx]);
                 $model->remove();
                 $_SESSION["messages_app"]["success"] = ["Rascunho removido."];
             }
@@ -322,6 +323,26 @@ class usersimports_controller
         }
 
         basic_redir($usersimports_url, rollback: $rollback);
+    }
+
+    /**
+     * Dispara o e-mail de convite (mesmo template/fluxo de
+     * auth_controller::register(), via send_admin_credentials_mail()) para
+     * cada usuário criado na passada 1 de action(). Falha de e-mail em uma
+     * linha não desfaz o usuário já criado nem impede as demais — só é logada.
+     *
+     * @param array<int, array{idx:int,name:string,mail:string,token:string}> $created
+     */
+    private function sendInviteEmails(array $created): void
+    {
+        foreach ($created as $row) {
+            try {
+                // Sem coluna login nesta fatia — o rótulo do template aceita e-mail.
+                send_admin_credentials_mail($row['name'], $row['mail'], $row['mail'], $row['token']);
+            } catch (Exception $e) {
+                error_log("Erro ao enviar email de import: " . $e->getMessage());
+            }
+        }
     }
 
     /**

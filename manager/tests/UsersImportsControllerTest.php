@@ -413,4 +413,245 @@ final class UsersImportsControllerTest extends DBTestCase
             }
         }
     }
+
+    public function testActionConfirmarUpdateRowWithNoMatchingActiveUserRollsBackBatch(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+        $marker   = uniqid();
+        $noMatch  = "sem_match_{$marker}@example.com";
+        $draftIdx = null;
+
+        $this->resetSingleton();
+        try {
+            // Nenhum usuario com este mail existe — a linha "atualizar" nao
+            // encontra nada pra atualizar (achado do especialista de
+            // Manutenibilidade: sem essa checagem o UPDATE afeta 0 linhas em
+            // silencio e o import "aplica com sucesso" sem ter feito nada).
+            $rows = [
+                ['row' => 2, 'name' => 'Nome Novo', 'mail' => $noMatch, 'status' => 'atualizar', 'motivo' => null],
+            ];
+            $draft = new users_imports_model();
+            $draft->populate(['name' => 'sem-match.csv', 'dados' => json_encode($rows)]);
+            $draftIdx = (int) $draft->save();
+            $this->assertGreaterThan(0, $draftIdx);
+
+            localPDO::getInstance()->commit();
+            $this->resetSingleton();
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+
+            try {
+                (new usersimports_controller())->action([
+                    'post' => ['_csrf_token' => $_SESSION['_csrf_token'], 'action' => 'confirmar', 'idx' => $draftIdx],
+                ]);
+                $this->fail('action() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains(
+                    'Falha ao aplicar o import. Nenhuma alteração foi salva.',
+                    $_SESSION['messages_app']['danger'] ?? [],
+                    'Linha "atualizar" sem usuario ativo correspondente deve reverter o lote, nao aplicar silenciosamente'
+                );
+            }
+
+            $check    = new localPDO();
+            $draftRow = $check->executePrepared("SELECT imported_at FROM users_imports WHERE idx = ?", [$draftIdx])->fetch(PDO::FETCH_ASSOC);
+            $this->assertNull($draftRow['imported_at'], 'imported_at NAO deve ser marcado quando a linha "atualizar" nao encontrou usuario');
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            if ($draftIdx) {
+                (new localPDO())->executePrepared("DELETE FROM users_imports WHERE idx = ?", [$draftIdx]);
+            }
+        }
+    }
+
+    public function testFormDraftNotFoundRedirectsWithDangerMessage(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+
+        $this->resetSingleton();
+        try {
+            try {
+                (new usersimports_controller())->form([1 => 999999999]);
+                $this->fail('form() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains(
+                    'Rascunho de import não encontrado.',
+                    $_SESSION['messages_app']['danger'] ?? []
+                );
+            }
+        } finally {
+            unset($_SESSION['messages_app']);
+            $this->resetSingleton();
+        }
+    }
+
+    public function testSaveWithoutUploadedFileRedirectsWithDangerMessage(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+        $marker = uniqid();
+
+        $this->resetSingleton();
+        try {
+            unset($_FILES['arquivo']);
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+
+            try {
+                // Fora de um POST HTTP real $_FILES['arquivo'] nunca existe —
+                // handle_upload() sempre retorna false neste caminho (achado
+                // do especialista de Cobertura de Testes: e determinístico,
+                // testavel sem simular upload real).
+                (new usersimports_controller())->save([
+                    'post' => ['_csrf_token' => $_SESSION['_csrf_token']],
+                ]);
+                $this->fail('save() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertStringContainsString(
+                    constant('cFrontend') . 'importar-usuarios/novo',
+                    $e->payload['url'] ?? ''
+                );
+                $this->assertNotEmpty($_SESSION['messages_app']['danger'] ?? []);
+            }
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+        }
+    }
+
+    public function testDisplayBaixarModeloReturnsCsvTemplateHeader(): void
+    {
+        $this->resetSingleton();
+        try {
+            ob_start();
+            try {
+                (new usersimports_controller())->display(['get' => ['baixar_modelo' => '1']]);
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+                $this->fail('display() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $body = ob_get_clean();
+                $this->assertSame(TerminalResponse::KIND_CSV, $e->kind);
+                $this->assertStringContainsString('name;mail', $body, 'Modelo de CSV deve conter o cabecalho name;mail');
+            }
+        } finally {
+            $this->resetSingleton();
+        }
+    }
+
+    public function testRemoveNotFoundRedirectsWithDangerMessage(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+        $marker = uniqid();
+
+        $this->resetSingleton();
+        try {
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+
+            try {
+                (new usersimports_controller())->remove([1 => 999999999, 'post' => ['_csrf_token' => $_SESSION['_csrf_token']]]);
+                $this->fail('remove() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains(
+                    'Rascunho de import não encontrado.',
+                    $_SESSION['messages_app']['danger'] ?? []
+                );
+            }
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+        }
+    }
+
+    public function testRemoveAlreadyAppliedBlocksRemoval(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+        $marker   = uniqid();
+        $draftIdx = null;
+
+        $this->resetSingleton();
+        try {
+            $draft = new users_imports_model();
+            $draft->populate([
+                'name'        => 'aplicado.csv',
+                'dados'       => json_encode([]),
+                'imported_at' => date('Y-m-d H:i:s'),
+            ]);
+            $draftIdx = (int) $draft->save();
+            $this->assertGreaterThan(0, $draftIdx);
+
+            localPDO::getInstance()->commit();
+            $this->resetSingleton();
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+
+            try {
+                (new usersimports_controller())->remove([1 => $draftIdx, 'post' => ['_csrf_token' => $_SESSION['_csrf_token']]]);
+                $this->fail('remove() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains(
+                    'Este import já foi aplicado e não pode ser removido.',
+                    $_SESSION['messages_app']['danger'] ?? []
+                );
+            }
+
+            $check = new localPDO();
+            $row   = $check->executePrepared("SELECT active FROM users_imports WHERE idx = ?", [$draftIdx])->fetch(PDO::FETCH_ASSOC);
+            $this->assertSame('yes', $row['active'], 'Rascunho ja aplicado nao pode ser soft-deletado por remove()');
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            if ($draftIdx) {
+                (new localPDO())->executePrepared("DELETE FROM users_imports WHERE idx = ?", [$draftIdx]);
+            }
+        }
+    }
+
+    public function testRemoveSuccessSoftDeletesDraft(): void
+    {
+        $GLOBALS['usersimports_url'] = constant('cFrontend') . 'importar-usuarios';
+        $marker   = uniqid();
+        $draftIdx = null;
+
+        $this->resetSingleton();
+        try {
+            $draft = new users_imports_model();
+            $draft->populate(['name' => 'remover.csv', 'dados' => json_encode([])]);
+            $draftIdx = (int) $draft->save();
+            $this->assertGreaterThan(0, $draftIdx);
+
+            localPDO::getInstance()->commit();
+            $this->resetSingleton();
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker;
+            unset($_SESSION['_csrf_used']);
+
+            try {
+                (new usersimports_controller())->remove([1 => $draftIdx, 'post' => ['_csrf_token' => $_SESSION['_csrf_token']]]);
+                $this->fail('remove() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+                $this->assertContains('Rascunho removido.', $_SESSION['messages_app']['success'] ?? []);
+            }
+
+            $check = new localPDO();
+            $row   = $check->executePrepared("SELECT active FROM users_imports WHERE idx = ?", [$draftIdx])->fetch(PDO::FETCH_ASSOC);
+            $this->assertSame('no', $row['active'], 'Rascunho nao aplicado deve ser soft-deletado (active=no) por remove()');
+        } finally {
+            unset($_SESSION['_csrf_token'], $_SESSION['_csrf_used'], $_SESSION['messages_app']);
+            $this->resetSingleton();
+            if ($draftIdx) {
+                (new localPDO())->executePrepared("DELETE FROM users_imports WHERE idx = ?", [$draftIdx]);
+            }
+        }
+    }
 }

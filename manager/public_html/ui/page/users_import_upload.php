@@ -68,8 +68,8 @@ $csrfToken  = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-
 
                     <div class="mb-3">
                         <label for="import-arquivo" class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Arquivo CSV</label>
-                        <input type="file" id="import-arquivo" name="arquivo" class="form-control" accept=".csv,text/csv" required>
-                        <div class="form-text">
+                        <input type="file" id="import-arquivo" name="arquivo" class="form-control" accept=".csv,text/csv" aria-describedby="import-arquivo-help" required>
+                        <div class="form-text" id="import-arquivo-help">
                             Colunas obrigatórias: <code>name</code>, <code>mail</code>. Até 200 linhas de dados.
                             <a href="<?php echo htmlspecialchars(set_url($GLOBALS['usersimports_url'], ['baixar_modelo' => '1']), ENT_QUOTES, 'UTF-8'); ?>">Baixar modelo</a>.
                         </div>
