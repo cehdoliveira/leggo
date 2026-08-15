@@ -133,7 +133,11 @@ $ariaSort   = static fn(string $col): string => match ($ordenation[$col][1]) {
                             <li class="page-item<?php echo $page <= 1 ? ' disabled' : ''; ?>">
                                 <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => (max(1, $page - 1) - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $page <= 1 ? ' aria-disabled="true" tabindex="-1"' : ''; ?>>Anterior</a>
                             </li>
-                            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                            <?php
+                            $windowStart = max(1, min($page - 3, $totalPages - 6));
+                            $windowEnd   = min($totalPages, $windowStart + 6);
+                            for ($p = $windowStart; $p <= $windowEnd; $p++):
+                            ?>
                                 <li class="page-item<?php echo $p === $page ? ' active' : ''; ?>">
                                     <a class="page-link" href="<?php echo htmlspecialchars(set_url($GLOBALS['emails_url'], ['sr' => ($p - 1) * $paginate] + $done), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $p === $page ? ' aria-current="page"' : ''; ?>><?php echo $p; ?></a>
                                 </li>
