@@ -559,6 +559,7 @@ class auth_controller
             $users->populate(["email_token" => null]);
             $users->save();
             $_SESSION['pending_reset_idx'] = (int)$user["idx"];
+            close_request_transaction(200);
         }
 
         if (empty($_SESSION['_csrf_token'])) {
