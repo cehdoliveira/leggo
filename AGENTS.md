@@ -236,6 +236,10 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 
 - Bumping `VERSION` also requires updating `APP_VERSION` in **both** `kernel.php.example` files — it drives the `?v=` asset cache-bust in `head.php` and `foot.php`. Keep them in sync.
 
+## Rebrand
+
+- Para trocar a identidade visual do whitelabel, edite `--accent` e seus derivados em `{manager,site}/public_html/assets/css/tokens.css` (as duas cópias, idênticas — `bin/check-shared-sync.sh` cobre esse arquivo). Depois troque `assets/img/logo.svg` e `favicon.svg`.
+
 ## Files to know
 
 | File | Purpose |
