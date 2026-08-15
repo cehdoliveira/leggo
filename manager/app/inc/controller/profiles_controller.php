@@ -152,7 +152,7 @@ class profiles_controller
 
             // return_data() chama load_data(true) por baixo — recordset vira o
             // total SEM o LIMIT, a contagem da paginação. Não escreva um COUNT à mão.
-            [$total, $profiles] = $model->return_data();
+            [$total] = $model->return_data();
             $total = (int)$total;
 
             // Uma query em lote para a pagina inteira (nao por linha) — o
@@ -333,6 +333,26 @@ class profiles_controller
                 $capabilityIds = array_values(array_filter(
                     array_map('intval', (array)($post['capabilities_id'] ?? [])),
                     fn(int $id): bool => $id > 0
+                ));
+
+                // Anti-escalacao + anti-lixo: id que nao esta mais entre as
+                // capacidades ativas (POST forjado, ou inativada entre a
+                // renderizacao do form e o submit) e descartado direto —
+                // profiles_capabilities.capabilities_id nao tem FOREIGN KEY.
+                // Capacidade ativa que o perfil ja tinha pode ser mantida ou
+                // removida livremente; capacidade NOVA so entra se o autor do
+                // POST ja tiver essa capacidade (has() e estrito, ignora o
+                // bypass do modo log do can()). Sem isso, qualquer perfil com
+                // perfis.escrever poderia se auto-conceder qualquer outra
+                // capacidade pelo form.
+                $previouslyLinked = $this->selected_capabilities($idx);
+                $capsModel = new capabilities_model();
+                $capsModel->load_data(false);
+                $slugById = array_column($capsModel->data, 'slug', 'idx');
+                $capabilityIds = array_values(array_filter(
+                    $capabilityIds,
+                    fn(int $id): bool => isset($slugById[$id])
+                        && (in_array($id, $previouslyLinked, true) || auth_controller::has($slugById[$id]))
                 ));
 
                 $model->save_attach(
