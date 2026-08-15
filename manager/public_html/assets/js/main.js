@@ -56,19 +56,3 @@ function initializeTheme() {
         applyTheme(nextTheme);
     });
 }
-
-function injectFloatingThemeToggle() {
-    if (document.querySelector('.leggo-theme-toggle-floating')) {
-        return;
-    }
-    const floatingButton = document.createElement('button');
-    floatingButton.type = 'button';
-    floatingButton.className =
-        'btn btn-sm leggo-theme-toggle leggo-theme-toggle-floating';
-    floatingButton.setAttribute('data-theme-toggle', 'true');
-    floatingButton.setAttribute('title', 'Alternar tema');
-    floatingButton.setAttribute('aria-label', 'Ativar tema claro');
-    floatingButton.innerHTML =
-        '<i class="bi bi-sun"></i><span class="d-none d-md-inline">Claro</span>';
-    document.body.appendChild(floatingButton);
-}
