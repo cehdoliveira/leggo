@@ -562,4 +562,36 @@ class auth_controller
         $_SESSION["messages_app"]["success"] = ["Senha redefinida com sucesso! Faça login para continuar."];
         basic_redir($GLOBALS["login_url"]);
     }
+
+    public function display_account(array $info): void
+    {
+        if (!self::check_login()) {
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = random_token();
+        }
+
+        $userIdx = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+
+        $users = new users_model();
+        $users->set_field([" idx ", " name ", " mail ", " login "]);
+        $users->set_filter([" active = 'yes' ", " idx = ? "], [$userIdx]);
+        $users->set_paginate([1]);
+        $users->load_data(false);
+
+        $account = $users->data[0] ?? [];
+
+        if ($account === []) {
+            $_SESSION["messages_app"]["danger"] = ["Sessão inválida. Entre novamente."];
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/account.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
 }
