@@ -155,6 +155,11 @@ class profiles_controller
             [$total, $profiles] = $model->return_data();
             $total = (int)$total;
 
+            // Uma query em lote para a pagina inteira (nao por linha) — o
+            // attach() do DOLModel ja resolve isso (plano 004).
+            $model->attach(["capabilities"]);
+            $profiles = $model->data;
+
             $availableParents = $this->available_parents();
         } catch (RuntimeException $e) {
             Logger::getInstance()->error("profiles display failed", ["error" => $e->getMessage()]);
