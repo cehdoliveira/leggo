@@ -84,6 +84,12 @@ $dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controll
 $dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
 $dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
 
+// Recuperação de senha (público — usuário não consegue entrar)
+$dispatcher->add_route("GET",  "/esqueci-minha-senha",            "auth_controller:display_forgot_password", null, $params);
+$dispatcher->add_route("POST", "/esqueci-minha-senha",            "auth_controller:forgot_password",         null, $params);
+$dispatcher->add_route("GET",  "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controller:display_reset_password",  null, $params);
+$dispatcher->add_route("POST", "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controller:reset_password",          null, $params);
+
 // Minha conta — qualquer usuário logado edita a própria
 $dispatcher->add_route("GET",  "/minha-conta",        "auth_controller:display_account", $authGuard, $params);
 $dispatcher->add_route("POST", "/minha-conta",        "auth_controller:save_account",    $authGuard, $params);

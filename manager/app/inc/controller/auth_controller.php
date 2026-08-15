@@ -406,6 +406,229 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/foot.php");
     }
 
+    public function display_forgot_password(array $info): void
+    {
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = random_token();
+        }
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/forgot_password.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function forgot_password(array $info): never
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["forgot_password_url"]);
+
+        $mail = trim($info["post"]["mail"] ?? '');
+
+        if (empty($mail)) {
+            $_SESSION["messages_app"]["danger"] = ["Informe seu e-mail."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+        }
+
+        $redis   = $GLOBALS['redis'] ?? null;
+        $rateKey = "forgot_pwd:" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        if (check_and_increment_rate_limit($redis, $rateKey, 3, 300)) {
+            $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde alguns minutos."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+        }
+
+        $users = new users_model();
+        $users->set_field([" idx ", " name ", " mail ", " login ", " enabled "]);
+        $users->set_filter([" active = 'yes' ", " mail = ? "], [$mail]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        $user = $users->data[0] ?? null;
+
+        if ($user) {
+            $userId   = (int)$user['idx'];
+            $name     = $user['name'];
+            $token   = random_token();
+
+            if ($user['enabled'] === 'no') {
+                // Unverified users: use same 72h window as original registration.
+                // gmdate(), nao date(): kernel.php forca America/Sao_Paulo (UTC-3)
+                // pro PHP, mas o MySQL deste ambiente roda em UTC — gravar em UTC
+                // dos dois lados evita expirar o token antes da hora (ver achado).
+                $expires = gmdate("Y-m-d H:i:s", strtotime("+72 hours"));
+            } else {
+                // Verified users: shorter window for password reset
+                $expires = gmdate("Y-m-d H:i:s", strtotime("+2 hours"));
+            }
+
+            $users->set_filter(["idx = ?"], [$userId]);
+            $users->populate([
+                "email_token"           => $token,
+                "email_token_expires_at" => $expires,
+            ]);
+            $users->save();
+
+            try {
+                $canonicalBase = canonical_url('MANAGER_CANONICAL_URL');
+
+                if ($user['enabled'] === 'no') {
+                    // O manager nao tem cadastro publico nem rota de verificar-email: quem
+                    // ainda nao ativou a conta foi criado por um administrador e entra pelo
+                    // mesmo link de convite usado no cadastro (definir-senha).
+                    $login           = $user['login'];
+                    $setPasswordLink = $canonicalBase . '/definir-senha/' . $token;
+                    $subject         = "Defina sua senha — " . constant('cTitle');
+                    ob_start();
+                    include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
+                    $body = ob_get_clean();
+                } else {
+                    $resetLink = $canonicalBase . '/redefinir-senha/' . $token;
+                    $subject   = "Redefinição de senha — " . constant('cTitle');
+                    ob_start();
+                    include(constant("cRootServer") . "ui/mail/reset_password.php");
+                    $body = ob_get_clean();
+                }
+
+                $emailSent = false;
+                try {
+                    if (class_exists("EmailProducer")) {
+                        $producer = EmailProducer::getInstance();
+                        $emailSent = (bool)$producer->send($user['mail'], $subject, $body);
+                    }
+                } catch (Exception $e) {
+                    error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
+                }
+
+                try {
+                    $msgModel = new messages_model();
+                    $msgModel->populate([
+                        "to_mail" => $user['mail'],
+                        "subject" => $subject,
+                        "body"    => redact_email_body($body),
+                        "sent_at" => date("Y-m-d H:i:s"),
+                    ]);
+                    $msgModel->save();
+                } catch (Exception $e) {
+                    error_log("Erro ao salvar log de email: " . $e->getMessage());
+                }
+
+                if (!$emailSent) {
+                    // Nao revela ao usuario que o envio falhou: a mensagem final e
+                    // sempre a generica (ver achado de enumeracao de conta). O
+                    // operador enxerga a falha pelo log.
+                    Logger::getInstance()->error("Falha ao enviar email de recuperação de senha", [
+                        "user_id" => $userId,
+                    ]);
+                }
+            } catch (RuntimeException $e) {
+                // canonical_url() falha fechado de proposito quando a configuracao
+                // canonica esta ausente. Desfaz o token gravado acima e mantem a
+                // MESMA resposta generica — nao deixa a falta de configuracao virar
+                // um jeito de diferenciar conta cadastrada de nao cadastrada.
+                Logger::getInstance()->error("Falha ao montar link de recuperação de senha", [
+                    "error"   => $e->getMessage(),
+                    "user_id" => $userId,
+                ]);
+                $_SESSION["messages_app"]["success"] = ["Se o e-mail informado estiver cadastrado, você receberá um link em breve."];
+                basic_redir($GLOBALS["login_url"], rollback: true);
+            }
+        }
+
+        // Mensagem genérica — não revela se o e-mail existe
+        $_SESSION["messages_app"]["success"] = ["Se o e-mail informado estiver cadastrado, você receberá um link em breve."];
+        basic_redir($GLOBALS["login_url"]);
+    }
+
+    public function display_reset_password(array $info): void
+    {
+        $token = $info[1] ?? null;
+
+        if (empty($token)) {
+            $_SESSION["messages_app"]["danger"] = ["Link inválido."];
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        // Somente leitura: o GET nao consome o token. Um scanner de seguranca de
+        // e-mail (Safe Links, ATP, proxy de imagem) que pre-busca o link antes do
+        // usuario clicar nao pode "queimar" o token por conta disso. O consumo de
+        // verdade, atomico, acontece em reset_password() (POST) — ver ali.
+        $users = new users_model();
+        $users->set_field([" idx "]);
+        $users->set_filter([" active = 'yes' ", " enabled = 'yes' ", " email_token = ? ", " email_token_expires_at > NOW() "], [$token]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        if (empty($users->data[0]["idx"])) {
+            $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = random_token();
+        }
+        $alpineControllers = ['setPassword'];
+        $reset_password_token = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+
+        include(constant("cRootServer") . "ui/common/head.php");
+        include(constant("cRootServer") . "ui/common/header.php");
+        include(constant("cRootServer") . "ui/page/reset_password.php");
+        include(constant("cRootServer") . "ui/common/footer.php");
+        include(constant("cRootServer") . "ui/common/foot.php");
+    }
+
+    public function reset_password(array $info): never
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["login_url"]);
+
+        $token    = $info[1] ?? null;
+        $password = $info["post"]["password"] ?? '';
+        $confirm  = $info["post"]["password_confirm"] ?? '';
+
+        if (empty($token)) {
+            $_SESSION["messages_app"]["danger"] = ["Link inválido."];
+            basic_redir($GLOBALS["forgot_password_url"]);
+        }
+
+        if (empty($password) || strlen($password) < 6) {
+            $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
+            basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
+        }
+
+        if ($password !== $confirm) {
+            $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
+            basic_redir(sprintf($GLOBALS["reset_password_url"], $token));
+        }
+
+        // Valida e consome o token no MESMO UPDATE: o WHERE repete email_token = ?
+        // (nao so idx), entao so uma requisicao concorrente com o mesmo link
+        // consegue afetar a linha — a outra ve rowCount() 0 e cai no erro de link
+        // invalido, mesmo tendo lido o token valido no mesmo instante.
+        $users = new users_model();
+        $users->set_filter([
+            " active = 'yes' ",
+            " enabled = 'yes' ",
+            " email_token = ? ",
+            " email_token_expires_at > NOW() ",
+        ], [$token]);
+        $users->populate([
+            "password"                => password_hash($password, PASSWORD_BCRYPT),
+            "email_token"             => null,
+            "email_token_expires_at"  => null,
+        ]);
+        $result = $users->save();
+        $rowsAffected = ($result instanceof \PDOStatement) ? $result->rowCount() : 0;
+
+        if ($rowsAffected !== 1) {
+            $_SESSION["messages_app"]["danger"] = ["Link inválido, expirado ou já utilizado."];
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        session_regenerate_id(true);
+
+        $_SESSION["messages_app"]["success"] = ["Senha redefinida com sucesso! Faça login para continuar."];
+        basic_redir($GLOBALS["login_url"]);
+    }
+
     public function display_account(array $info): void
     {
         if (!self::check_login()) {
