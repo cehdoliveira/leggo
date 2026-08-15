@@ -4,7 +4,11 @@
  *
  * Contrato: o view define $sidebarActive antes do include, com uma das chaves
  * de $sidebarItems abaixo. Item sem a capacidade exigida não é renderizado —
- * a checagem usa auth_controller::has() (estrita), não can() (modo log).
+ * a checagem usa auth_controller::can() (modo log), não has() (estrita).
+ * Motivo: profiles_capabilities só é seedada pro perfil admin (migrations/012);
+ * usar has() aqui esconderia o menu inteiro de qualquer perfil custom até a
+ * tela de gestão de capacidades (plano 029) existir. Reavaliar quando 029 ou
+ * 022 (can() bloqueante) entrarem.
  */
 $sidebarActive = $sidebarActive ?? '';
 
@@ -20,7 +24,7 @@ $sidebarItems = [
         <div class="nav-section-label">Menu</div>
         <ul class="nav flex-column gap-1">
             <?php foreach ($sidebarItems as $item): ?>
-                <?php if (!auth_controller::has($item['cap'])) { continue; } ?>
+                <?php if (!auth_controller::can($item['cap'])) { continue; } ?>
                 <?php $isActive = $sidebarActive === $item['key']; ?>
                 <li class="nav-item">
                     <a href="<?php echo htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8'); ?>"
