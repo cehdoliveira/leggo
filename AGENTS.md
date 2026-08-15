@@ -234,7 +234,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 
 ## Releases
 
-- Bumping `VERSION` also requires updating `APP_VERSION` in **both** `kernel.php.example` files — it drives the `?v=` asset cache-bust in `foot.php`. Keep them in sync.
+- Bumping `VERSION` also requires updating `APP_VERSION` in **both** `kernel.php.example` files — it drives the `?v=` asset cache-bust in `head.php` and `foot.php`. Keep them in sync.
 
 ## Files to know
 
