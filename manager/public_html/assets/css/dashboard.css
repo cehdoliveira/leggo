@@ -385,3 +385,12 @@
         padding: 1rem;
     }
 }
+
+.capabilities-box {
+    max-height: 14rem;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--surface-2);
+}

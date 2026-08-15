@@ -88,6 +88,7 @@ $page       = (int)floor($offset / $paginate) + 1;
                                     <th>Admin</th>
                                     <th>Protegido</th>
                                     <th>Perfil pai</th>
+                                    <th>Capacidades</th>
                                     <th>
                                         <a href="<?php echo htmlspecialchars(set_url($GLOBALS['profiles_url'], ['ordenation' => $ordenation['created_at'][0]] + $done), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="text-decoration-none">
@@ -127,6 +128,12 @@ $page       = (int)floor($offset / $paginate) + 1;
                                             <?php endif; ?>
                                         </td>
                                         <td style="font-size:0.82rem;color:var(--text-muted);"><?php echo htmlspecialchars($parentName, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td style="font-size:0.82rem;color:var(--text-muted);">
+                                            <?php
+                                            $capCount = count($p['capabilities_attach'] ?? []);
+                                            echo $isAdm ? 'todas' : (string)$capCount;
+                                            ?>
+                                        </td>
                                         <td style="font-size:0.78rem;color:var(--text-muted);"><?php echo htmlspecialchars((string)($p['created_at'] ?? '—'), ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td>
                                             <?php if ($isEditabled): ?>

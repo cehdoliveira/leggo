@@ -70,6 +70,57 @@ class profiles_controller
         return (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
     }
 
+    /**
+     * Todas as capacidades ativas, em [idx => name], para os checkboxes do form.
+     * O vocabulario e fechado (migrations/012): a tela marca e desmarca, nunca
+     * cria capacidade nova.
+     *
+     * @return array<int, string>
+     */
+    private function available_capabilities(): array
+    {
+        $model = new capabilities_model();
+        $model->set_field([" idx ", " slug ", " name "]);
+        $model->set_filter([" active = 'yes' "]);
+        $model->set_order([" slug ASC "]);
+        $model->load_data(false);
+
+        $out = [];
+        foreach ($model->data as $row) {
+            $out[(int)$row['idx']] = sprintf('%s — %s', $row['slug'], $row['name']);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Capacidades atualmente vinculadas a um perfil, via attach() (convencao
+     * de nomes do DOLModel resolve para profiles_capabilities). Extraido para
+     * metodo proprio para ser testavel por reflection sem renderizar a tela.
+     *
+     * @return array<int, int>
+     */
+    private function selected_capabilities(int $idx): array
+    {
+        if ($idx <= 0) {
+            return [];
+        }
+
+        $linked = new profiles_model();
+        $linked->set_field([" idx "]);
+        $linked->set_filter([" active = 'yes' ", " idx = ? "], [$idx]);
+        $linked->set_paginate([1]);
+        $linked->load_data(false);
+        $linked->attach(["capabilities"]);
+
+        $selected = [];
+        foreach ($linked->data[0]['capabilities_attach'] ?? [] as $row) {
+            $selected[] = (int)($row['idx'] ?? 0);
+        }
+
+        return $selected;
+    }
+
     public function display(array $info): void
     {
         global $profiles_url, $newprofile_url, $profile_url;
@@ -101,8 +152,13 @@ class profiles_controller
 
             // return_data() chama load_data(true) por baixo — recordset vira o
             // total SEM o LIMIT, a contagem da paginação. Não escreva um COUNT à mão.
-            [$total, $profiles] = $model->return_data();
+            [$total] = $model->return_data();
             $total = (int)$total;
+
+            // Uma query em lote para a pagina inteira (nao por linha) — o
+            // attach() do DOLModel ja resolve isso (plano 004).
+            $model->attach(["capabilities"], null, null, ["idx"]);
+            $profiles = $model->data;
 
             $availableParents = $this->available_parents();
         } catch (RuntimeException $e) {
@@ -193,7 +249,9 @@ class profiles_controller
             $form["url"]   = sprintf($profile_url, rawurlencode((string)$data['slug']));
         }
 
-        $availableParents = $this->available_parents();
+        $availableParents      = $this->available_parents();
+        $availableCapabilities = $this->available_capabilities();
+        $selectedCapabilities  = $this->selected_capabilities($idx);
 
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
@@ -265,6 +323,42 @@ class profiles_controller
                     'editabled' => 'yes',
                 ]);
                 $idx = (int)$model->save();
+            }
+
+            // Só mexe no vínculo quando o formulário trouxe a seção — o campo
+            // oculto distingue "desmarquei tudo" (desvincula) de "form sem a
+            // seção" (não mexe). Perfil protegido nunca chega aqui: o guard de
+            // is_editabled() acima já barrou.
+            if (isset($post['capabilities_sent'])) {
+                $capabilityIds = array_values(array_filter(
+                    array_map('intval', (array)($post['capabilities_id'] ?? [])),
+                    fn(int $id): bool => $id > 0
+                ));
+
+                // Anti-escalacao + anti-lixo: id que nao esta mais entre as
+                // capacidades ativas (POST forjado, ou inativada entre a
+                // renderizacao do form e o submit) e descartado direto —
+                // profiles_capabilities.capabilities_id nao tem FOREIGN KEY.
+                // Capacidade ativa que o perfil ja tinha pode ser mantida ou
+                // removida livremente; capacidade NOVA so entra se o autor do
+                // POST ja tiver essa capacidade (has() e estrito, ignora o
+                // bypass do modo log do can()). Sem isso, qualquer perfil com
+                // perfis.escrever poderia se auto-conceder qualquer outra
+                // capacidade pelo form.
+                $previouslyLinked = $this->selected_capabilities($idx);
+                $capsModel = new capabilities_model();
+                $capsModel->load_data(false);
+                $slugById = array_column($capsModel->data, 'slug', 'idx');
+                $capabilityIds = array_values(array_filter(
+                    $capabilityIds,
+                    fn(int $id): bool => isset($slugById[$id])
+                        && (in_array($id, $previouslyLinked, true) || auth_controller::has($slugById[$id]))
+                ));
+
+                $model->save_attach(
+                    ['idx' => $idx, 'post' => ['capabilities_id' => $capabilityIds]],
+                    ['capabilities']
+                );
             }
 
             $_SESSION["messages_app"]["success"] = [$slug !== null ? "Perfil atualizado com sucesso." : "Perfil criado com sucesso."];
