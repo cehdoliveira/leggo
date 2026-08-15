@@ -220,29 +220,12 @@ class auth_controller
                 $newUser->save_attach($info, ["profiles"]);
 
                 try {
-                    $name             = $info["post"]["name"];
-                    $login            = $info["post"]["login"];
-                    $canonicalBase    = canonical_url('MANAGER_CANONICAL_URL');
-                    $loginLink        = $canonicalBase . '/login';
-                    $setPasswordLink  = $canonicalBase . '/definir-senha/' . $token;
-                    $subject          = "Seus dados de acesso — " . constant('cTitle');
-                    ob_start();
-                    include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
-                    $body = ob_get_clean();
-
-                    if (class_exists("EmailProducer")) {
-                        $producer = EmailProducer::getInstance();
-                        $producer->send($info["post"]["mail"], $subject, $body);
-                    }
-
-                    $msgModel = new messages_model();
-                    $msgModel->populate([
-                        "to_mail" => $info["post"]["mail"],
-                        "subject" => $subject,
-                        "body"    => redact_email_body($body),
-                        "sent_at" => date("Y-m-d H:i:s"),
-                    ]);
-                    $msgModel->save();
+                    send_admin_credentials_mail(
+                        $info["post"]["name"],
+                        $info["post"]["login"],
+                        $info["post"]["mail"],
+                        $token
+                    );
                 } catch (Exception $e) {
                     error_log("Erro ao enviar email de cadastro: " . $e->getMessage());
                 }
