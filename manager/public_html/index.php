@@ -63,6 +63,10 @@ $dispatcher = new Dispatcher(true);
 // mora em auth_controller::routeGuard(), testavel isoladamente.
 $can = fn(string $capability): callable => fn(): bool => auth_controller::routeGuard($capability);
 
+// "Minha conta" nao e permissao de administracao: qualquer usuario logado
+// acessa a propria. Guard e so sessao, nao capacidade.
+$authGuard = fn(): bool => auth_controller::check_login();
+
 $dispatcher->add_route("GET", "/(index(\.json|\.xml|\.html)).*?", "function:basic_redir", null, $home_url);
 
 // Login

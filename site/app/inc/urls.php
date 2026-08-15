@@ -12,3 +12,5 @@ $terms_url          = sprintf("%s%s", constant("cFrontend"), "termos-de-uso");
 $privacy_url        = sprintf("%s%s", constant("cFrontend"), "politica-de-privacidade");
 $forgot_password_url     = sprintf("%s%s", constant("cFrontend"), "esqueci-minha-senha");
 $reset_password_url      = sprintf("%s%s/%s", constant("cFrontend"), "redefinir-senha", "%s");
+$account_url          = sprintf("%s%s", constant("cFrontend"), "minha-conta");
+$account_password_url = sprintf("%s%s", constant("cFrontend"), "minha-conta/senha");
