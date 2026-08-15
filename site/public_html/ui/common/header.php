@@ -15,9 +15,10 @@
                     $userName = htmlspecialchars($_SESSION[constant("cAppKey")]["credential"]["name"] ?? '', ENT_QUOTES, 'UTF-8');
                     ?>
                     <div class="ss-navbar-actions">
-                        <a class="d-none d-sm-inline" href="<?php echo htmlspecialchars($GLOBALS['account_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                        <a href="<?php echo htmlspecialchars($GLOBALS['account_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                           aria-label="Minha conta"
                            style="font-size:0.78rem;color:var(--text-muted);text-decoration:none;">
-                            <i class="bi bi-person-circle me-1" aria-hidden="true"></i><?php echo $userName; ?>
+                            <i class="bi bi-person-circle me-1" aria-hidden="true"></i><span class="d-none d-sm-inline"><?php echo $userName; ?></span>
                         </a>
                         <button type="button" class="btn-theme-toggle" data-theme-toggle title="Alternar tema" aria-label="Alternar tema">
                             <i class="bi bi-sun" aria-hidden="true"></i>

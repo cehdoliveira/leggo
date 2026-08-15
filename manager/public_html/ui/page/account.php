@@ -77,8 +77,8 @@ $csrfToken = htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8
                     <div class="mb-3">
                         <label for="confirm-password" class="form-label">Confirme a nova senha</label>
                         <input type="password" id="confirm-password" name="password_confirm" class="form-control"
-                               required autocomplete="new-password" x-model="confirm">
-                        <p class="invalid-feedback d-block" x-show="confirm !== '' && pwd !== confirm">
+                               required autocomplete="new-password" x-model="confirm" aria-describedby="confirm-password-error">
+                        <p id="confirm-password-error" class="invalid-feedback d-block" role="alert" x-show="confirm !== '' && pwd !== confirm">
                             As senhas não conferem.
                         </p>
                     </div>
