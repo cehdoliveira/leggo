@@ -11,38 +11,7 @@ $ariaSort   = static fn(string $col): string => match ($ordenation[$col][1]) {
 
 <div class="manager-layout">
 
-    <!-- Sidebar -->
-    <nav class="manager-sidebar">
-        <div class="manager-sidebar-inner">
-            <div class="nav-section-label">Menu</div>
-            <ul class="nav flex-column gap-1">
-                <li class="nav-item">
-                    <a href="<?php echo $GLOBALS['home_url']; ?>" class="nav-link">
-                        <i class="bi bi-people" aria-hidden="true"></i> Usuários
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="<?php echo $GLOBALS['emails_url']; ?>" class="nav-link active">
-                        <i class="bi bi-envelope" aria-hidden="true"></i> E-mails
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="<?php echo $GLOBALS['profiles_url']; ?>" class="nav-link">
-                        <i class="bi bi-person-badge" aria-hidden="true"></i> Perfis
-                    </a>
-                </li>
-            </ul>
-
-            <div class="nav-section-label">Conta</div>
-            <ul class="nav flex-column gap-1">
-                <li class="nav-item">
-                    <a href="<?php echo $GLOBALS['logout_url']; ?>" class="nav-link" style="color: #ef4444;">
-                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <?php $sidebarActive = 'emails'; include(constant("cRootServer") . "ui/common/sidebar.php"); ?>
 
     <!-- Conteúdo principal -->
     <main class="manager-content">
