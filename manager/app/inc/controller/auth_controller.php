@@ -72,6 +72,45 @@ class auth_controller
     }
 
     /**
+     * Guard de rota por capacidade — valor passado no 4o argumento de
+     * add_route() (Dispatcher::evaluateCheck).
+     *
+     * Devolver false faz o Dispatcher redirecionar pro login — certo pra quem
+     * nao esta logado. Pra quem ESTA logado e so nao tem a capacidade, o login
+     * redireciona de volta pra home (auth_controller::display) e o usuario
+     * fica sem nenhuma explicacao: nesse caso a resposta correta e 403, via
+     * render_error_page() (CommonFunctions.php).
+     *
+     * Enquanto can() estiver em modo log (plano 021), o 403 nunca dispara:
+     * can() sempre devolve true pra quem esta logado. O ramo fica inerte ate
+     * o plano 022 trocar esse retorno pra false.
+     *
+     * $can e $checkLogin sao seams de teste (default: can()/check_login()
+     * reais) — permitem simular em teste a fatia 022 (can() negando pra quem
+     * esta logado), que hoje nao acontece de verdade. Nao passe nada em
+     * producao.
+     */
+    public static function routeGuard(string $capability, ?callable $can = null, ?callable $checkLogin = null): bool
+    {
+        $can ??= fn(string $c): bool => self::can($c);
+        $checkLogin ??= fn(): bool => self::check_login();
+
+        if ($can($capability)) {
+            return true;
+        }
+
+        if (!$checkLogin()) {
+            return false;
+        }
+
+        render_error_page(
+            403,
+            "Acesso negado",
+            "Sua conta não tem permissão para esta área. Peça a um administrador a capacidade necessária."
+        );
+    }
+
+    /**
      * Perfis ativos do usuario e as capacidades ativas de cada um, numa query.
      * LEFT JOIN: um perfil sem nenhuma capacidade ainda devolve uma linha, com
      * slug nulo — e por ela que o bypass de adm = 'yes' funciona.

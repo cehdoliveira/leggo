@@ -59,31 +59,9 @@ $params = [
 $dispatcher = new Dispatcher(true);
 // Guard por capacidade. O Dispatcher avalia qualquer callable no 4o argumento
 // de add_route() (Dispatcher::evaluateCheck), entao o guard e so um valor —
-// nenhuma mudanca no roteador. O slug e literal aqui no codigo; o banco so e
-// consultado dentro de can(), para saber se o perfil do usuario tem aquela
-// capacidade.
-// Guard por capacidade. O Dispatcher avalia qualquer callable no 4o argumento
-// de add_route() (Dispatcher::evaluateCheck), entao o guard e so um valor.
-//
-// Devolver false faz o Dispatcher redirecionar para o login — certo para quem
-// nao esta logado. Para quem ESTA logado e so nao tem a capacidade, o login
-// redireciona de volta para a home (auth_controller::display) e o usuario fica
-// sem nenhuma explicacao: nesse caso a resposta correta e 403.
-$can = fn(string $capability): callable => function () use ($capability): bool {
-	if (auth_controller::can($capability)) {
-		return true;
-	}
-
-	if (!auth_controller::check_login()) {
-		return false;
-	}
-
-	render_error_page(
-		403,
-		"Acesso negado",
-		"Sua conta não tem permissão para esta área. Peça a um administrador a capacidade necessária."
-	);
-};
+// nenhuma mudanca no roteador. O slug e literal aqui no codigo; a decisao real
+// mora em auth_controller::routeGuard(), testavel isoladamente.
+$can = fn(string $capability): callable => fn(): bool => auth_controller::routeGuard($capability);
 
 $dispatcher->add_route("GET", "/(index(\.json|\.xml|\.html)).*?", "function:basic_redir", null, $home_url);
 

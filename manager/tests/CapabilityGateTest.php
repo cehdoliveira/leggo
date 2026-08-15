@@ -164,4 +164,76 @@ final class CapabilityGateTest extends DBTestCase
         $this->assertFalse(auth_controller::has('perfis.ler'));
         $this->assertTrue(auth_controller::can('perfis.ler'));
     }
+
+    /**
+     * Cobre o guard do plano 026 (manager/public_html/index.php): sem
+     * sessao, routeGuard() nega sem chegar perto de render_error_page() —
+     * regressao aqui e visitante anonimo tomando 403 em vez de ir pro login.
+     */
+    public function testRouteGuardNegaSemSessao(): void
+    {
+        unset($_SESSION[constant('cAppKey')]);
+        $this->assertFalse(auth_controller::routeGuard('usuarios.ler'));
+    }
+
+    /**
+     * Hoje, logado sempre passa (can() em modo log nunca nega pra quem tem
+     * sessao) — o ramo do 403 fica inerte ate o plano 022. Confirma que
+     * routeGuard() nao dispara render_error_page() enquanto isso.
+     */
+    public function testRouteGuardAceitaLogadoNoModoLog(): void
+    {
+        $marker = uniqid();
+        [$userId] = $this->makeUserWithProfile($marker, 'no');
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
+
+        $this->assertTrue(auth_controller::routeGuard('capacidade-inexistente'));
+    }
+
+    /**
+     * Simula a fatia 022 (can() negando pra quem esta logado) via seam de
+     * teste, pra provar que o mecanismo do 403 funciona ANTES dela existir
+     * de verdade — sem isso, uma regressao na ordem das checagens (ex.:
+     * inverter can()/check_login(), ou nunca chamar render_error_page) so
+     * apareceria em producao depois do plano 022 ligar o bloqueio.
+     */
+    public function testRouteGuardDisparaTerminalResponse403QuandoLogadoSemCapacidade(): void
+    {
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = 1;
+        $GLOBALS['home_url']   = '/';
+        $GLOBALS['login_url']  = '/login';
+        $GLOBALS['logout_url'] = '/logout';
+
+        ob_start();
+        try {
+            auth_controller::routeGuard(
+                'usuarios.ler',
+                can: fn(string $c): bool => false,
+                checkLogin: fn(): bool => true,
+            );
+            $this->fail('routeGuard() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            ob_end_clean();
+            $this->assertSame(TerminalResponse::KIND_ERROR, $e->kind);
+            $this->assertSame(403, $e->payload['code']);
+        }
+    }
+
+    /**
+     * Mesma simulacao, mas sem sessao: routeGuard() tem que negar (false),
+     * nunca cair no 403 — visitante anonimo vai pro login, nao pra tela de
+     * acesso negado.
+     */
+    public function testRouteGuardNaoDisparaErroSemSessaoMesmoComCanNegando(): void
+    {
+        unset($_SESSION[constant('cAppKey')]);
+
+        $result = auth_controller::routeGuard(
+            'usuarios.ler',
+            can: fn(string $c): bool => false,
+            checkLogin: fn(): bool => false,
+        );
+
+        $this->assertFalse($result);
+    }
 }
