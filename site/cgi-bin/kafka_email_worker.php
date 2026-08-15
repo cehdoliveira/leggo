@@ -263,7 +263,9 @@ function runWorker()
                 if ($messageCount % 20 === 0) {
                     log_message("Heartbeat: Worker ativo, aguardando mensagens... (ciclo #{$messageCount})");
                 }
-                pcntl_signal_dispatch(); // mantém tratamento de sinais responsivo enquanto ocioso
+                if (function_exists('pcntl_signal_dispatch')) {
+                    pcntl_signal_dispatch(); // mantém tratamento de sinais responsivo enquanto ocioso
+                }
                 continue;
             }
 
