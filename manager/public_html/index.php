@@ -59,10 +59,9 @@ $params = [
 $dispatcher = new Dispatcher(true);
 // Guard por capacidade. O Dispatcher avalia qualquer callable no 4o argumento
 // de add_route() (Dispatcher::evaluateCheck), entao o guard e so um valor —
-// nenhuma mudanca no roteador. O slug e literal aqui no codigo; o banco so e
-// consultado dentro de can(), para saber se o perfil do usuario tem aquela
-// capacidade.
-$can = fn(string $capability): callable => fn(): bool => auth_controller::can($capability);
+// nenhuma mudanca no roteador. O slug e literal aqui no codigo; a decisao real
+// mora em auth_controller::routeGuard(), testavel isoladamente.
+$can = fn(string $capability): callable => fn(): bool => auth_controller::routeGuard($capability);
 
 $dispatcher->add_route("GET", "/(index(\.json|\.xml|\.html)).*?", "function:basic_redir", null, $home_url);
 
@@ -113,5 +112,9 @@ $dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)/remover",  "profiles_contr
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
-	basic_redir($home_url);
+	render_error_page(
+		404,
+		"Página não encontrada",
+		"O endereço acessado não existe ou foi movido. Confira o link ou volte ao início."
+	);
 }

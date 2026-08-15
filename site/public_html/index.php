@@ -98,5 +98,9 @@ $dispatcher->add_route("GET", "/area(\.json|\.xml|\.html)?", "site_controller:ho
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
-	basic_redir($home_url);
+	render_error_page(
+		404,
+		"Página não encontrada",
+		"O endereço acessado não existe ou foi movido. Confira o link ou volte ao início."
+	);
 }
