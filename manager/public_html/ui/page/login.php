@@ -49,6 +49,11 @@
                             <span x-text="isSubmitting ? 'Entrando...' : 'Entrar'">Entrar</span>
                         </button>
 
+                        <p class="text-center mt-3 mb-0">
+                            <a href="<?php echo htmlspecialchars($GLOBALS['forgot_password_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                               style="font-size:0.8rem;color:var(--text-muted);">Esqueci minha senha</a>
+                        </p>
+
                     </form>
                 </div>
             </div>
