@@ -19,7 +19,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" integrity="sha384-9Ax3MmS9AClxJyd5/zafcXXjxmwFhZCdsT6HJoJjarvCaAkJlk5QDzjLJm+Wdx5F" crossorigin="anonymous"></script>
 
     <!-- Custom JS -->
-    <script src="<?php printf("%s%s", constant('cFrontend'), "assets/js/main.js"); ?>"></script>
+    <script src="<?php printf("%s%s?v=%s", constant('cFrontend'), "assets/js/main.js", constant('APP_VERSION')); ?>"></script>
     </body>
 
     </html>

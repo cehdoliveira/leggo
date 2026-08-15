@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.min.css">
 
-    <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/main.css"); ?>">
-    <link rel="stylesheet" href="<?php printf("%s%s", constant("cFrontend"), "assets/css/dashboard.css"); ?>">
+    <link rel="stylesheet" href="<?php printf("%s%s?v=%s", constant("cFrontend"), "assets/css/main.css", constant("APP_VERSION")); ?>">
+    <link rel="stylesheet" href="<?php printf("%s%s?v=%s", constant("cFrontend"), "assets/css/dashboard.css", constant("APP_VERSION")); ?>">
 
     <!-- Apply theme before render to prevent flash -->
     <script nonce="<?php echo htmlspecialchars($GLOBALS['cspNonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
