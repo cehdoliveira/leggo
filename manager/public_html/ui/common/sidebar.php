@@ -40,6 +40,13 @@ $sidebarItems = [
         <div class="nav-section-label">Conta</div>
         <ul class="nav flex-column gap-1">
             <li class="nav-item">
+                <a href="<?php echo htmlspecialchars($GLOBALS['account_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                   class="nav-link<?php echo $sidebarActive === 'conta' ? ' active' : ''; ?>"
+                   <?php echo $sidebarActive === 'conta' ? 'aria-current="page"' : ''; ?>>
+                    <i class="bi bi-person-circle" aria-hidden="true"></i> Minha conta
+                </a>
+            </li>
+            <li class="nav-item">
                 <form method="POST" action="<?php echo htmlspecialchars($GLOBALS['logout_url'], ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" class="nav-link nav-link-logout">
