@@ -34,7 +34,10 @@
     --error: #ef4444;
     --success-dim: rgba(34, 197, 94, 0.1);
     --warning-dim: rgba(245, 158, 11, 0.1);
-    --error-dim: rgba(239, 68, 68, 0.1);
+    --error-dim: rgba(239, 68, 68, 0.08);
+    --success-border: rgba(34, 197, 94, 0.2);
+    --warning-border: rgba(245, 158, 11, 0.2);
+    --error-border: rgba(239, 68, 68, 0.2);
 
     /* Bootstrap overrides */
     --bs-body-color: #e2e8f0;
@@ -59,12 +62,15 @@
 
     --border: rgba(0, 0, 0, 0.08);
 
-    --success: #16a34a;
-    --warning: #b45309;
-    --error: #dc2626;
-    --success-dim: rgba(22, 163, 74, 0.1);
-    --warning-dim: rgba(180, 83, 9, 0.1);
-    --error-dim: rgba(220, 38, 38, 0.1);
+    --success: #107736;
+    --warning: #a74d08;
+    --error: #c82020;
+    --success-dim: rgba(16, 119, 54, 0.1);
+    --warning-dim: rgba(167, 77, 8, 0.1);
+    --error-dim: rgba(200, 32, 32, 0.1);
+    --success-border: rgba(16, 119, 54, 0.2);
+    --warning-border: rgba(167, 77, 8, 0.2);
+    --error-border: rgba(200, 32, 32, 0.2);
 
     --bs-body-color: #1a2332;
     --bs-btn-color: #1a2332;

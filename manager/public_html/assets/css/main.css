@@ -256,7 +256,7 @@ h6 {
 
 .alert-success {
     background-color: var(--success-dim);
-    border-color: rgba(74, 222, 128, 0.22);
+    border-color: var(--success-border);
     color: var(--success);
 }
 
