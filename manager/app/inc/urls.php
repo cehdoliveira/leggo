@@ -18,3 +18,5 @@ $profile_url       = sprintf("%s%s/%s", constant("cFrontend"), "perfil", "%s");
 $removeprofile_url = sprintf("%s%s/%s/%s", constant("cFrontend"), "perfil", "%s", "remover");
 $verify_email_url  = sprintf("%s%s/%s", constant("cFrontend"), "verificar-email", "%s");
 $set_password_url  = sprintf("%s%s/%s", constant("cFrontend"), "definir-senha", "%s");
+$account_url          = sprintf("%s%s", constant("cFrontend"), "minha-conta");
+$account_password_url = sprintf("%s%s", constant("cFrontend"), "minha-conta/senha");

@@ -63,6 +63,10 @@ $dispatcher = new Dispatcher(true);
 // mora em auth_controller::routeGuard(), testavel isoladamente.
 $can = fn(string $capability): callable => fn(): bool => auth_controller::routeGuard($capability);
 
+// "Minha conta" nao e permissao de administracao: qualquer usuario logado
+// acessa a propria. Guard e so sessao, nao capacidade.
+$authGuard = fn(): bool => auth_controller::check_login();
+
 $dispatcher->add_route("GET", "/(index(\.json|\.xml|\.html)).*?", "function:basic_redir", null, $home_url);
 
 // Login
@@ -79,6 +83,11 @@ $dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controll
 // Definição de senha para novos usuários (público — usuário ainda não autenticado)
 $dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
 $dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
+
+// Minha conta — qualquer usuário logado edita a própria
+$dispatcher->add_route("GET",  "/minha-conta",        "auth_controller:display_account", $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta",        "auth_controller:save_account",    $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta/senha",  "auth_controller:change_password", $authGuard, $params);
 
 // Usuários — padrão display/form/save/remove (requer autenticação)
 $dispatcher->add_route("GET",  "/?",                              "users_controller:display", $can('usuarios.ler'), $params);

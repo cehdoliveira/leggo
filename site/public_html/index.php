@@ -85,6 +85,11 @@ $dispatcher->add_route("POST", "/esqueci-minha-senha",            "auth_controll
 $dispatcher->add_route("GET",  "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controller:display_reset_password",  null, $params);
 $dispatcher->add_route("POST", "/redefinir-senha/([a-zA-Z0-9]+)", "auth_controller:reset_password",          null, $params);
 
+// Minha conta — qualquer usuário logado edita a própria
+$dispatcher->add_route("GET",  "/minha-conta",        "auth_controller:display_account", $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta",        "auth_controller:save_account",    $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta/senha",  "auth_controller:change_password", $authGuard, $params);
+
 // Logout
 $dispatcher->add_route("POST", "/sair", "auth_controller:logout", null, $params);
 
