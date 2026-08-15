@@ -92,6 +92,14 @@ $dispatcher->add_route("GET",  "/usuario/([a-z0-9_-]+)",          "users_control
 $dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)",          "users_controller:save",    $can('usuarios.escrever'), $params);
 $dispatcher->add_route("POST", "/usuario/([a-z0-9_-]+)/remover",  "users_controller:remove",  $can('usuarios.escrever'), $params);
 
+// Import de usuários por CSV — fatia 1 do plans/018-DESIGN.md (requer autenticação)
+$dispatcher->add_route("GET",  "/importar-usuarios",                     "usersimports_controller:display", $can('usuarios.ler'), $params);
+$dispatcher->add_route("GET",  "/importar-usuarios/novo",                "usersimports_controller:form",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/importar-usuarios/novo",                "usersimports_controller:save",    $can('usuarios.escrever'), $params);
+$dispatcher->add_route("GET",  "/importar-usuarios/([0-9]+)",            "usersimports_controller:form",    $can('usuarios.ler'), $params);
+$dispatcher->add_route("POST", "/importar-usuarios",                     "usersimports_controller:action",  $can('usuarios.escrever'), $params);
+$dispatcher->add_route("POST", "/importar-usuarios/([0-9]+)/remover",    "usersimports_controller:remove",  $can('usuarios.escrever'), $params);
+
 // Outbox de e-mails — somente leitura (requer autenticação)
 $dispatcher->add_route("GET", "/emails(\.json|\.html)?", "emails_controller:display", $can('emails.ler'), $params);
 
