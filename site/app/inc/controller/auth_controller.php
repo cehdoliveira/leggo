@@ -672,7 +672,7 @@ class auth_controller
         $users->set_field([" idx ", " password "]);
         $users->set_filter([" active = 'yes' ", " idx = ? "], [$userIdx]);
         $users->set_paginate([1]);
-        $users->load_data();
+        $users->load_data(false);
 
         $stored = $users->data[0]["password"] ?? '';
 
@@ -681,15 +681,31 @@ class auth_controller
             basic_redir($GLOBALS["account_url"]);
         }
 
-        $users->set_filter([" idx = ? "], [$userIdx]);
-        $users->populate(["password" => password_hash($password, PASSWORD_BCRYPT)]);
-        $users->save();
+        $rollback = false;
 
-        // Troca de senha invalida a sessao antiga: e a defesa contra sessao
-        // roubada continuar valendo depois da troca.
-        session_regenerate_id(true);
+        try {
+            $users->set_filter([" idx = ? "], [$userIdx]);
+            $users->populate(["password" => password_hash($password, PASSWORD_BCRYPT)]);
+            $users->save();
 
-        $_SESSION["messages_app"]["success"] = ["Senha alterada."];
-        basic_redir($GLOBALS["account_url"]);
+            // Troca valida: a cota de tentativas nao deve penalizar quem so
+            // errou e depois acertou, como ja acontece em login().
+            reset_rate_limit($redis, $rateKey);
+
+            // Troca de senha invalida a sessao antiga: e a defesa contra sessao
+            // roubada continuar valendo depois da troca.
+            session_regenerate_id(true);
+
+            $_SESSION["messages_app"]["success"] = ["Senha alterada."];
+        } catch (RuntimeException $e) {
+            $rollback = true;
+            Logger::getInstance()->error("password change failed", [
+                "error" => $e->getMessage(),
+                "user"  => $userIdx,
+            ]);
+            $_SESSION["messages_app"]["danger"] = ["Não foi possível alterar a senha. Tente novamente."];
+        }
+
+        basic_redir($GLOBALS["account_url"], rollback: $rollback);
     }
 }
