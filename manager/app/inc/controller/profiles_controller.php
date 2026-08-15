@@ -320,6 +320,22 @@ class profiles_controller
                 $idx = (int)$model->save();
             }
 
+            // Só mexe no vínculo quando o formulário trouxe a seção — o campo
+            // oculto distingue "desmarquei tudo" (desvincula) de "form sem a
+            // seção" (não mexe). Perfil protegido nunca chega aqui: o guard de
+            // is_editabled() acima já barrou.
+            if (isset($post['capabilities_sent'])) {
+                $capabilityIds = array_values(array_filter(
+                    array_map('intval', (array)($post['capabilities_id'] ?? [])),
+                    fn(int $id): bool => $id > 0
+                ));
+
+                $model->save_attach(
+                    ['idx' => $idx, 'post' => ['capabilities_id' => $capabilityIds]],
+                    ['capabilities']
+                );
+            }
+
             $_SESSION["messages_app"]["success"] = [$slug !== null ? "Perfil atualizado com sucesso." : "Perfil criado com sucesso."];
         } catch (RuntimeException $e) {
             $rollback = true;
