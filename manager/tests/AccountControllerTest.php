@@ -359,4 +359,104 @@ final class AccountControllerTest extends DBTestCase
             }
         }
     }
+
+    public function testDisplayAccountWithoutSessionRedirectsToLogin(): void
+    {
+        $this->resetSingleton();
+        unset($_SESSION[constant('cAppKey')]);
+
+        try {
+            (new auth_controller())->display_account([]);
+            $this->fail('display_account() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+            $this->assertSame($GLOBALS['login_url'], $e->payload['url'], 'Sem sessao, display_account() deve redirecionar para o login');
+        } finally {
+            $this->resetSingleton();
+        }
+    }
+
+    public function testDisplayAccountWithInactiveOrMissingAccountRedirectsToLoginWithMessage(): void
+    {
+        $this->resetSingleton();
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = 999999999;
+
+        try {
+            (new auth_controller())->display_account([]);
+            $this->fail('display_account() deveria ter lancado TerminalResponse');
+        } catch (TerminalResponse $e) {
+            $this->assertSame(TerminalResponse::KIND_REDIRECT, $e->kind);
+            $this->assertSame($GLOBALS['login_url'], $e->payload['url'], 'Conta inexistente/inativa deve redirecionar para o login');
+            $this->assertContains(
+                'Sessão inválida. Entre novamente.',
+                $_SESSION['messages_app']['danger'] ?? []
+            );
+        } finally {
+            unset($_SESSION[constant('cAppKey')]);
+            $this->resetSingleton();
+        }
+    }
+
+    public function testChangePasswordBlocksAfterFiveAttemptsWithinWindow(): void
+    {
+        $marker = uniqid();
+        $userId = null;
+
+        $this->resetSingleton();
+        try {
+            $userId = $this->makeUser($marker, 'secret1');
+
+            $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
+
+            for ($i = 0; $i < 5; $i++) {
+                // validate_csrf() consome o token da sessao a cada chamada;
+                // cada tentativa simula uma nova carga de formulario/token.
+                $_SESSION['_csrf_token'] = 'tok-' . $marker . '-' . $i;
+
+                try {
+                    (new auth_controller())->change_password([
+                        'post' => [
+                            '_csrf_token'       => $_SESSION['_csrf_token'],
+                            'current_password'  => 'senha-errada',
+                            'password'          => 'novaSenha1',
+                            'password_confirm'  => 'novaSenha1',
+                        ],
+                    ]);
+                    $this->fail('change_password() deveria ter lancado TerminalResponse');
+                } catch (TerminalResponse $e) {
+                    $this->assertContains(
+                        'A senha atual está incorreta.',
+                        $_SESSION['messages_app']['danger'] ?? [],
+                        "Tentativa " . ($i + 1) . " deveria ainda estar dentro do teto"
+                    );
+                }
+            }
+
+            $_SESSION['_csrf_token'] = 'tok-' . $marker . '-6';
+
+            try {
+                (new auth_controller())->change_password([
+                    'post' => [
+                        '_csrf_token'       => $_SESSION['_csrf_token'],
+                        'current_password'  => 'senha-errada',
+                        'password'          => 'novaSenha1',
+                        'password_confirm'  => 'novaSenha1',
+                    ],
+                ]);
+                $this->fail('change_password() deveria ter lancado TerminalResponse');
+            } catch (TerminalResponse $e) {
+                $this->assertContains(
+                    'Muitas tentativas. Aguarde um momento.',
+                    $_SESSION['messages_app']['danger'] ?? [],
+                    '6a tentativa dentro da janela de 60s deve ser bloqueada pelo rate limit'
+                );
+            }
+        } finally {
+            reset_rate_limit(null, 'change_pwd:unknown');
+            $this->resetSingleton();
+            if ($userId) {
+                (new localPDO())->executePrepared("DELETE FROM users WHERE idx = ?", [$userId]);
+            }
+        }
+    }
 }
