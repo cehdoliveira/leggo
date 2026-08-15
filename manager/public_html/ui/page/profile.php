@@ -81,10 +81,10 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['profiles_url'];
                         $capabilityGroups[$capDomain][$capIdx] = $capLabel;
                     }
                     ?>
-                    <div class="mb-3" x-data="{ q: '' }">
-                        <label class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
+                    <fieldset class="mb-3" style="border:0;padding:0;margin-bottom:1rem;" x-data="{ q: '' }">
+                        <legend class="form-label" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;width:auto;float:none;">
                             Capacidades
-                        </label>
+                        </legend>
 
                         <?php if ($isAdmProfile): ?>
                             <p class="form-text mb-0">
@@ -103,13 +103,13 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['profiles_url'];
                             <div class="capabilities-box">
                                 <?php foreach ($capabilityGroups as $capDomain => $capItems): ?>
                                     <?php $groupSearchText = htmlspecialchars(strtolower(implode(' ', $capItems)), ENT_QUOTES, 'UTF-8'); ?>
-                                    <div x-show="q === '' || '<?php echo $groupSearchText; ?>'.includes(q.toLowerCase())">
+                                    <div data-search="<?php echo $groupSearchText; ?>" x-show="q === '' || $el.dataset.search.includes(q.toLowerCase())">
                                         <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-top:0.5rem;">
                                             <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $capDomain)), ENT_QUOTES, 'UTF-8'); ?>
                                         </div>
                                         <?php foreach ($capItems as $capIdx => $capLabel): ?>
                                             <?php $checked = in_array((int)$capIdx, $selectedCapabilities, true); ?>
-                                            <div class="form-check" x-show="q === '' || '<?php echo htmlspecialchars(strtolower($capLabel), ENT_QUOTES, 'UTF-8'); ?>'.includes(q.toLowerCase())">
+                                            <div class="form-check" data-search="<?php echo htmlspecialchars(strtolower($capLabel), ENT_QUOTES, 'UTF-8'); ?>" x-show="q === '' || $el.dataset.search.includes(q.toLowerCase())">
                                                 <input class="form-check-input" type="checkbox"
                                                        name="capabilities_id[]" value="<?php echo (int)$capIdx; ?>"
                                                        id="cap-<?php echo (int)$capIdx; ?>"<?php echo $checked ? ' checked' : ''; ?>>
@@ -127,7 +127,7 @@ $cancelUrl  = $form['cancelUrl'] ?? $GLOBALS['profiles_url'];
                                 Desmarcar tudo remove todas as capacidades deste perfil.
                             </p>
                         <?php endif; ?>
-                    </div>
+                    </fieldset>
 
                     <div class="d-flex gap-2 justify-content-end">
                         <a href="<?php echo htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-sm btn-secondary">Cancelar</a>
