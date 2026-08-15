@@ -84,6 +84,11 @@ $dispatcher->add_route("POST", "/cadastro(\.json|\.xml|\.html)?", "auth_controll
 $dispatcher->add_route("GET",  "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:display_set_password", null, $params);
 $dispatcher->add_route("POST", "/definir-senha/([a-zA-Z0-9]+)", "auth_controller:set_password",         null, $params);
 
+// Minha conta — qualquer usuário logado edita a própria
+$dispatcher->add_route("GET",  "/minha-conta",        "auth_controller:display_account", $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta",        "auth_controller:save_account",    $authGuard, $params);
+$dispatcher->add_route("POST", "/minha-conta/senha",  "auth_controller:change_password", $authGuard, $params);
+
 // Usuários — padrão display/form/save/remove (requer autenticação)
 $dispatcher->add_route("GET",  "/?",                              "users_controller:display", $can('usuarios.ler'), $params);
 $dispatcher->add_route("GET",  "/admin",                          "users_controller:display", $can('usuarios.ler'), $params);

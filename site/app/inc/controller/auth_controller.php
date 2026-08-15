@@ -594,4 +594,102 @@ class auth_controller
         include(constant("cRootServer") . "ui/common/footer.php");
         include(constant("cRootServer") . "ui/common/foot.php");
     }
+
+    public function save_account(array $info): never
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["account_url"]);
+
+        if (!self::check_login()) {
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        $userIdx = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+        $name    = trim((string)($info["post"]["name"] ?? ''));
+
+        if ($name === '') {
+            $_SESSION["messages_app"]["danger"] = ["Informe seu nome."];
+            basic_redir($GLOBALS["account_url"]);
+        }
+
+        $rollback = false;
+
+        try {
+            $users = new users_model();
+            $users->set_filter([" idx = ? "], [$userIdx]);
+            $users->populate(["name" => $name]);
+            $users->save();
+
+            // A sessao guarda o nome exibido no cabecalho; sem isto a tela
+            // continuaria mostrando o nome antigo ate o proximo login.
+            $_SESSION[constant("cAppKey")]["credential"]["name"] = $name;
+
+            $_SESSION["messages_app"]["success"] = ["Dados atualizados."];
+        } catch (RuntimeException $e) {
+            $rollback = true;
+            Logger::getInstance()->error("account save failed", [
+                "error" => $e->getMessage(),
+                "user"  => $userIdx,
+            ]);
+            $_SESSION["messages_app"]["danger"] = ["Não foi possível salvar. Tente novamente."];
+        }
+
+        basic_redir($GLOBALS["account_url"], rollback: $rollback);
+    }
+
+    public function change_password(array $info): never
+    {
+        validate_csrf($info["post"]["_csrf_token"] ?? null, $GLOBALS["account_url"]);
+
+        if (!self::check_login()) {
+            basic_redir($GLOBALS["login_url"]);
+        }
+
+        $userIdx = (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0);
+        $current  = (string)($info["post"]["current_password"] ?? '');
+        $password = (string)($info["post"]["password"] ?? '');
+        $confirm  = (string)($info["post"]["password_confirm"] ?? '');
+
+        // Mesmo teto do login: 5 tentativas por minuto por IP. Sem isto, a tela
+        // vira oraculo de senha para quem pegar uma sessao aberta.
+        $redis   = $GLOBALS['redis'] ?? null;
+        $rateKey = "change_pwd:" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        if (check_and_increment_rate_limit($redis, $rateKey, 5, 60)) {
+            $_SESSION["messages_app"]["danger"] = ["Muitas tentativas. Aguarde um momento."];
+            basic_redir($GLOBALS["account_url"]);
+        }
+
+        if (strlen($password) < 6) {
+            $_SESSION["messages_app"]["danger"] = ["Senha deve ter pelo menos 6 caracteres."];
+            basic_redir($GLOBALS["account_url"]);
+        }
+
+        if ($password !== $confirm) {
+            $_SESSION["messages_app"]["danger"] = ["As senhas não conferem."];
+            basic_redir($GLOBALS["account_url"]);
+        }
+
+        $users = new users_model();
+        $users->set_field([" idx ", " password "]);
+        $users->set_filter([" active = 'yes' ", " idx = ? "], [$userIdx]);
+        $users->set_paginate([1]);
+        $users->load_data();
+
+        $stored = $users->data[0]["password"] ?? '';
+
+        if (!verify_password_with_migration($stored, $current, (string)$userIdx)) {
+            $_SESSION["messages_app"]["danger"] = ["A senha atual está incorreta."];
+            basic_redir($GLOBALS["account_url"]);
+        }
+
+        $users->set_filter([" idx = ? "], [$userIdx]);
+        $users->populate(["password" => password_hash($password, PASSWORD_BCRYPT)]);
+        $users->save();
+
+        // Troca de senha invalida a sessao antiga: e a defesa contra sessao
+        // roubada continuar valendo depois da troca.
+        session_regenerate_id(true);
+
+        $_SESSION["messages_app"]["success"] = ["Senha alterada."];
+        basic_redir($GLOBALS["account_url"]);
+    }
 }
