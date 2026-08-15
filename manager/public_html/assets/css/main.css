@@ -4,43 +4,17 @@
    Font: Inter (Google Fonts)
    ================================================ */
 
+/* Tokens compartilhados vêm de tokens.css. Aqui só o que é específico do manager. */
 :root {
-    --accent: #2563eb;
-    --accent-glow: rgba(37, 99, 235, 0.2);
-    --accent-hover: #3b82f6;
-    --bg: #0a0a0b;
-    --surface: #111113;
-    --surface-2: #18181b;
-    --text: #d4d8e0;
-    --text-muted: #60657a;
-    --border: #1e1e24;
     --navbar-bg: #080808;
     --footer-bg: #080808;
-    --footer-text: rgba(212, 216, 224, 0.38);
-    --focus-ring: rgba(37, 99, 235, 0.28);
-
-    /* Bootstrap overrides */
-    --bs-body-color: #d4d8e0;
-    --bs-btn-color: #d4d8e0;
+    --footer-text: rgba(226, 232, 240, 0.38);
 }
 
 [data-theme="light"] {
-    --accent: #2563eb;
-    --accent-glow: rgba(37, 99, 235, 0.15);
-    --accent-hover: #1d4ed8;
-    --bg: #f1f5f9;
-    --surface: #ffffff;
-    --surface-2: #f8fafc;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
     --navbar-bg: #ffffff;
-    --footer-bg: #f8fafc;
-    --footer-text: rgba(30, 41, 59, 0.5);
-    --focus-ring: rgba(37, 99, 235, 0.25);
-
-    --bs-body-color: #1e293b;
-    --bs-btn-color: #1e293b;
+    --footer-bg: #eef2f7;
+    --footer-text: rgba(26, 35, 50, 0.5);
 }
 
 /* Theme toggle button in header */
