@@ -1482,3 +1482,29 @@ h6 {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ---- ERROR PAGE ---- */
+.error-page {
+    max-width: 34rem;
+    padding: 4rem 1rem;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--accent);
+}
+
+.error-title {
+    font-size: 1.25rem;
+    margin: 0.75rem 0 0.5rem;
+}
+
+.error-message {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
