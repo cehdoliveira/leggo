@@ -22,6 +22,7 @@ if (!class_exists('TerminalResponse')) {
 		public const KIND_REDIRECT = 'redirect';
 		public const KIND_JSON     = 'json';
 		public const KIND_CSV      = 'csv';
+		public const KIND_ERROR    = 'error';
 
 		/** @param array<string, mixed> $payload */
 		public function __construct(
