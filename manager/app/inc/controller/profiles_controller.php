@@ -70,6 +70,57 @@ class profiles_controller
         return (new profiles_model())->data4select("idx", [" active = 'yes' "], "name");
     }
 
+    /**
+     * Todas as capacidades ativas, em [idx => name], para os checkboxes do form.
+     * O vocabulario e fechado (migrations/012): a tela marca e desmarca, nunca
+     * cria capacidade nova.
+     *
+     * @return array<int, string>
+     */
+    private function available_capabilities(): array
+    {
+        $model = new capabilities_model();
+        $model->set_field([" idx ", " slug ", " name "]);
+        $model->set_filter([" active = 'yes' "]);
+        $model->set_order([" slug ASC "]);
+        $model->load_data(false);
+
+        $out = [];
+        foreach ($model->data as $row) {
+            $out[(int)$row['idx']] = sprintf('%s — %s', $row['slug'], $row['name']);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Capacidades atualmente vinculadas a um perfil, via attach() (convencao
+     * de nomes do DOLModel resolve para profiles_capabilities). Extraido para
+     * metodo proprio para ser testavel por reflection sem renderizar a tela.
+     *
+     * @return array<int, int>
+     */
+    private function selected_capabilities(int $idx): array
+    {
+        if ($idx <= 0) {
+            return [];
+        }
+
+        $linked = new profiles_model();
+        $linked->set_field([" idx "]);
+        $linked->set_filter([" active = 'yes' ", " idx = ? "], [$idx]);
+        $linked->set_paginate([1]);
+        $linked->load_data(false);
+        $linked->attach(["capabilities"]);
+
+        $selected = [];
+        foreach ($linked->data[0]['capabilities_attach'] ?? [] as $row) {
+            $selected[] = (int)($row['idx'] ?? 0);
+        }
+
+        return $selected;
+    }
+
     public function display(array $info): void
     {
         global $profiles_url, $newprofile_url, $profile_url;
@@ -193,7 +244,9 @@ class profiles_controller
             $form["url"]   = sprintf($profile_url, rawurlencode((string)$data['slug']));
         }
 
-        $availableParents = $this->available_parents();
+        $availableParents      = $this->available_parents();
+        $availableCapabilities = $this->available_capabilities();
+        $selectedCapabilities  = $this->selected_capabilities($idx);
 
         include(constant("cRootServer") . "ui/common/head.php");
         include(constant("cRootServer") . "ui/common/header.php");
