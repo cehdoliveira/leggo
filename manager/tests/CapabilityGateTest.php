@@ -127,4 +127,41 @@ final class CapabilityGateTest extends DBTestCase
 
         $this->assertTrue(auth_controller::can('emails.ler'));
     }
+
+    public function testHasAceitaPerfilAdmSemCapacidade(): void
+    {
+        $marker = uniqid();
+        [$userId] = $this->makeUserWithProfile($marker, 'yes');
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
+
+        $this->assertTrue(auth_controller::has('perfis.ler'));
+    }
+
+    public function testHasNegaPerfilNaoAdmSemACapacidadePedida(): void
+    {
+        $marker = uniqid();
+        [$userId, $profileId] = $this->makeUserWithProfile($marker, 'no');
+        $this->grant($profileId, 'usuarios.ler');
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
+
+        $this->assertTrue(auth_controller::has('usuarios.ler'));
+        $this->assertFalse(auth_controller::has('perfis.ler'));
+    }
+
+    public function testHasNegaSemSessao(): void
+    {
+        unset($_SESSION[constant('cAppKey')]);
+        $this->assertFalse(auth_controller::has('usuarios.ler'));
+    }
+
+    public function testCanNaoRegrideNoModoLogQuandoHasNega(): void
+    {
+        $marker = uniqid();
+        [$userId, $profileId] = $this->makeUserWithProfile($marker, 'no');
+        $this->grant($profileId, 'usuarios.ler');
+        $_SESSION[constant('cAppKey')]['credential']['idx'] = $userId;
+
+        $this->assertFalse(auth_controller::has('perfis.ler'));
+        $this->assertTrue(auth_controller::can('perfis.ler'));
+    }
 }
