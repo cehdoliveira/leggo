@@ -1,6 +1,7 @@
 </head>
 
 <body>
+    <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
     <header>
         <nav class="navbar leggo-navbar">
             <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
@@ -33,4 +34,4 @@
         </nav>
     </header>
 
-    <main id="mainContent" class="flex-shrink-0">
+    <main id="mainContent" class="flex-shrink-0" tabindex="-1">

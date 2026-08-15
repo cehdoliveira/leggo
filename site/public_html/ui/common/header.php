@@ -1,6 +1,7 @@
 </head>
 
 <body>
+    <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
     <header>
         <nav class="ss-navbar">
             <div class="container ss-navbar-inner">
@@ -46,4 +47,4 @@
         </nav>
     </header>
 
-    <main id="mainContent" class="flex-shrink-0">
+    <main id="mainContent" class="flex-shrink-0" tabindex="-1">
