@@ -113,5 +113,9 @@ $dispatcher->add_route("POST", "/perfil/([a-z0-9_-]+)/remover",  "profiles_contr
 
 // Executar dispatcher e tratar falhas
 if (!$dispatcher->exec()) {
-	basic_redir($home_url);
+	render_error_page(
+		404,
+		"Página não encontrada",
+		"O endereço acessado não existe ou foi movido. Confira o link ou volte ao início."
+	);
 }
