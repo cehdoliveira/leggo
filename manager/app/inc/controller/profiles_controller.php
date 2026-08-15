@@ -157,7 +157,7 @@ class profiles_controller
 
             // Uma query em lote para a pagina inteira (nao por linha) — o
             // attach() do DOLModel ja resolve isso (plano 004).
-            $model->attach(["capabilities"]);
+            $model->attach(["capabilities"], null, null, ["idx"]);
             $profiles = $model->data;
 
             $availableParents = $this->available_parents();
