@@ -11,20 +11,13 @@ class auth_controller
     }
 
     /**
-     * O usuario logado tem a capacidade pedida?
+     * O usuario logado tem a capacidade, de verdade?
      *
-     * FATIA 2 (modo log): para quem JA esta logado, esta funcao nunca nega —
-     * ela registra o que negaria e devolve true. Serve para descobrir seed
-     * incompleto ou rota mapeada no slug errado antes de bloquear alguem.
-     * O plano 022 troca o `return true` final por `return false`.
-     *
-     * A checagem de sessao (check_login) e separada e NUNCA e afrouxada:
-     * requisicao sem login e negada em qualquer fatia.
-     *
-     * Regra de compatibilidade permanente: um perfil ativo com adm = 'yes'
-     * vale por todas as capacidades, sem consultar profiles_capabilities.
+     * Resposta estrita: nunca passa pelo bypass do modo log. Use em decisao de
+     * NAVEGACAO (esconder item de menu, esconder botao) — nao em guard de rota,
+     * onde a fatia atual ainda e can().
      */
-    public static function can(string $capability): bool
+    public static function has(string $capability): bool
     {
         if (!self::check_login()) {
             return false;
@@ -41,9 +34,38 @@ class auth_controller
             }
         }
 
+        return false;
+    }
+
+    /**
+     * O usuario logado tem a capacidade pedida?
+     *
+     * FATIA 2 (modo log): para quem JA esta logado, esta funcao nunca nega —
+     * ela registra o que negaria e devolve true. Serve para descobrir seed
+     * incompleto ou rota mapeada no slug errado antes de bloquear alguem.
+     * O plano 022 troca o `return true` final por `return false`.
+     *
+     * A checagem de sessao (check_login) e separada e NUNCA e afrouxada:
+     * requisicao sem login e negada em qualquer fatia.
+     *
+     * Regra de compatibilidade permanente: um perfil ativo com adm = 'yes'
+     * vale por todas as capacidades, sem consultar profiles_capabilities.
+     *
+     * A decisao real mora em has() — can() so acrescenta o bypass do modo log.
+     */
+    public static function can(string $capability): bool
+    {
+        if (self::has($capability)) {
+            return true;
+        }
+
+        if (!self::check_login()) {
+            return false;
+        }
+
         Logger::getInstance()->warning("capacidade negada (modo log, nao bloqueou)", [
             "capability" => $capability,
-            "user"       => $userId,
+            "user"       => (int)($_SESSION[constant("cAppKey")]["credential"]["idx"] ?? 0),
         ]);
 
         return true;
