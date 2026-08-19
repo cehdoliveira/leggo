@@ -787,8 +787,13 @@ function csv_sanitize_cell(mixed $value): string
  * Qualquer caminho que feche a transacao global DEVE passar por aqui: comitar
  * por fora deixa a fila de e-mail sem gate (despacha o que nao foi persistido,
  * ou perde o que foi).
+ *
+ * Retorna $commitOk para o chamador que precisar saber se o commit foi
+ * CONFIRMADO (ex.: script CLI que so deve reportar sucesso nesse caso).
+ * basic_redir() e close_request_transaction() ignoram o retorno de proposito:
+ * a resposta HTTP ja segue por outro caminho (redirect ou corpo ja escrito).
  */
-function close_transaction_and_mail(bool $commit): void
+function close_transaction_and_mail(bool $commit): bool
 {
   $commitOk = false;
   try {
@@ -810,6 +815,8 @@ function close_transaction_and_mail(bool $commit): void
   } else {
     EmailQueue::discardPending();
   }
+
+  return $commitOk;
 }
 
 /**

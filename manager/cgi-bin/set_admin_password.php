@@ -52,7 +52,10 @@ $users->populate([
 ]);
 $users->save();
 
-close_transaction_and_mail(true);
+if (!close_transaction_and_mail(true)) {
+    echo "Erro: falha ao salvar a senha.\n";
+    exit(1);
+}
 
 echo "Senha do admin atualizada com sucesso.\n";
 exit(0);
