@@ -36,7 +36,9 @@ different `kernel.php` constants, controllers, routes, and views.
   history exposure) and sets `$_SERVER["HTTP_HOST"]` itself so it can load `kernel.php`.
 
 - Hooks: pre-commit runs PHPStan + shared-sync guard; pre-push runs PHPUnit (in Docker,
-  skipped if the container isn't up):
+  skipped if the container isn't up, and skipped when pushing from a git worktree — the
+  container mounts the main checkout, so testing from a worktree would grade the wrong
+  code; run the suite manually in that case):
   ```
   git config core.hooksPath .githooks
   ```

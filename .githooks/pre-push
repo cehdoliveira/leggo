@@ -15,6 +15,20 @@ NC='\033[0m'
 
 CONTAINER=leggo
 
+# Worktree guard: o container monta o checkout PRINCIPAL (docker/docker-compose.yml:14-25),
+# entao `docker exec` a partir de uma worktree rodaria a suite contra o codigo do checkout
+# principal, nao contra a branch sendo empurrada — verde falso. Avisa e PULA, mesmo criterio
+# do container fora do ar.
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+    WORKTREE_PATH=$(git rev-parse --show-toplevel)
+    echo -e "${YELLOW}Push a partir de uma git worktree ($WORKTREE_PATH) — PHPUnit pulado.${NC}"
+    echo -e "${YELLOW}O container 'leggo' monta o checkout principal, entao testar aqui daria${NC}"
+    echo -e "${YELLOW}verde sobre outro codigo. Rode a suite na propria worktree antes de subir:${NC}"
+    echo -e "${YELLOW}  bash bin/test.sh   # a partir do checkout principal, com a branch aplicada${NC}"
+    echo -e "${YELLOW}  ou suba um container efemero montando esta worktree.${NC}"
+    exit 0
+fi
+
 if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
     echo -e "${YELLOW}Container '$CONTAINER' não está rodando — PHPUnit pulado no pre-push.${NC}"
     echo -e "${YELLOW}Suba o ambiente e rode a suíte antes de subir mudanças:${NC}"
