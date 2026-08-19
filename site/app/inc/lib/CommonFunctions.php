@@ -162,28 +162,7 @@ function basic_redir(string|array $url, int $code = 302, bool $use_html = false,
     $url = $url[0];
   }
 
-  $commitOk = false;
-  try {
-    if ($rollback) {
-      localPDO::getInstance()->rollback();
-    } else {
-      localPDO::getInstance()->commit();
-      $commitOk = true;
-    }
-  } catch (\Throwable) {
-    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu,
-    // ou o commit pode ter falhado de verdade (ex.: conexao perdida). Nos dois casos
-    // tratamos como "nao commitado" — mais seguro descartar a fila do que despachar
-    // e-mail de uma escrita que pode nao ter sido persistida.
-  }
-
-  // A fila de e-mail só é despachada quando o commit foi CONFIRMADO. Em rollback, ou
-  // em qualquer falha/exceção no commit, o buffer é descartado (ver EmailQueue).
-  if ($commitOk) {
-    EmailQueue::flushPending();
-  } else {
-    EmailQueue::discardPending();
-  }
+  close_transaction_and_mail(!$rollback);
 
   // Cache-Control: no-store impede que o browser cache 302s.
   // Sem isso, um redirect para /login poderia ser cacheado e reproduzido
@@ -800,6 +779,47 @@ function csv_sanitize_cell(mixed $value): string
 }
 
 /**
+ * Fecha a transacao global e resolve a fila de e-mail na mesma decisao.
+ *
+ * $commit = true  -> commit; se o commit for CONFIRMADO, despacha o buffer.
+ * $commit = false -> rollback; o buffer e descartado.
+ *
+ * Qualquer caminho que feche a transacao global DEVE passar por aqui: comitar
+ * por fora deixa a fila de e-mail sem gate (despacha o que nao foi persistido,
+ * ou perde o que foi).
+ *
+ * Retorna $commitOk para o chamador que precisar saber se o commit foi
+ * CONFIRMADO (ex.: script CLI que so deve reportar sucesso nesse caso).
+ * basic_redir() e close_request_transaction() ignoram o retorno de proposito:
+ * a resposta HTTP ja segue por outro caminho (redirect ou corpo ja escrito).
+ */
+function close_transaction_and_mail(bool $commit): bool
+{
+  $commitOk = false;
+  try {
+    if ($commit) {
+      localPDO::getInstance()->commit();
+      $commitOk = true;
+    } else {
+      localPDO::getInstance()->rollback();
+    }
+  } catch (\Throwable) {
+    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu,
+    // ou o commit pode ter falhado de verdade (ex.: conexao perdida). Nos dois casos
+    // tratamos como "nao commitado" — mais seguro descartar a fila do que despachar
+    // e-mail de uma escrita que pode nao ter sido persistida.
+  }
+
+  if ($commitOk) {
+    EmailQueue::flushPending();
+  } else {
+    EmailQueue::discardPending();
+  }
+
+  return $commitOk;
+}
+
+/**
  * Fecha a transacao global antes de uma resposta terminal que nao passa por
  * basic_redir(). Sem isso o request sai sem commit e o __destruct() do
  * localPDO faz rollback de seguranca — a escrita some silenciosamente.
@@ -809,26 +829,7 @@ function csv_sanitize_cell(mixed $value): string
  */
 function close_request_transaction(int $code = 200): void
 {
-  $commitOk = false;
-  try {
-    if ($code >= 400) {
-      localPDO::getInstance()->rollback();
-    } else {
-      localPDO::getInstance()->commit();
-      $commitOk = true;
-    }
-  } catch (\Throwable) {
-    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu,
-    // ou o commit pode ter falhado de verdade. Nos dois casos tratamos como "nao
-    // commitado" — mais seguro descartar a fila do que despachar e-mail de uma
-    // escrita que pode nao ter sido persistida.
-  }
-
-  if ($commitOk) {
-    EmailQueue::flushPending();
-  } else {
-    EmailQueue::discardPending();
-  }
+  close_transaction_and_mail($code < 400);
 }
 
 /**
