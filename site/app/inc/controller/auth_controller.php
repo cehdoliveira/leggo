@@ -154,15 +154,7 @@ class auth_controller
                 include(constant("cRootServer") . "ui/mail/verify_email.php");
                 $body = ob_get_clean();
 
-                $emailSent = false;
-                try {
-                    if (class_exists("EmailProducer")) {
-                        $producer = EmailProducer::getInstance();
-                        $emailSent = (bool)$producer->send($info["post"]["mail"], $subject, $body);
-                    }
-                } catch (Exception $e) {
-                    error_log("Erro ao enfileirar email de verificação: " . $e->getMessage());
-                }
+                EmailQueue::enqueue($info["post"]["mail"], $subject, $body);
 
                 try {
                     $msgModel = new messages_model();
@@ -175,11 +167,6 @@ class auth_controller
                     $msgModel->save();
                 } catch (Exception $e) {
                     error_log("Erro ao salvar log de email: " . $e->getMessage());
-                }
-
-                if (!$emailSent) {
-                    $_SESSION["messages_app"]["danger"] = ["Cadastro realizado, mas não foi possível enviar o email de verificação. Entre em contato com o suporte."];
-                    basic_redir($GLOBALS["register_url"]);
                 }
 
                 $_SESSION["messages_app"]["success"] = ["Cadastro realizado! Verifique seu e-mail para ativar sua conta."];
@@ -423,15 +410,7 @@ class auth_controller
                 $body = ob_get_clean();
             }
 
-            $emailSent = false;
-            try {
-                if (class_exists("EmailProducer")) {
-                    $producer = EmailProducer::getInstance();
-                    $emailSent = (bool)$producer->send($user['mail'], $subject, $body);
-                }
-            } catch (Exception $e) {
-                error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
-            }
+            EmailQueue::enqueue($user['mail'], $subject, $body);
 
             try {
                 $msgModel = new messages_model();
@@ -444,11 +423,6 @@ class auth_controller
                 $msgModel->save();
             } catch (Exception $e) {
                 error_log("Erro ao salvar log de email: " . $e->getMessage());
-            }
-
-            if (!$emailSent) {
-                $_SESSION["messages_app"]["danger"] = ["Não foi possível enviar o email. Tente novamente mais tarde."];
-                basic_redir($GLOBALS["forgot_password_url"]);
             }
         }
 

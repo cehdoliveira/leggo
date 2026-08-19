@@ -477,14 +477,7 @@ class users_controller
                     include(constant("cRootServer") . "ui/mail/reset_password.php");
                     $body = ob_get_clean();
 
-                    try {
-                        if (class_exists("EmailProducer")) {
-                            $producer = EmailProducer::getInstance();
-                            $producer->send($user['mail'], $subject, $body);
-                        }
-                    } catch (Exception $e) {
-                        error_log("Erro ao enviar reset de senha: " . $e->getMessage());
-                    }
+                    EmailQueue::enqueue($user['mail'], $subject, $body);
 
                     try {
                         $msgModel = new messages_model();
