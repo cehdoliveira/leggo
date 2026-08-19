@@ -19,11 +19,11 @@ define("REDIS_DATABASE", 0);
 define("REDIS_ENABLED", true);
 define("REDIS_DEFAULT_TTL", 3600);
 
-// ===== KAFKA =====
-define("KAFKA_HOST", "kafka");
-define("KAFKA_PORT", "9092");
-define("KAFKA_TOPIC_EMAIL", "leggo_site_emails");
-define("KAFKA_CONSUMER_GROUP", "leggo-site-email-worker-group");
+// ===== FILA DE E-MAIL (Redis Streams) =====
+define("EMAIL_STREAM_KEY", "leggo:site:emails");
+define("EMAIL_STREAM_GROUP", "leggo-site-email-worker");
+define("EMAIL_STREAM_CONSUMER", "worker-1");
+define("EMAIL_STREAM_MAXLEN", 10000);
 
 // ===== EMAIL (SMTP) =====
 define("mail_from_name", "leggo");

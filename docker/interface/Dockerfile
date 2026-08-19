@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     nginx \
     cron \
-    librdkafka-dev \
     libgd-dev \
     libpng-dev \
     libjpeg-dev \
@@ -23,9 +22,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 
 # Redis
 RUN pecl install redis && docker-php-ext-enable redis
-
-# RdKafka
-RUN pecl install rdkafka && docker-php-ext-enable rdkafka
 
 # Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer

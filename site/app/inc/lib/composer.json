@@ -10,9 +10,6 @@
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0"
     },
-    "suggest": {
-        "ext-rdkafka": "Para envio assíncrono de emails via Kafka"
-    },
     "autoload": {
         "psr-4": {
             "leggo\\": "classes/"
@@ -24,7 +21,7 @@
             "rootOBJ.php",
             "DOLModel.php",
             "RedisCache.php",
-            "EmailProducer.php",
+            "EmailQueue.php",
             "Dispatcher.php"
         ]
     },

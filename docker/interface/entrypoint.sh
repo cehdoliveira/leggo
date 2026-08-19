@@ -46,14 +46,6 @@ fi
 echo "Iniciando PHP-FPM..."
 php-fpm -D
 
-# Iniciar Kafka Email Worker em background
-echo "Iniciando Kafka Email Worker..."
-php /var/www/leggo/manager/cgi-bin/kafka_email_worker.php >> /var/log/kafka_email_worker_manager.log 2>&1 &
-MANAGER_PID=$!
-php /var/www/leggo/site/cgi-bin/kafka_email_worker.php >> /var/log/kafka_email_worker_site.log 2>&1 &
-SITE_PID=$!
-echo "Kafka Email Workers iniciados (manager PID $MANAGER_PID, site PID $SITE_PID)"
-
 # Iniciar Nginx (criar diretório de logs se não existir)
 echo "Iniciando Nginx..."
 mkdir -p /var/log/nginx

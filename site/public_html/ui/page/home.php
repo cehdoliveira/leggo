@@ -118,7 +118,7 @@
                 </div>
                 <div class="hero-indicator">
                     <i class="bi bi-envelope-check" aria-hidden="true"></i>
-                    <span>E-mail via Kafka</span>
+                    <span>E-mail via Redis Streams</span>
                 </div>
                 <div class="hero-indicator">
                     <i class="bi bi-speedometer2" aria-hidden="true"></i>
@@ -145,9 +145,9 @@
                     ['bi-person-badge',      'Perfis e Permissões',
                         'Sistema de perfis com papéis (admin/usuário), guards de rota e verificação de e-mail obrigatória.'],
                     ['bi-envelope-arrow-up', 'E-mail Assíncrono',
-                        'Envio via Kafka + PHPMailer em background. Kafka down = fallback silencioso. O fluxo nunca trava.'],
+                        'Envio via Redis Streams + PHPMailer em background. Redis down = fallback silencioso. O fluxo nunca trava.'],
                     ['bi-hdd-stack',         'Infraestrutura Pronta',
-                        'Docker com Nginx + PHP-FPM 8.4, MySQL 8, Redis 7 e Kafka. Migrations automáticas a cada 5 minutos.'],
+                        'Docker com Nginx + PHP-FPM 8.4, MySQL 8 e Redis 7. Migrations automáticas a cada 5 minutos.'],
                 ];
                 foreach ($features as [$icon, $title, $desc]):
                 ?>
@@ -178,7 +178,7 @@
                     ['bi-window',   'Site',    'Público + área logada. Cadastro, login, verificação de e-mail e reset de senha. Frontend voltado ao usuário final.'],
                     ['bi-sliders',  'Manager', 'Painel administrativo restrito. Gestão de usuários com ativação, inativação e remoção (soft-delete).'],
                     ['bi-database', 'Shared',  'Models, lib e migrações compartilhados. DOLModel (ORM), localPDO (PDO wrapper), Dispatcher (rotas).'],
-                    ['bi-gear',     'Config',  'kernel.php por ambiente (nunca versionado). Redis, Kafka, SMTP, DB e URLs configuráveis por env.'],
+                    ['bi-gear',     'Config',  'kernel.php por ambiente (nunca versionado). Redis, fila de e-mail, SMTP, DB e URLs configuráveis por env.'],
                 ];
                 foreach ($blocks as [$icon, $title, $desc]):
                 ?>

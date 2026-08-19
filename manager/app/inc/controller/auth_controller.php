@@ -489,15 +489,7 @@ class auth_controller
                     $body = ob_get_clean();
                 }
 
-                $emailSent = false;
-                try {
-                    if (class_exists("EmailProducer")) {
-                        $producer = EmailProducer::getInstance();
-                        $emailSent = (bool)$producer->send($user['mail'], $subject, $body);
-                    }
-                } catch (Exception $e) {
-                    error_log("Erro ao enfileirar email de recuperação de senha: " . $e->getMessage());
-                }
+                EmailQueue::enqueue($user['mail'], $subject, $body);
 
                 try {
                     $msgModel = new messages_model();
@@ -510,15 +502,6 @@ class auth_controller
                     $msgModel->save();
                 } catch (Exception $e) {
                     error_log("Erro ao salvar log de email: " . $e->getMessage());
-                }
-
-                if (!$emailSent) {
-                    // Nao revela ao usuario que o envio falhou: a mensagem final e
-                    // sempre a generica (ver achado de enumeracao de conta). O
-                    // operador enxerga a falha pelo log.
-                    Logger::getInstance()->error("Falha ao enviar email de recuperação de senha", [
-                        "user_id" => $userId,
-                    ]);
                 }
             } catch (RuntimeException $e) {
                 // canonical_url() falha fechado de proposito quando a configuracao
