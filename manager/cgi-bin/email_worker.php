@@ -32,6 +32,14 @@ require_once __DIR__ . '/../app/inc/lib/EmailQueue.php';
 /** Máximo de entregas antes de tratar a entrada como poison e descartar. */
 const MAX_DELIVERIES = 5;
 
+/**
+ * Intervalo entre reprocessamentos do pending list, em segundos. Por tempo
+ * decorrido, não por ociosidade do stream: sob tráfego contínuo o stream nunca
+ * fica vazio, e uma entrada sem ACK não pode ficar presa na pending list até o
+ * tráfego cessar.
+ */
+const DRAIN_INTERVAL_SECONDS = 60;
+
 function log_message(string $message, string $level = 'INFO'): void
 {
     echo '[' . date('Y-m-d H:i:s') . "] [{$level}] {$message}\n";
@@ -40,6 +48,15 @@ function log_message(string $message, string $level = 'INFO'): void
 /** Processa uma entrada: true = pode dar ACK. */
 function process_entry(string $id, array $fields): bool
 {
+    if ($fields === []) {
+        // MAXLEN aproximado (EMAIL_STREAM_MAXLEN) pode trimar do stream uma entrada
+        // que ainda estava pendente/não confirmada. O ID continua na pending list,
+        // mas o payload já foi apagado — o e-mail está perdido, sem forma de
+        // recuperar. Diferente de payload malformado: aqui é perda de dados real.
+        log_message("Entrada {$id} truncada pelo MAXLEN antes de confirmar entrega — email perdido.", 'CRITICAL');
+        return true; // ACK: não há payload para reprocessar
+    }
+
     $payload = json_decode($fields['payload'] ?? '', true);
 
     if (!is_array($payload) || empty($payload['to']) || empty($payload['subject'])) {
@@ -114,29 +131,25 @@ if (function_exists('pcntl_signal')) {
 log_message("Worker iniciado — stream {$key}, grupo {$group}, consumer {$consumer}");
 drain_pending($redis, $key, $group, $consumer);
 
-$idleCycles = 0;
+$lastDrain = time();
 
 while (true) {
     try {
         $messages = $redis->xReadGroup($group, $consumer, [$key => '>'], 10, 5000);
 
         $entries = $messages[$key] ?? [];
-        if ($entries === []) {
-            $idleCycles++;
-            // ~60s de ociosidade: tenta de novo o que falhou e ficou pendente.
-            if ($idleCycles >= 12) {
-                $idleCycles = 0;
-                drain_pending($redis, $key, $group, $consumer);
+        if ($entries !== []) {
+            foreach ($entries as $id => $fields) {
+                if (process_entry((string) $id, $fields)) {
+                    $redis->xAck($key, $group, [$id]);
+                    $redis->xDel($key, [$id]);
+                }
             }
-            continue;
         }
 
-        $idleCycles = 0;
-        foreach ($entries as $id => $fields) {
-            if (process_entry((string) $id, $fields)) {
-                $redis->xAck($key, $group, [$id]);
-                $redis->xDel($key, [$id]);
-            }
+        if ((time() - $lastDrain) >= DRAIN_INTERVAL_SECONDS) {
+            $lastDrain = time();
+            drain_pending($redis, $key, $group, $consumer);
         }
     } catch (Throwable $e) {
         log_message('Erro no loop do worker: ' . $e->getMessage(), 'ERROR');
