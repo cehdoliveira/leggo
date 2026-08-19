@@ -162,22 +162,27 @@ function basic_redir(string|array $url, int $code = 302, bool $use_html = false,
     $url = $url[0];
   }
 
+  $commitOk = false;
   try {
     if ($rollback) {
       localPDO::getInstance()->rollback();
     } else {
       localPDO::getInstance()->commit();
+      $commitOk = true;
     }
   } catch (\Throwable) {
-    // localPDO might not be initialized if no DB ops occurred
+    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu,
+    // ou o commit pode ter falhado de verdade (ex.: conexao perdida). Nos dois casos
+    // tratamos como "nao commitado" — mais seguro descartar a fila do que despachar
+    // e-mail de uma escrita que pode nao ter sido persistida.
   }
 
-  // A fila de e-mail só é despachada DEPOIS do commit: em rollback o buffer morre
-  // com a request, sem mandar e-mail de operação revertida (ver EmailQueue).
-  if ($rollback) {
-    EmailQueue::discardPending();
-  } else {
+  // A fila de e-mail só é despachada quando o commit foi CONFIRMADO. Em rollback, ou
+  // em qualquer falha/exceção no commit, o buffer é descartado (ver EmailQueue).
+  if ($commitOk) {
     EmailQueue::flushPending();
+  } else {
+    EmailQueue::discardPending();
   }
 
   // Cache-Control: no-store impede que o browser cache 302s.
@@ -804,20 +809,25 @@ function csv_sanitize_cell(mixed $value): string
  */
 function close_request_transaction(int $code = 200): void
 {
+  $commitOk = false;
   try {
     if ($code >= 400) {
       localPDO::getInstance()->rollback();
     } else {
       localPDO::getInstance()->commit();
+      $commitOk = true;
     }
   } catch (\Throwable) {
-    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu.
+    // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu,
+    // ou o commit pode ter falhado de verdade. Nos dois casos tratamos como "nao
+    // commitado" — mais seguro descartar a fila do que despachar e-mail de uma
+    // escrita que pode nao ter sido persistida.
   }
 
-  if ($code >= 400) {
-    EmailQueue::discardPending();
-  } else {
+  if ($commitOk) {
     EmailQueue::flushPending();
+  } else {
+    EmailQueue::discardPending();
   }
 }
 
