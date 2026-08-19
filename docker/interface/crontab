@@ -29,3 +29,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # pula este ciclo em vez de iniciar um segundo processo. Guarda independente do
 # lock de banco (GET_LOCK no MigrationRunner) — defesa em profundidade.
 */5 * * * * flock -n /tmp/leggo_migrate.lock php /var/www/leggo/site/cgi-bin/run_migrations.php >> /var/log/migrations.log 2>&1
+
+# Supervisor dos workers de e-mail: flock -n garante um processo por ambiente.
+# O worker é um loop infinito; se morrer, o próximo tick (1 min) o levanta.
+* * * * * flock -n /tmp/leggo_email_worker_manager.lock php /var/www/leggo/manager/cgi-bin/email_worker.php >> /var/log/email_worker_manager.log 2>&1
+* * * * * flock -n /tmp/leggo_email_worker_site.lock php /var/www/leggo/site/cgi-bin/email_worker.php >> /var/log/email_worker_site.log 2>&1
