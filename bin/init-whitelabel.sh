@@ -132,8 +132,8 @@ sed -i \
     -e "s#define(\"ALLOWED_HOSTS\", \"leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_SITE_HOSTS}\");#" \
     -e "s#define(\"SITE_CANONICAL_URL\", \"http://leggo.local\");#define(\"SITE_CANONICAL_URL\", \"${E_SITE_URL}\");#" \
     -e "s#define(\"REDIS_PREFIX\", \"leggo:site:\");#define(\"REDIS_PREFIX\", \"${E_SLUG}:site:\");#" \
-    -e "s#define(\"KAFKA_TOPIC_EMAIL\", \"leggo_site_emails\");#define(\"KAFKA_TOPIC_EMAIL\", \"${E_SLUG}_site_emails\");#" \
-    -e "s#define(\"KAFKA_CONSUMER_GROUP\", \"leggo-site-email-worker-group\");#define(\"KAFKA_CONSUMER_GROUP\", \"${E_SLUG}-site-email-worker-group\");#" \
+    -e "s#define(\"EMAIL_STREAM_KEY\", \"leggo:site:emails\");#define(\"EMAIL_STREAM_KEY\", \"${E_SLUG}:site:emails\");#" \
+    -e "s#define(\"EMAIL_STREAM_GROUP\", \"leggo-site-email-worker\");#define(\"EMAIL_STREAM_GROUP\", \"${E_SLUG}-site-email-worker\");#" \
     "$SITE_KERNEL"
 
 cp "$MANAGER_EXAMPLE" "$MANAGER_KERNEL"
@@ -144,8 +144,8 @@ sed -i \
     -e "s#define(\"ALLOWED_HOSTS\", \"manager.leggo.local\");#define(\"ALLOWED_HOSTS\", \"${E_MANAGER_HOSTS}\");#" \
     -e "s#define(\"MANAGER_CANONICAL_URL\", \"http://manager.leggo.local\");#define(\"MANAGER_CANONICAL_URL\", \"${E_MANAGER_URL}\");#" \
     -e "s#define(\"REDIS_PREFIX\", \"leggo:manager:\");#define(\"REDIS_PREFIX\", \"${E_SLUG}:manager:\");#" \
-    -e "s#define(\"KAFKA_TOPIC_EMAIL\", \"leggo_manager_emails\");#define(\"KAFKA_TOPIC_EMAIL\", \"${E_SLUG}_manager_emails\");#" \
-    -e "s#define(\"KAFKA_CONSUMER_GROUP\", \"leggo-manager-email-worker-group\");#define(\"KAFKA_CONSUMER_GROUP\", \"${E_SLUG}-manager-email-worker-group\");#" \
+    -e "s#define(\"EMAIL_STREAM_KEY\", \"leggo:manager:emails\");#define(\"EMAIL_STREAM_KEY\", \"${E_SLUG}:manager:emails\");#" \
+    -e "s#define(\"EMAIL_STREAM_GROUP\", \"leggo-manager-email-worker\");#define(\"EMAIL_STREAM_GROUP\", \"${E_SLUG}-manager-email-worker\");#" \
     "$MANAGER_KERNEL"
 
 echo "Gerado: $SITE_KERNEL"
