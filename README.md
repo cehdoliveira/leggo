@@ -51,7 +51,6 @@ git config core.hooksPath .githooks
 # 7. Acesse
 # Manager:  http://manager.leggo.local
 # Site:     http://leggo.local
-# Kafka UI: http://localhost:8080
 ```
 
 > [!IMPORTANT]
@@ -71,14 +70,13 @@ flowchart TD
     MC --> L["app/inc/lib · app/inc/model<br/><b>2 cópias byte-idênticas</b><br/>guard: bin/check-shared-sync.sh"]
     SC --> L
     L --> DB[("MySQL 8.0")]
-    L --> R[("Redis · rate limit")]
-    L --> K[["Kafka · e-mail assíncrono"]]
+    L --> R[("Redis · rate limit + fila de e-mail")]
 ```
 
 `manager` e `site` compartilham o mesmo `app/inc/lib` e `app/inc/model` —
 duas cópias byte-idênticas verificadas pelo guard `bin/check-shared-sync.sh`
 no pre-commit. Controllers, rotas, views e `kernel.php` são por ambiente e
-podem divergir. Redis e Kafka são **fail-open**: se ficarem indisponíveis, a
+podem divergir. Redis é **fail-open**: se ficar indisponível, a
 request continua (rate limit e e-mail assíncrono degradam, não derrubam).
 
 ```mermaid
@@ -135,7 +133,7 @@ sequenceDiagram
 manager/               ← Painel admin (manager.leggo.local)
   app/inc/
     controller/        ← Lógica das rotas
-    lib/               ← Framework LEGGO (Dispatcher, ORM, PDO, Redis, Kafka, Logger)
+    lib/               ← Framework LEGGO (Dispatcher, ORM, PDO, Redis, fila de e-mail, Logger)
     model/             ← Models (users, profiles, messages)
     kernel.php         ← Config sensível (gitignored, copiar do .example)
   public_html/         ← Raiz web
@@ -187,7 +185,7 @@ Projeto roda sobre framework próprio (não Laravel/Symfony).
 | ORM | `DOLModel.php` | Active record com soft-delete, `populate()`/`save()`/`remove()`, `select()`/`update()` avulsos, prepared statements, batch `join()` |
 | Database | `localPDO.php` | Wrapper PDO com `select()`, `insert()`, `update()`, `executePrepared(sql, params)` |
 | Cache | `RedisCache.php` | Singleton Redis com TTL, fail-open |
-| Email | `EmailProducer.php` | Producer Kafka assíncrono (fallback sem rdkafka) |
+| Email | `EmailQueue.php` | Fila de e-mail em Redis Streams (fallback inline) |
 | Migrations | `MigrationRunner.php` | Runner idempotente de arquivos .sql |
 | Auth | `auth_controller.php` | Login bcrypt + migração MD5, CSRF com grace period de 10s, rate limit |
 | Logger | `Logger.php` | Log estruturado em JSON com níveis debug/info/warning/error |

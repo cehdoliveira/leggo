@@ -102,12 +102,12 @@ the CSRF token).
 |---|---|---|
 | `cAppKey` | `leggo_manager_session` | `leggo_site_session` |
 | `REDIS_PREFIX` | `leggo:manager:` | `leggo:site:` |
-| `KAFKA_TOPIC_EMAIL` | `leggo_manager_emails` | `leggo_site_emails` |
+| `EMAIL_STREAM_KEY` | `leggo:manager:emails` | `leggo:site:emails` |
 | `ALLOWED_HOSTS` | `manager.leggo.local` | `leggo.local` |
 | `*_CANONICAL_URL` | `MANAGER_CANONICAL_URL` | `SITE_CANONICAL_URL` |
 
-Both share the same MySQL database and Redis instance. Kafka topics are separate. Each
-`kernel.php` validates `$_SERVER["HTTP_HOST"]` against `ALLOWED_HOSTS` and `exit('Invalid host
+Both share the same MySQL database and Redis instance. Streams de e-mail são separados
+por ambiente. Each `kernel.php` validates `$_SERVER["HTTP_HOST"]` against `ALLOWED_HOSTS` and `exit('Invalid host
 header')` on mismatch — CLI scripts pass an empty host (bypass) or set it themselves (e.g.
 `set_admin_password.php`).
 
@@ -191,7 +191,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 
 - **Redis**: fail-open with file fallback. Used for rate limiting (`login_attempts:{ip}`, 5/60s) and forgot-password (`forgot_pwd:{ip}`, 3/300s) via `check_and_increment_rate_limit()`. If Redis is down, rate limiting falls back to file-based locks in `ratelimit_fallback_dir()` (default `sys_get_temp_dir()/leggo_ratelimit`, override with `RATELIMIT_FALLBACK_DIR`). Only fails open (no limiting) if both Redis AND the file fallback are unavailable — a warning is logged so operators can detect total bypass.
 
-- **Email**: async via Kafka (`EmailProducer`). Falls back to sync if rdkafka extension is missing. The entrypoint starts **two** workers — `manager/cgi-bin/kafka_email_worker.php` and `site/cgi-bin/kafka_email_worker.php` — as background processes.
+- **Email**: async via Redis Streams (`EmailQueue`). Enqueue is buffered in-request and only pushed to the stream **after** the global transaction commits (`basic_redir`/`close_request_transaction`); a rollback discards the buffer. If Redis is unavailable the mail is sent inline via PHPMailer (fail-open, 20s budget). Two workers — `manager/cgi-bin/email_worker.php` and `site/cgi-bin/email_worker.php` — are started and supervised by cron with `flock -n`.
 
 - **Passwords**: bcrypt (`password_hash`/`password_verify`). MD5 legacy passwords are auto-migrated to bcrypt on login.
 
@@ -212,7 +212,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 
 - Tests live in `manager/tests/` and `site/tests/`. They are identical between environments.
 
-- Bootstrap (`tests/bootstrap.php`) sets `$_SERVER["HTTP_HOST"]` to the env's allowed host, then manually loads `kernel.php`, autoload, and `lists.php` — so **tests need a valid database** (and optionally Redis/Kafka). Define real DB constants in kernel.php or tests will fail to connect.
+- Bootstrap (`tests/bootstrap.php`) sets `$_SERVER["HTTP_HOST"]` to the env's allowed host, then manually loads `kernel.php`, autoload, and `lists.php` — so **tests need a valid database** (and optionally Redis). Define real DB constants in kernel.php or tests will fail to connect.
 
 - PHPUnit 11 via Composer (`app/inc/lib/vendor/bin/phpunit`). Config at `phpunit.xml` in each env root.
 
@@ -244,7 +244,7 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 
 | File | Purpose |
 |---|---|
-| `manager/app/inc/kernel.php.example` | Manager config template (DB, Redis, Kafka, SMTP, app keys, `ALLOWED_HOSTS`, `MANAGER_CANONICAL_URL`) |
+| `manager/app/inc/kernel.php.example` | Manager config template (DB, Redis, email stream, SMTP, app keys, `ALLOWED_HOSTS`, `MANAGER_CANONICAL_URL`) |
 | `site/app/inc/kernel.php.example` | Site config template (`SITE_CANONICAL_URL`, etc.) |
 | `manager/app/inc/lib/composer.json` | Composer deps + autoload (phpmailer ^6.9, phpstan ^2.0, phpunit ^11.0; same for both envs) |
 | `manager/app/inc/main.php` | Loader required by `index.php`: kernel + autoload + lists + CommonFunctions + urls + CSRF seed |
@@ -255,8 +255,8 @@ uma das cópias bloqueia o commit. Rode manualmente com `bash bin/check-shared-s
 | `bin/test.sh` | Full verification: PHPStan (host) + PHPUnit (Docker), both envs |
 | `bin/check-shared-sync.sh` | Drift guard for `lib/` and `model/` between envs (runs in pre-commit + CI) |
 | `bin/init-whitelabel.sh` | Generates both `kernel.php` for a new whitelabel brand |
-| `docker/docker-compose.yml` | Services: leggo (nginx+fpm), mysql (`--sql_mode=""`), redis, kafka, kafka-ui (port 8080) |
-| `docker/interface/entrypoint.sh` | Startup: composer install (both envs), cron, two kafka workers, nginx |
+| `docker/docker-compose.yml` | Services: leggo (nginx+fpm), mysql (`--sql_mode=""`), redis |
+| `docker/interface/entrypoint.sh` | Startup: composer install (both envs), cron, nginx |
 | `docker/interface/default.conf` | Nginx vhosts for `manager.leggo.local` and `leggo.local` + security headers |
 | `docker/interface/crontab` | Migrations every 5 min with `flock` |
 | `.github/workflows/ci.yml` | CI: sync-guard + PHPStan + PHPUnit (MySQL 8.0 service) |
