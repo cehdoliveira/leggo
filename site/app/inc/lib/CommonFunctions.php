@@ -172,6 +172,14 @@ function basic_redir(string|array $url, int $code = 302, bool $use_html = false,
     // localPDO might not be initialized if no DB ops occurred
   }
 
+  // A fila de e-mail só é despachada DEPOIS do commit: em rollback o buffer morre
+  // com a request, sem mandar e-mail de operação revertida (ver EmailQueue).
+  if ($rollback) {
+    EmailQueue::discardPending();
+  } else {
+    EmailQueue::flushPending();
+  }
+
   // Cache-Control: no-store impede que o browser cache 302s.
   // Sem isso, um redirect para /login poderia ser cacheado e reproduzido
   // em requisições futuras mesmo com o usuário já autenticado.
@@ -805,6 +813,12 @@ function close_request_transaction(int $code = 200): void
   } catch (\Throwable) {
     // localPDO pode nao ter sido inicializado se nenhuma operacao de banco ocorreu.
   }
+
+  if ($code >= 400) {
+    EmailQueue::discardPending();
+  } else {
+    EmailQueue::flushPending();
+  }
 }
 
 /**
@@ -933,9 +947,7 @@ function send_admin_credentials_mail(string $name, string $login, string $mail, 
   include(constant("cRootServer") . "ui/mail/new_admin_credentials.php");
   $body = ob_get_clean();
 
-  if (class_exists("EmailProducer")) {
-    EmailProducer::getInstance()->send($mail, $subject, $body);
-  }
+  EmailQueue::enqueue($mail, $subject, $body);
 
   $msgModel = new messages_model();
   $msgModel->populate([
