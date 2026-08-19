@@ -52,7 +52,7 @@ $users->populate([
 ]);
 $users->save();
 
-localPDO::getInstance()->commit();
+close_transaction_and_mail(true);
 
 echo "Senha do admin atualizada com sucesso.\n";
 exit(0);
